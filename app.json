@@ -3,6 +3,7 @@
     "name": "react-native-practice-template-expo57",
     "slug": "react-native-practice-template-expo57",
     "version": "1.0.0",
+    "scheme": "rn-practice",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -20,6 +21,10 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font"
+    ]
   }
 }
