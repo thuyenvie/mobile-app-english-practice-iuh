@@ -11,7 +11,7 @@ export function GoogleButton({ onPress }: { onPress: () => void }) {
       hoverStyle={{ backgroundColor: authDesign.colors.surface, borderColor: authDesign.colors.border }}
       focusStyle={{ backgroundColor: authDesign.colors.surface, borderColor: authDesign.colors.border }}
       pressStyle={{ backgroundColor: '$borderColor' }} onPress={onPress}
-      accessibilityLabel="Tiếp tục với Google"
+      aria-label="Tiếp tục với Google"
       icon={<Text color={authDesign.colors.google} fontSize={26} fontWeight="700" accessible={false}>G</Text>}>
       Tiếp tục với Google
     </AppButton>

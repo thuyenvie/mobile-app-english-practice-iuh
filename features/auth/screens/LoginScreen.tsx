@@ -16,7 +16,7 @@ export default function LoginScreen() {
   return (
     <AuthScaffold>
       <YStack gap={12}>
-        <Text accessibilityRole="header" textAlign="center" {...authDesign.title} color="$color">
+        <Text role="heading" textAlign="center" {...authDesign.title} color="$color">
           Chào mừng trở lại
         </Text>
         <Text textAlign="center" {...authDesign.subtitle} color="$textSecondary">
@@ -33,17 +33,17 @@ export default function LoginScreen() {
         </AppButton>
         <XStack marginTop={-18} marginBottom={-18} justifyContent="space-between" flexWrap="wrap" gap="$small">
           <AppButton appearance="text" fontSize={11} justifyContent="center" color="$textSecondary"
-            accessibilityRole="button" onPress={() => setNotice('Khôi phục mật khẩu chưa khả dụng.')}>
+            role="button" onPress={() => setNotice('Khôi phục mật khẩu chưa khả dụng.')}>
             Quên mật khẩu?
           </AppButton>
           <AppButton appearance="text" fontSize={11} justifyContent="center" color="$color"
-            accessibilityRole="button" onPress={() => router.push('/auth/register')}>Đăng ký</AppButton>
+            role="button" onPress={() => router.push('/auth/register')}>Đăng ký</AppButton>
         </XStack>
       </YStack>
       <YStack marginTop={authDesign.googleGap}>
         <GoogleButton onPress={() => setNotice('Đăng nhập với Google chưa khả dụng.')} />
       </YStack>
-      {notice ? <Text marginTop="$medium" accessibilityLiveRegion="polite" role="status" color="$textSecondary">{notice}</Text> : null}
+      {notice ? <Text marginTop="$medium" aria-live="polite" role="status" color="$textSecondary">{notice}</Text> : null}
       <Text textAlign="center" color="$textSecondary" marginTop={28} {...authDesign.caption}>
         Bằng việc đăng nhập vào ứng dụng, bạn đồng ý với{'\n'}chính sách bảo mật của chúng tôi
       </Text>

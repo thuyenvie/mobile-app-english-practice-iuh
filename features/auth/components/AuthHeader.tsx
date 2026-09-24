@@ -15,13 +15,13 @@ export function AuthHeader({ onBack }: { onBack?: () => void }) {
       borderBottomLeftRadius={authDesign.headerRadius} borderBottomRightRadius={authDesign.headerRadius}>
       {onBack && (
         <AppButton appearance="text" position="absolute" top={insets.top + 8} left={0}
-          minWidth="$touchTarget" accessibilityLabel="Quay lại đăng nhập" onPress={onBack}
+          minWidth="$touchTarget" aria-label="Quay lại đăng nhập" onPress={onBack}
           icon={<MaterialIcons name="chevron-left" size={32} color={authDesign.colors.text} />} />
       )}
       {/* Neutral wireframe placeholder; replace with the team's local logo asset later. */}
       <YStack width={authDesign.logoWidth} height={authDesign.logoHeight}
         backgroundColor={authDesign.colors.logo} overflow="hidden"
-        alignItems="center" justifyContent="center" accessibilityLabel="Vị trí logo ứng dụng">
+        alignItems="center" justifyContent="center">
         <YStack position="absolute" width={154} height={1}
           backgroundColor={authDesign.colors.logoLine} rotate="38deg" />
         <YStack position="absolute" width={154} height={1}
