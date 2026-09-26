@@ -15,9 +15,23 @@ export default function RegisterScreen() {
   const [notice, setNotice] = useState('');
   const goToLogin = () => router.dismissTo('/auth/login');
 
+  const handleRegister = () => {
+    if (!username.trim() || !password || !confirmPassword) {
+      setNotice('Vui lòng nhập đầy đủ thông tin.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setNotice('Mật khẩu xác nhận không khớp.');
+      return;
+    }
+
+    setNotice('Chức năng đăng ký sẽ được kết nối với máy chủ sau.');
+  };
+
   return (
     <AuthScaffold onBack={goToLogin}>
-      <Text role="heading" textAlign="center" {...authDesign.title} color="$color">Đăng ký</Text>
+      <Text role="heading" textAlign="center" {...authDesign.title} color={authDesign.colors.text}>Đăng ký</Text>
       <YStack marginTop={authDesign.registerFormGap} gap={authDesign.fieldGap}>
         <AppInput {...authDesign.input} labelProps={authDesign.label} labelGap={authDesign.labelGap} autoCapitalize="none" autoCorrect={false} label="Tên đăng nhập" placeholder="Nhập tên của bạn"
           value={username} onChangeText={setUsername} autoComplete="username" />
@@ -25,15 +39,15 @@ export default function RegisterScreen() {
           value={password} onChangeText={setPassword} secureTextEntry autoComplete="new-password" />
         <AppInput {...authDesign.input} labelProps={authDesign.label} labelGap={authDesign.labelGap} autoCapitalize="none" autoCorrect={false} label="Xác nhận lại mật khẩu" placeholder="Nhập lại mật khẩu"
           value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry autoComplete="new-password" />
-        <AppButton {...authDesign.button} marginTop={8} onPress={() => setNotice('Đăng ký chưa khả dụng. Vui lòng thử lại sau.')}>
+        <AppButton {...authDesign.button} marginTop={8} onPress={handleRegister}>
           Xác nhận
         </AppButton>
       </YStack>
       <YStack marginTop={authDesign.googleGap}>
         <GoogleButton onPress={() => setNotice('Đăng nhập với Google chưa khả dụng.')} />
       </YStack>
-      {notice ? <Text marginTop="$medium" aria-live="polite" role="status" color="$textSecondary">{notice}</Text> : null}
-      <AppButton appearance="text" fontSize={11} marginTop="$medium" alignSelf="center" justifyContent="center" color="$color"
+      {notice ? <Text marginTop="$medium" aria-live="polite" role="status" color={authDesign.colors.secondary}>{notice}</Text> : null}
+      <AppButton appearance="text" fontSize={11} marginTop="$medium" alignSelf="center" justifyContent="center" color={authDesign.colors.text}
         role="button" onPress={goToLogin}>Đăng nhập</AppButton>
     </AuthScaffold>
   );

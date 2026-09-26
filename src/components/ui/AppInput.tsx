@@ -7,7 +7,7 @@ import {
   type YStackProps,
 } from "tamagui";
 
-import { typography } from "@/theme/tokens";
+import { authDesign, typography } from "@/theme/tokens";
 
 type AppInputProps = InputProps & {
   label: string;
@@ -23,20 +23,20 @@ export function AppInput({
 }: AppInputProps) {
   return (
     <YStack gap={labelGap}>
-      <Text color="$color" {...typography.label} {...labelProps}>
+      <Text color={authDesign.colors.text} {...typography.label} {...labelProps}>
         {label}
       </Text>
       <Input
         minHeight="$control"
         borderRadius="$control"
-        backgroundColor="$inputBackground"
-        borderColor="$borderColor"
-        color="$color"
-        placeholderTextColor="$placeholderColor"
+        backgroundColor={authDesign.colors.surface}
+        borderColor={authDesign.colors.border}
+        color={authDesign.colors.text}
+        placeholderTextColor={authDesign.colors.placeholder as import("tamagui").ColorTokens}
         fontSize={typography.body.fontSize}
         paddingHorizontal="$medium"
         aria-label={label}
-        focusStyle={{ borderColor: "$primary" }}
+        focusStyle={{ borderColor: authDesign.colors.primary }}
         {...props}
       />
     </YStack>

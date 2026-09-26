@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { router } from "expo-router";
 import { Text, XStack, YStack } from "tamagui";
-import * as SecureStore from "expo-secure-store";
-
 import { authDesign } from "@/theme/tokens";
 import { AppButton } from "@/components/ui/AppButton";
 import { AppInput } from "@/components/ui/AppInput";
@@ -47,14 +45,14 @@ export default function LoginScreen() {
           role="heading"
           textAlign="center"
           {...authDesign.title}
-          color="$color"
+          color={authDesign.colors.text}
         >
           Chào mừng trở lại
         </Text>
         <Text
           textAlign="center"
           {...authDesign.subtitle}
-          color="$textSecondary"
+          color={authDesign.colors.secondary}
         >
           Đăng nhập để đồng bộ tiến độ giữa các thiết bị
         </Text>
@@ -105,7 +103,7 @@ export default function LoginScreen() {
             appearance="text"
             fontSize={11}
             justifyContent="center"
-            color="$textSecondary"
+            color={authDesign.colors.secondary}
             role="button"
             onPress={() => setNotice("Khôi phục mật khẩu chưa khả dụng.")}
           >
@@ -115,7 +113,7 @@ export default function LoginScreen() {
             appearance="text"
             fontSize={11}
             justifyContent="center"
-            color="$color"
+            color={authDesign.colors.text}
             role="button"
             onPress={() => router.push("/auth/register")}
           >
@@ -133,14 +131,14 @@ export default function LoginScreen() {
           marginTop="$medium"
           aria-live="polite"
           role="status"
-          color="$textSecondary"
+          color={authDesign.colors.secondary}
         >
           {notice}
         </Text>
       ) : null}
       <Text
         textAlign="center"
-        color="$textSecondary"
+        color={authDesign.colors.secondary}
         marginTop={28}
         {...authDesign.caption}
       >

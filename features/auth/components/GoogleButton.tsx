@@ -6,7 +6,7 @@ import { AppButton } from '@/components/ui/AppButton';
 
 export function GoogleButton({ onPress }: { onPress: () => void }) {
   return (
-    <AppButton {...authDesign.button} borderRadius={100} color="$color"
+    <AppButton {...authDesign.button} borderRadius={100} color={authDesign.colors.text}
       backgroundColor={authDesign.colors.surface} borderWidth={1} borderColor={authDesign.colors.border}
       hoverStyle={{ backgroundColor: authDesign.colors.surface, borderColor: authDesign.colors.border }}
       focusStyle={{ backgroundColor: authDesign.colors.surface, borderColor: authDesign.colors.border }}
