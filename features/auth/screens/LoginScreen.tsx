@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { router } from "expo-router";
 import { Text, XStack, YStack } from "tamagui";
 
 import { authDesign } from "@/theme/tokens";
 import { AppButton } from "@/components/ui/AppButton";
 import { AppInput } from "@/components/ui/AppInput";
-import { getAccessToken } from "@/lib/auth/tokenStorage";
 import { AuthScaffold } from "../components/AuthScaffold";
 import { GoogleButton } from "../components/GoogleButton";
 import { getLoginErrorMessage, login } from "../api/authApi";
@@ -16,11 +15,8 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [notice, setNotice] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { isGoogleLoading, googleResultMessage, signInWithGoogle } = useGoogleLogin();
-
-  useEffect(() => {
-    if (googleResultMessage) setNotice(googleResultMessage);
-  }, [googleResultMessage]);
+  const { completeGoogleSignIn, isGoogleLoading, signInWithGoogle } =
+    useGoogleLogin();
 
   const handleLogin = async () => {
     const userName = username.trim();
@@ -35,8 +31,6 @@ export default function LoginScreen() {
 
     try {
       await login({ userName, passWord: password });
-      const storedToken = await getAccessToken();
-      console.log("Stored access token:", storedToken);
       setNotice("Đăng nhập thành công.");
     } catch (error) {
       setNotice(getLoginErrorMessage(error));
@@ -46,9 +40,20 @@ export default function LoginScreen() {
   };
 
   const handleGoogleLogin = async () => {
+    setNotice("");
     try {
       const result = await signInWithGoogle();
       if (result) setNotice("Đăng nhập Google thành công.");
+    } catch (error) {
+      setNotice(getLoginErrorMessage(error));
+    }
+  };
+
+  const handleGoogleIdToken = async (idToken: string) => {
+    setNotice("");
+    try {
+      await completeGoogleSignIn(idToken);
+      setNotice("Đăng nhập Google thành công.");
     } catch (error) {
       setNotice(getLoginErrorMessage(error));
     }
@@ -142,6 +147,8 @@ export default function LoginScreen() {
           disabled={isGoogleLoading}
           loading={isGoogleLoading}
           onPress={handleGoogleLogin}
+          onIdToken={handleGoogleIdToken}
+          onError={setNotice}
         />
       </YStack>
       {notice ? (

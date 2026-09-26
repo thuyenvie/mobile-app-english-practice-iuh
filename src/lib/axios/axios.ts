@@ -1,4 +1,4 @@
-import axios from "axios";
+import { create, isAxiosError } from "axios";
 
 import { getAccessToken, removeAccessToken } from "@/lib/auth/tokenStorage";
 
@@ -11,7 +11,7 @@ import { getAccessToken, removeAccessToken } from "@/lib/auth/tokenStorage";
 export const API_BASE_URL =
   process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:9999/api";
 
-const api = axios.create({
+const api = create({
   baseURL: API_BASE_URL,
   timeout: 30_000,
   headers: {
@@ -32,7 +32,7 @@ api.interceptors.request.use(async (config) => {
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    if (axios.isAxiosError(error) && error.response?.status === 401) {
+    if (isAxiosError(error) && error.response?.status === 401) {
       await removeAccessToken();
     }
 

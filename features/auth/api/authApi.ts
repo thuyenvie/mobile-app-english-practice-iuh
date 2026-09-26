@@ -1,7 +1,7 @@
-import axios from "axios";
+import { isAxiosError } from "axios";
 
 import api from "@/lib/axios/axios";
-import { saveAccessToken, saveRefreshToken } from "@/lib/auth/tokenStorage";
+import { saveAccessToken } from "@/lib/auth/tokenStorage";
 import type { ApiResponse } from "@/types/api";
 
 export interface LoginRequest {
@@ -15,11 +15,21 @@ export interface LoginResult {
   refreshToken?: string;
 }
 
-export interface GoogleAuthorizationCodeRequest {
-  code: string;
-  codeVerifier: string;
-  redirectUri: string;
-  platform: "WEB" | "ANDROID" | "IOS";
+export async function loginWithGoogleIdToken(
+  idToken: string,
+): Promise<LoginResult> {
+  const response = await api.post<ApiResponse<LoginResult>>(
+    "/identity/auth/google/mobile",
+    { idToken },
+  );
+  const body = response.data;
+
+  if (!body.success || !body.result?.success || !body.result.token) {
+    throw new Error(body.message || "Đăng nhập Google không thành công.");
+  }
+
+  await saveAccessToken(body.result.token);
+  return body.result;
 }
 
 export async function login(request: LoginRequest): Promise<LoginResult> {
@@ -37,29 +47,8 @@ export async function login(request: LoginRequest): Promise<LoginResult> {
   return body.result;
 }
 
-export async function loginWithGoogleCode(
-  request: GoogleAuthorizationCodeRequest,
-): Promise<LoginResult> {
-  const response = await api.post<ApiResponse<LoginResult>>(
-    "/identity/auth/outbound/authentication",
-    request,
-  );
-  const body = response.data;
-
-  if (!body.success || !body.result?.success || !body.result.token) {
-    throw new Error(body.message || "Đăng nhập Google không thành công.");
-  }
-
-  await saveAccessToken(body.result.token);
-  if (body.result.refreshToken) {
-    await saveRefreshToken(body.result.refreshToken);
-  }
-
-  return body.result;
-}
-
 export function getLoginErrorMessage(error: unknown): string {
-  if (axios.isAxiosError<ApiResponse<unknown>>(error)) {
+  if (isAxiosError<ApiResponse<unknown>>(error)) {
     if (!error.response) {
       return "Không thể kết nối đến máy chủ. Hãy kiểm tra API Gateway và địa chỉ mạng.";
     }
