@@ -38,3 +38,26 @@ export const authDesign = {
   logoWidth: 100,
   logoHeight: 80,
 } as const;
+
+export const homeDesign = {
+  colors: {
+    background: authDesign.colors.background,
+    text: authDesign.colors.text,
+    secondary: '#99999f',
+    link: '#62a7df',
+    card: '#d9d9d9',
+    cardText: '#111111',
+    cardTrack: '#f5f5f5',
+    surface: '#1e1e1e',
+    surfaceRaised: '#2b2b2d',
+    border: '#3a3a3c',
+    tab: '#609fda',
+    tabActive: '#c2ef50',
+    completed: '#22c55e',
+    inProgress: '#ffa600',
+    notStarted: '#66666b',
+  },
+  maxWidth: 480,
+  pagePadding: 16,
+  tabHeight: 60,
+} as const;
