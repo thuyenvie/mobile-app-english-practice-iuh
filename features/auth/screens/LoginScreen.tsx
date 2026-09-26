@@ -4,7 +4,6 @@ import { Text, XStack, YStack } from "tamagui";
 import { authDesign } from "@/theme/tokens";
 import { AppButton } from "@/components/ui/AppButton";
 import { AppInput } from "@/components/ui/AppInput";
-import { getAccessToken } from "@/lib/auth/tokenStorage";
 import { AuthScaffold } from "../components/AuthScaffold";
 import { GoogleButton } from "../components/GoogleButton";
 import { getLoginErrorMessage, login } from "../api/authApi";
@@ -28,9 +27,7 @@ export default function LoginScreen() {
 
     try {
       await login({ userName, passWord: password });
-      const storedToken = await getAccessToken();
-      console.log("Stored access token:", storedToken);
-      setNotice("Đăng nhập thành công.");
+      router.replace("/(tabs)/home");
     } catch (error) {
       setNotice(getLoginErrorMessage(error));
     } finally {
