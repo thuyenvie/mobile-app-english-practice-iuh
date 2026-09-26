@@ -1,7 +1,7 @@
 import axios from "axios";
 
 import api from "@/lib/axios/axios";
-import { saveAccessToken } from "@/lib/auth/tokenStorage";
+import { saveAccessToken, saveRefreshToken } from "@/lib/auth/tokenStorage";
 import type { ApiResponse } from "@/types/api";
 
 export interface LoginRequest {
@@ -12,6 +12,14 @@ export interface LoginRequest {
 export interface LoginResult {
   token: string;
   success: boolean;
+  refreshToken?: string;
+}
+
+export interface GoogleAuthorizationCodeRequest {
+  code: string;
+  codeVerifier: string;
+  redirectUri: string;
+  platform: "WEB" | "ANDROID" | "IOS";
 }
 
 export async function login(request: LoginRequest): Promise<LoginResult> {
@@ -26,6 +34,27 @@ export async function login(request: LoginRequest): Promise<LoginResult> {
   }
 
   await saveAccessToken(body.result.token);
+  return body.result;
+}
+
+export async function loginWithGoogleCode(
+  request: GoogleAuthorizationCodeRequest,
+): Promise<LoginResult> {
+  const response = await api.post<ApiResponse<LoginResult>>(
+    "/identity/auth/outbound/authentication",
+    request,
+  );
+  const body = response.data;
+
+  if (!body.success || !body.result?.success || !body.result.token) {
+    throw new Error(body.message || "Đăng nhập Google không thành công.");
+  }
+
+  await saveAccessToken(body.result.token);
+  if (body.result.refreshToken) {
+    await saveRefreshToken(body.result.refreshToken);
+  }
+
   return body.result;
 }
 

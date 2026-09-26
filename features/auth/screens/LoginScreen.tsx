@@ -1,7 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { router } from "expo-router";
 import { Text, XStack, YStack } from "tamagui";
-import * as SecureStore from "expo-secure-store";
 
 import { authDesign } from "@/theme/tokens";
 import { AppButton } from "@/components/ui/AppButton";
@@ -10,12 +9,18 @@ import { getAccessToken } from "@/lib/auth/tokenStorage";
 import { AuthScaffold } from "../components/AuthScaffold";
 import { GoogleButton } from "../components/GoogleButton";
 import { getLoginErrorMessage, login } from "../api/authApi";
+import { useGoogleLogin } from "../hooks/useGoogleLogin";
 
 export default function LoginScreen() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [notice, setNotice] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { isGoogleLoading, googleResultMessage, signInWithGoogle } = useGoogleLogin();
+
+  useEffect(() => {
+    if (googleResultMessage) setNotice(googleResultMessage);
+  }, [googleResultMessage]);
 
   const handleLogin = async () => {
     const userName = username.trim();
@@ -37,6 +42,15 @@ export default function LoginScreen() {
       setNotice(getLoginErrorMessage(error));
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      const result = await signInWithGoogle();
+      if (result) setNotice("Đăng nhập Google thành công.");
+    } catch (error) {
+      setNotice(getLoginErrorMessage(error));
     }
   };
 
@@ -125,7 +139,9 @@ export default function LoginScreen() {
       </YStack>
       <YStack marginTop={authDesign.googleGap}>
         <GoogleButton
-          onPress={() => setNotice("Đăng nhập với Google chưa khả dụng.")}
+          disabled={isGoogleLoading}
+          loading={isGoogleLoading}
+          onPress={handleGoogleLogin}
         />
       </YStack>
       {notice ? (
