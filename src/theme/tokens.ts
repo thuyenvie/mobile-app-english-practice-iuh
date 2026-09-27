@@ -61,3 +61,19 @@ export const homeDesign = {
   pagePadding: 16,
   tabHeight: 60,
 } as const;
+
+export const aiDesign = {
+  colors: {
+    background: authDesign.colors.background,
+    text: authDesign.colors.text,
+    surface: authDesign.colors.surface,
+    secondary: authDesign.colors.secondary,
+    accent: '#aaa2ef',
+    avatar: '#242458',
+    robot: '#e5b950',
+    camera: '#f88a45',
+    send: '#419feb',
+  },
+  cardRadius: 30,
+  cardMinHeight: 120,
+} as const;
