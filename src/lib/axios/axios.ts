@@ -1,4 +1,5 @@
 import { create, isAxiosError } from "axios";
+import { Platform } from "react-native";
 
 import { getAccessToken, removeAccessToken } from "@/lib/auth/tokenStorage";
 
@@ -8,8 +9,17 @@ import { getAccessToken, removeAccessToken } from "@/lib/auth/tokenStorage";
  * EXPO_PUBLIC_API_BASE_URL cho phép đổi địa chỉ API theo môi trường mà không
 
  */
+const configuredBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL?.trim();
+
+// Native app không thể dùng localhost để gọi API đang chạy trên máy Mac:
+// - Android emulator dùng 10.0.2.2.
+// - iOS simulator có thể dùng localhost.
+// - Thiết bị thật phải cấu hình IP LAN qua EXPO_PUBLIC_API_BASE_URL.
 export const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:9999/api";
+  configuredBaseUrl ||
+  (Platform.OS === "android"
+    ? "http://10.0.2.2:9999/api"
+    : "http://localhost:9999/api");
 
 const api = create({
   baseURL: API_BASE_URL,

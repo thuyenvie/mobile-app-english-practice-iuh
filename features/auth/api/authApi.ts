@@ -19,7 +19,8 @@ export async function loginWithGoogleIdToken(
   idToken: string,
 ): Promise<LoginResult> {
   const response = await api.post<ApiResponse<LoginResult>>(
-    "/identity/auth/google/mobile",
+    // Identity service nhận Google ID token, tự tạo/tìm user và trả JWT hệ thống.
+    "/identity/auth/google",
     { idToken },
   );
   const body = response.data;

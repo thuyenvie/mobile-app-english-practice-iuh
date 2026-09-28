@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { router } from "expo-router";
 import { Text, XStack, YStack } from "tamagui";
-import * as SecureStore from "expo-secure-store";
 
 import { authDesign } from "@/theme/tokens";
 import { AppButton } from "@/components/ui/AppButton";
@@ -10,7 +9,6 @@ import { AuthScaffold } from "../components/AuthScaffold";
 import { GoogleButton } from "../components/GoogleButton";
 import { getLoginErrorMessage, login } from "../api/authApi";
 import { useGoogleLogin } from "../hooks/useGoogleLogin";
-import { getAccessToken } from "@/lib/auth/tokenStorage";
 
 export default function LoginScreen() {
   const [username, setUsername] = useState("");
@@ -33,8 +31,6 @@ export default function LoginScreen() {
 
     try {
       await login({ userName, passWord: password });
-      const storedToken = await getAccessToken();
-      console.log("Stored access token:", storedToken);
       setNotice("Đăng nhập thành công.");
       router.replace("/(tabs)/home");
     } catch (error) {
@@ -48,7 +44,10 @@ export default function LoginScreen() {
     setNotice("");
     try {
       const result = await signInWithGoogle();
-      if (result) setNotice("Đăng nhập Google thành công.");
+      if (result) {
+        setNotice("Đăng nhập Google thành công.");
+        router.replace("/(tabs)/home");
+      }
     } catch (error) {
       setNotice(getLoginErrorMessage(error));
     }
@@ -59,6 +58,7 @@ export default function LoginScreen() {
     try {
       await completeGoogleSignIn(idToken);
       setNotice("Đăng nhập Google thành công.");
+      router.replace("/(tabs)/home");
     } catch (error) {
       setNotice(getLoginErrorMessage(error));
     }
