@@ -12,7 +12,7 @@ export function AuthScaffold({ children, onBack }: PropsWithChildren<{ onBack?: 
 
   return (
     <Theme name="light_auth">
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
       <KeyboardAvoidingView style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled"

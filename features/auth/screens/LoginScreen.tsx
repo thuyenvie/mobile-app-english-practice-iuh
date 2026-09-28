@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { router } from "expo-router";
 import { Text, XStack, YStack } from "tamagui";
+import * as SecureStore from "expo-secure-store";
 
 import { authDesign } from "@/theme/tokens";
 import { AppButton } from "@/components/ui/AppButton";
@@ -9,6 +10,7 @@ import { AuthScaffold } from "../components/AuthScaffold";
 import { GoogleButton } from "../components/GoogleButton";
 import { getLoginErrorMessage, login } from "../api/authApi";
 import { useGoogleLogin } from "../hooks/useGoogleLogin";
+import { getAccessToken } from "@/lib/auth/tokenStorage";
 
 export default function LoginScreen() {
   const [username, setUsername] = useState("");
@@ -31,7 +33,10 @@ export default function LoginScreen() {
 
     try {
       await login({ userName, passWord: password });
+      const storedToken = await getAccessToken();
+      console.log("Stored access token:", storedToken);
       setNotice("Đăng nhập thành công.");
+      router.replace("/(tabs)/home");
     } catch (error) {
       setNotice(getLoginErrorMessage(error));
     } finally {
@@ -66,14 +71,14 @@ export default function LoginScreen() {
           role="heading"
           textAlign="center"
           {...authDesign.title}
-          color="$color"
+          color={authDesign.colors.text}
         >
           Chào mừng trở lại
         </Text>
         <Text
           textAlign="center"
           {...authDesign.subtitle}
-          color="$textSecondary"
+          color={authDesign.colors.secondary}
         >
           Đăng nhập để đồng bộ tiến độ giữa các thiết bị
         </Text>
@@ -124,7 +129,7 @@ export default function LoginScreen() {
             appearance="text"
             fontSize={11}
             justifyContent="center"
-            color="$textSecondary"
+            color={authDesign.colors.secondary}
             role="button"
             onPress={() => setNotice("Khôi phục mật khẩu chưa khả dụng.")}
           >
@@ -134,7 +139,7 @@ export default function LoginScreen() {
             appearance="text"
             fontSize={11}
             justifyContent="center"
-            color="$color"
+            color={authDesign.colors.text}
             role="button"
             onPress={() => router.push("/auth/register")}
           >
@@ -156,14 +161,14 @@ export default function LoginScreen() {
           marginTop="$medium"
           aria-live="polite"
           role="status"
-          color="$textSecondary"
+          color={authDesign.colors.secondary}
         >
           {notice}
         </Text>
       ) : null}
       <Text
         textAlign="center"
-        color="$textSecondary"
+        color={authDesign.colors.secondary}
         marginTop={28}
         {...authDesign.caption}
       >
