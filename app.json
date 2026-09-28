@@ -3,14 +3,17 @@
     "name": "react-native-practice-template-expo57",
     "slug": "react-native-practice-template-expo57",
     "version": "1.0.0",
-    "scheme": "rn-practice",
+    "platforms": ["ios", "android", "web"],
+    "scheme": "com.dohoainho.englishpractice",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.dohoainho.englishpractice"
     },
     "android": {
+      "package": "com.dohoainho.englishpractice",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -26,6 +29,12 @@
       "expo-router",
       "expo-font",
       "expo-secure-store"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "70890ec2-0284-4612-b258-767629e7cd7d"
+      }
+    }
   }
 }

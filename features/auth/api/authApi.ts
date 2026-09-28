@@ -1,4 +1,4 @@
-import axios from "axios";
+import { isAxiosError } from "axios";
 
 import api from "@/lib/axios/axios";
 import { saveAccessToken } from "@/lib/auth/tokenStorage";
@@ -12,6 +12,24 @@ export interface LoginRequest {
 export interface LoginResult {
   token: string;
   success: boolean;
+  refreshToken?: string;
+}
+
+export async function loginWithGoogleIdToken(
+  idToken: string,
+): Promise<LoginResult> {
+  const response = await api.post<ApiResponse<LoginResult>>(
+    "/identity/auth/google/mobile",
+    { idToken },
+  );
+  const body = response.data;
+
+  if (!body.success || !body.result?.success || !body.result.token) {
+    throw new Error(body.message || "Đăng nhập Google không thành công.");
+  }
+
+  await saveAccessToken(body.result.token);
+  return body.result;
 }
 
 export async function login(request: LoginRequest): Promise<LoginResult> {
@@ -30,7 +48,7 @@ export async function login(request: LoginRequest): Promise<LoginResult> {
 }
 
 export function getLoginErrorMessage(error: unknown): string {
-  if (axios.isAxiosError<ApiResponse<unknown>>(error)) {
+  if (isAxiosError<ApiResponse<unknown>>(error)) {
     if (!error.response) {
       return "Không thể kết nối đến máy chủ. Hãy kiểm tra API Gateway và địa chỉ mạng.";
     }

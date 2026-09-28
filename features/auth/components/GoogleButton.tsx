@@ -1,18 +1,40 @@
-import { Text } from 'tamagui';
+import { Text } from "tamagui";
 
-import { authDesign } from '@/theme/tokens';
+import { authDesign } from "@/theme/tokens";
 
-import { AppButton } from '@/components/ui/AppButton';
+import { AppButton } from "@/components/ui/AppButton";
 
 export function GoogleButton({ onPress }: { onPress: () => void }) {
   return (
-    <AppButton {...authDesign.button} borderRadius={100} color={authDesign.colors.text}
-      backgroundColor={authDesign.colors.surface} borderWidth={1} borderColor={authDesign.colors.border}
-      hoverStyle={{ backgroundColor: authDesign.colors.surface, borderColor: authDesign.colors.border }}
-      focusStyle={{ backgroundColor: authDesign.colors.surface, borderColor: authDesign.colors.border }}
-      pressStyle={{ backgroundColor: '$borderColor' }} onPress={onPress}
+    <AppButton
+      {...authDesign.button}
+      borderRadius={100}
+      color={authDesign.colors.text}
+      backgroundColor={authDesign.colors.surface}
+      borderWidth={1}
+      borderColor={authDesign.colors.border}
+      hoverStyle={{
+        backgroundColor: authDesign.colors.surface,
+        borderColor: authDesign.colors.border,
+      }}
+      focusStyle={{
+        backgroundColor: authDesign.colors.surface,
+        borderColor: authDesign.colors.border,
+      }}
+      pressStyle={{ backgroundColor: "$borderColor" }}
+      onPress={onPress}
       aria-label="Tiếp tục với Google"
-      icon={<Text color={authDesign.colors.google} fontSize={26} fontWeight="700" accessible={false}>G</Text>}>
+      icon={
+        <Text
+          color={authDesign.colors.google}
+          fontSize={26}
+          fontWeight="700"
+          accessible={false}
+        >
+          G
+        </Text>
+      }
+    >
       Tiếp tục với Google
     </AppButton>
   );
