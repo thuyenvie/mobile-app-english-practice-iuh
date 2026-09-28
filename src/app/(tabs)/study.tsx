@@ -1,5 +1,3 @@
-import { TabPlaceholderScreen } from '../../../features/home/screens/TabPlaceholderScreen';
+import StudyScreen from "../../../features/study/screens/StudyScreen";
 
-export default function StudyScreen() {
-  return <TabPlaceholderScreen title="Học tập" />;
-}
+export default StudyScreen;
