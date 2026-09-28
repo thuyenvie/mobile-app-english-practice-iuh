@@ -1,9 +1,14 @@
 {
   "expo": {
+    "owner": "thuyenvie",
     "name": "react-native-practice-template-expo57",
     "slug": "react-native-practice-template-expo57",
     "version": "1.0.0",
-    "platforms": ["ios", "android", "web"],
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
     "scheme": "com.dohoainho.englishpractice",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -33,7 +38,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "70890ec2-0284-4612-b258-767629e7cd7d"
+        "projectId": "bb2d820e-fed5-4ce3-b1b7-f73c92003d6a"
       }
     }
   }
