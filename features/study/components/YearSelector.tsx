@@ -26,12 +26,20 @@ export function YearSelector({
               minHeight={42}
               paddingHorizontal={16}
               borderRadius={21}
-              backgroundColor={selected ? homeDesign.colors.tabActive : homeDesign.colors.surfaceRaised}
-              color={selected ? homeDesign.colors.cardText : homeDesign.colors.text}
+              backgroundColor={
+                selected
+                  ? homeDesign.colors.tabActive
+                  : homeDesign.colors.surfaceRaised
+              }
+              color={
+                selected ? homeDesign.colors.cardText : homeDesign.colors.text
+              }
               accessibilityState={{ selected }}
               onPress={() => onSelect(year)}
             >
-              <Text color="inherit" fontWeight="700">ETS {year}</Text>
+              <Text color="inherit" fontWeight="700">
+                ETS {year}
+              </Text>
             </AppButton>
           );
         })}

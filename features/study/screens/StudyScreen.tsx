@@ -18,7 +18,7 @@ export default function StudyScreen() {
   const [selectedYear, setSelectedYear] = useState<number>(toeicYears[0]);
   const [notice, setNotice] = useState("");
   const { state, retry } = useTestsByYear(selectedYear);
-
+  // back end ch co cai nay
   const openTest = (testNumber: number) => {
     router.push({
       pathname: "/study/[year]/[testNumber]",
@@ -28,9 +28,17 @@ export default function StudyScreen() {
 
   return (
     <StudyScaffold>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+      >
         <YStack gap={6} marginBottom={22}>
-          <Text role="heading" color={homeDesign.colors.text} fontSize={25} fontWeight="800">
+          <Text
+            role="heading"
+            color={homeDesign.colors.text}
+            fontSize={25}
+            fontWeight="800"
+          >
             Học tập
           </Text>
           <Text color={homeDesign.colors.secondary} fontSize={13}>
@@ -46,15 +54,27 @@ export default function StudyScreen() {
           marginBottom={24}
         >
           <XStack alignItems="center" gap={10}>
-            <MaterialCommunityIcons name="progress-clock" size={25} color={homeDesign.colors.inProgress} />
-            <Text color={homeDesign.colors.text} fontSize={15} fontWeight="700">Tiếp tục bài đang làm</Text>
+            <MaterialCommunityIcons
+              name="progress-clock"
+              size={25}
+              color={homeDesign.colors.inProgress}
+            />
+            <Text color={homeDesign.colors.text} fontSize={15} fontWeight="700">
+              Tiếp tục bài đang làm
+            </Text>
           </XStack>
-          <Text color={homeDesign.colors.secondary} fontSize={12}>Chưa có bài thi được lưu nháp.</Text>
+          <Text color={homeDesign.colors.secondary} fontSize={12}>
+            Chưa có bài thi được lưu nháp.
+          </Text>
         </YStack>
 
         <YStack gap={12} marginBottom={25}>
           <SectionTitle title="Thi thử TOEIC" hint="Chọn năm ETS" />
-          <YearSelector years={toeicYears} selectedYear={selectedYear} onSelect={setSelectedYear} />
+          <YearSelector
+            years={toeicYears}
+            selectedYear={selectedYear}
+            onSelect={setSelectedYear}
+          />
         </YStack>
 
         <YStack gap={12} marginBottom={26}>
@@ -73,7 +93,9 @@ export default function StudyScreen() {
               />
             ))
           ) : (
-            <HomeDataMessage message={`Chưa có đề ETS ${selectedYear} trong hệ thống.`} />
+            <HomeDataMessage
+              message={`Chưa có đề ETS ${selectedYear} trong hệ thống.`}
+            />
           )}
         </YStack>
 
@@ -85,7 +107,9 @@ export default function StudyScreen() {
               minHeight={82}
               backgroundColor={homeDesign.colors.tab}
               color={homeDesign.colors.cardText}
-              onPress={() => setNotice("Hãy chọn một đề để luyện Listening Part 1–4.")}
+              onPress={() =>
+                setNotice("Hãy chọn một đề để luyện Listening Part 1–4.")
+              }
             >
               Listening · Part 1–4
             </AppButton>
@@ -94,12 +118,18 @@ export default function StudyScreen() {
               minHeight={82}
               backgroundColor={homeDesign.colors.tabActive}
               color={homeDesign.colors.cardText}
-              onPress={() => setNotice("Hãy chọn một đề để luyện Reading Part 5–7.")}
+              onPress={() =>
+                setNotice("Hãy chọn một đề để luyện Reading Part 5–7.")
+              }
             >
               Reading · Part 5–7
             </AppButton>
           </XStack>
-          {notice ? <Text color={homeDesign.colors.secondary} fontSize={12}>{notice}</Text> : null}
+          {notice ? (
+            <Text color={homeDesign.colors.secondary} fontSize={12}>
+              {notice}
+            </Text>
+          ) : null}
         </YStack>
 
         <YStack gap={8}>

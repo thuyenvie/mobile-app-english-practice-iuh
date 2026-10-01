@@ -25,8 +25,9 @@ export function useTestsByYear(year: number) {
         if (active) setState({ status: "ready", testNumbers });
       },
       (error) => {
-        if (active) setState({ status: "error", message: getExamErrorMessage(error) });
-      },
+        if (active)
+          setState({ status: "error", message: getExamErrorMessage(error) });
+      }
     );
 
     return () => {

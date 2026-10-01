@@ -5,7 +5,13 @@ import { AppButton } from "@/components/ui/AppButton";
 import { homeDesign } from "@/theme/tokens";
 import type { ToeicPartDefinition } from "../types";
 
-export function PartCard({ part, onStart }: { part: ToeicPartDefinition; onStart: () => void }) {
+export function PartCard({
+  part,
+  onStart,
+}: {
+  part: ToeicPartDefinition;
+  onStart: () => void;
+}) {
   const listening = part.section === "LISTENING";
 
   return (
@@ -22,7 +28,9 @@ export function PartCard({ part, onStart }: { part: ToeicPartDefinition; onStart
         width={44}
         height={44}
         borderRadius={22}
-        backgroundColor={listening ? homeDesign.colors.tab : homeDesign.colors.tabActive}
+        backgroundColor={
+          listening ? homeDesign.colors.tab : homeDesign.colors.tabActive
+        }
         alignItems="center"
         justifyContent="center"
       >
@@ -37,10 +45,16 @@ export function PartCard({ part, onStart }: { part: ToeicPartDefinition; onStart
           Part {part.number} · {part.title}
         </Text>
         <Text color={homeDesign.colors.secondary} fontSize={11}>
-          {part.description} · Câu {part.questionRange} · {part.questionCount} câu
+          {part.description} · Câu {part.questionRange} · {part.questionCount}{" "}
+          câu
         </Text>
       </YStack>
-      <AppButton appearance="text" color={homeDesign.colors.link} fontSize={12} onPress={onStart}>
+      <AppButton
+        appearance="text"
+        color={homeDesign.colors.link}
+        fontSize={12}
+        onPress={onStart}
+      >
         Bắt đầu
       </AppButton>
     </XStack>

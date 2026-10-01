@@ -18,24 +18,48 @@ export default function TestOverviewScreen() {
   const [notice, setNotice] = useState("");
   const validParams = Number.isInteger(year) && Number.isInteger(testNumber);
 
-  const showMissingApi = (partNumber?: number) => {
-    const scope = partNumber ? `Part ${partNumber}` : "full test";
-    setNotice(`Chưa thể bắt đầu ${scope}: backend chưa có API lấy chi tiết câu hỏi.`);
+  const openPart = (partNumber: number) => {
+    if (partNumber < 5) {
+      setNotice("Giao diện làm bài Listening Part 1–4 sẽ được phát triển sau.");
+      return;
+    }
+
+    router.push({
+      pathname: "/study/[year]/[testNumber]/parts/[partNumber]",
+      params: {
+        year: String(year),
+        testNumber: String(testNumber),
+        partNumber: String(partNumber),
+      },
+    });
   };
 
   return (
     <StudyScaffold>
-      <XStack alignItems="center" paddingHorizontal={12} paddingVertical={10} gap={8}>
+      <XStack
+        alignItems="center"
+        paddingHorizontal={12}
+        paddingVertical={10}
+        gap={8}
+      >
         <AppButton
           appearance="text"
           width={44}
           height={44}
           aria-label="Quay lại"
           onPress={() => router.back()}
-          icon={<MaterialIcons name="arrow-back" size={26} color={homeDesign.colors.text} />}
+          icon={
+            <MaterialIcons
+              name="arrow-back"
+              size={26}
+              color={homeDesign.colors.text}
+            />
+          }
         />
         <YStack flex={1}>
-          <Text color={homeDesign.colors.text} fontSize={18} fontWeight="700">Tổng quan đề thi</Text>
+          <Text color={homeDesign.colors.text} fontSize={18} fontWeight="700">
+            Tổng quan đề thi
+          </Text>
           {validParams ? (
             <Text color={homeDesign.colors.secondary} fontSize={11}>
               ETS {year} · Test {String(testNumber).padStart(2, "0")}
@@ -45,12 +69,25 @@ export default function TestOverviewScreen() {
       </XStack>
 
       {!validParams ? (
-        <YStack flex={1} alignItems="center" justifyContent="center" padding={24} gap={16}>
-          <Text color={homeDesign.colors.text}>Thông tin đề thi không hợp lệ.</Text>
-          <AppButton onPress={() => router.replace("/(tabs)/study")}>Về trang Học tập</AppButton>
+        <YStack
+          flex={1}
+          alignItems="center"
+          justifyContent="center"
+          padding={24}
+          gap={16}
+        >
+          <Text color={homeDesign.colors.text}>
+            Thông tin đề thi không hợp lệ.
+          </Text>
+          <AppButton onPress={() => router.replace("/(tabs)/study")}>
+            Về trang Học tập
+          </AppButton>
         </YStack>
       ) : (
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, paddingBottom: 36 }}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ padding: 16, paddingBottom: 36 }}
+        >
           <YStack
             backgroundColor={homeDesign.colors.surfaceRaised}
             borderRadius={18}
@@ -61,10 +98,21 @@ export default function TestOverviewScreen() {
             <Text color={homeDesign.colors.text} fontSize={21} fontWeight="800">
               ETS {year} · Test {String(testNumber).padStart(2, "0")}
             </Text>
-            <Text color={homeDesign.colors.secondary} fontSize={12} lineHeight={18}>
+            <Text
+              color={homeDesign.colors.secondary}
+              fontSize={12}
+              lineHeight={18}
+            >
               Listening 45 phút · Reading 75 phút · Tổng cộng 200 câu
             </Text>
-            <AppButton marginTop={6} onPress={() => showMissingApi()}>
+            <AppButton
+              marginTop={6}
+              onPress={() =>
+                setNotice(
+                  "Backend chưa có API nộp và chấm toàn bộ 200 câu. Hãy chọn Reading Part 5, 6 hoặc 7 để luyện tập."
+                )
+              }
+            >
               Bắt đầu Full Test
             </AppButton>
           </YStack>
@@ -86,14 +134,26 @@ export default function TestOverviewScreen() {
             <SectionTitle title="Listening · 45 phút" hint="Part 1–4" />
             {toeicParts
               .filter((part) => part.section === "LISTENING")
-              .map((part) => <PartCard key={part.number} part={part} onStart={() => showMissingApi(part.number)} />)}
+              .map((part) => (
+                <PartCard
+                  key={part.number}
+                  part={part}
+                  onStart={() => openPart(part.number)}
+                />
+              ))}
           </YStack>
 
           <YStack gap={12}>
             <SectionTitle title="Reading · 75 phút" hint="Part 5–7" />
             {toeicParts
               .filter((part) => part.section === "READING")
-              .map((part) => <PartCard key={part.number} part={part} onStart={() => showMissingApi(part.number)} />)}
+              .map((part) => (
+                <PartCard
+                  key={part.number}
+                  part={part}
+                  onStart={() => openPart(part.number)}
+                />
+              ))}
           </YStack>
         </ScrollView>
       )}

@@ -32,7 +32,11 @@ export function TestCard({
           alignItems="center"
           justifyContent="center"
         >
-          <MaterialCommunityIcons name="file-document-outline" size={27} color="#111111" />
+          <MaterialCommunityIcons
+            name="file-document-outline"
+            size={27}
+            color="#111111"
+          />
         </YStack>
         <YStack flex={1} gap={4}>
           <Text color={homeDesign.colors.text} fontSize={17} fontWeight="700">
@@ -42,7 +46,11 @@ export function TestCard({
             7 Parts · 200 câu · 120 phút
           </Text>
         </YStack>
-        <MaterialIcons name="chevron-right" size={25} color={homeDesign.colors.secondary} />
+        <MaterialIcons
+          name="chevron-right"
+          size={25}
+          color={homeDesign.colors.secondary}
+        />
       </XStack>
       <AppButton minHeight={40} paddingVertical={8} onPress={onPress}>
         Xem chi tiết đề
