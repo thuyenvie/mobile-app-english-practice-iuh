@@ -23,7 +23,10 @@ export function useReadingTimer(partNumber: number) {
   const label = useMemo(() => {
     const minutes = Math.floor(remainingSeconds / 60);
     const seconds = remainingSeconds % 60;
-    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(
+      2,
+      "0"
+    )}`;
   }, [remainingSeconds]);
 
   return { label, expired: remainingSeconds === 0 };

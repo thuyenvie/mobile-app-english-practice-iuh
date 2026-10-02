@@ -33,7 +33,14 @@
     "plugins": [
       "expo-router",
       "expo-font",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Cho phép ứng dụng chọn ảnh câu hỏi để gia sư AI giải thích.",
+          "cameraPermission": "Cho phép ứng dụng chụp ảnh câu hỏi để gia sư AI giải thích."
+        }
+      ]
     ],
     "extra": {
       "router": {},
