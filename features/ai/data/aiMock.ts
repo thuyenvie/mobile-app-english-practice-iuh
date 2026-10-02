@@ -5,12 +5,7 @@ export const aiMock = {
   suggestions: [
     { id: 'camera', type: 'camera', label: 'Chụp hình câu hỏi' },
     { id: 'vocabulary-1', type: 'prompt', label: 'Làm sao để cải thiện vốn từ vựng TOEIC nhanh' },
-    { id: 'vocabulary-2', type: 'prompt', label: 'Làm sao để cải thiện vốn từ vựng TOEIC nhanh' },
-    { id: 'vocabulary-3', type: 'prompt', label: 'Làm sao để cải thiện vốn từ vựng TOEIC nhanh' },
+    { id: 'grammar', type: 'prompt', label: 'Kiểm tra và sửa câu tiếng Anh của tôi' },
+    { id: 'toeic-plan', type: 'prompt', label: 'Gợi ý cách học TOEIC hiệu quả mỗi ngày' },
   ],
-  notices: {
-    camera: 'Chụp hình câu hỏi chưa khả dụng trong bản giao diện mock.',
-    history: 'Lịch sử trò chuyện chưa khả dụng trong bản giao diện mock.',
-    send: 'Đây là giao diện mock. Câu hỏi chưa được gửi đến AI.',
-  },
 } as const;
