@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { isAxiosError } from "axios";
 import Constants, { ExecutionEnvironment } from "expo-constants";
 
 import { loginWithGoogleIdToken } from "../api/authApi";
@@ -21,6 +22,8 @@ function validateGoogleConfiguration(): void {
 }
 
 function getNativeGoogleError(error: unknown): Error {
+  // Preserve the backend response for getLoginErrorMessage.
+  if (isAxiosError(error)) return error;
   if (
     typeof error !== "object" ||
     error === null ||

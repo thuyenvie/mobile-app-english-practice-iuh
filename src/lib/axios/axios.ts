@@ -30,6 +30,19 @@ const api = create({
 });
 
 api.interceptors.request.use(async (config) => {
+  const loginEndpoints = [
+    "/identity/auth/login",
+    "/identity/auth/google",
+    "/identity/auth/google/mobile",
+    "/identity/auth/outbound/authentication",
+  ];
+  const requestPath = config.url?.split("?")[0].replace(/\/+$/, "");
+  if (config.method?.toLowerCase() === "post" && loginEndpoints.includes(requestPath ?? "")) {
+    // An expired session must not prevent obtaining a new login token.
+    config.headers.delete("Authorization");
+    return config;
+  }
+
   const token = await getAccessToken();
 
   if (token) {

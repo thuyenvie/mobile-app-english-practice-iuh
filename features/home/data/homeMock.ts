@@ -11,7 +11,7 @@ function makeLessons(sectionId: string, count: number): Lesson[] {
 
 // Add a section here to render it on Home and give it its own see-all route.
 export const homeMock: HomeData = {
-  profile: { fullName: "Tèo" },
+  profile: { fullName: "bạn" },
   welcomeText: "Chào mừng đến ...",
   sections: [
     {

@@ -20,7 +20,7 @@ export function useHomeData() {
     let active = true;
     loadHomeData().then(
       (data) => { if (active) setState({ status: 'ready', data }); },
-      () => { if (active) setState({ status: 'error', message: 'Không thể tải bài học. Vui lòng thử lại.' }); },
+      () => { if (active) setState({ status: 'error', message: 'Không thể tải dữ liệu trang chủ. Vui lòng thử lại.' }); },
     );
     return () => { active = false; };
   }, [attempt]);
