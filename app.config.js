@@ -25,5 +25,9 @@ module.exports = ({ config }) => {
     plugins.push(googleSignInPlugin);
   }
 
+  // Chi phat audio, khong xin quyen micro.
+  if (!plugins.some((plugin) => (typeof plugin === "string" ? plugin : plugin[0]) === "expo-audio")) {
+    plugins.push(["expo-audio", { microphonePermission: false, recordAudioAndroid: false, enableBackgroundPlayback: false }]);
+  }
   return { ...config, plugins };
 };
