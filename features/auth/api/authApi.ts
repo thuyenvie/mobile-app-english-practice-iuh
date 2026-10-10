@@ -1,7 +1,7 @@
 import { isAxiosError } from "axios";
 
 import api from "@/lib/axios/axios";
-import { saveAccessToken } from "@/lib/auth/tokenStorage";
+import { saveTokenPair } from "@/lib/auth/tokenStorage";
 import type { ApiResponse } from "@/types/api";
 
 export interface LoginRequest {
@@ -12,39 +12,49 @@ export interface LoginRequest {
 export interface LoginResult {
   token: string;
   success: boolean;
-  refreshToken?: string;
+  refreshToken: string;
 }
 
 export async function loginWithGoogleIdToken(
-  idToken: string,
+  idToken: string
 ): Promise<LoginResult> {
   const response = await api.post<ApiResponse<LoginResult>>(
     // Identity service nhận Google ID token, tự tạo/tìm user và trả JWT hệ thống.
     "/identity/auth/google",
-    { idToken },
+    { idToken }
   );
   const body = response.data;
 
-  if (!body.success || !body.result?.success || !body.result.token) {
+  if (
+    !body.success ||
+    !body.result?.success ||
+    !body.result.token ||
+    !body.result.refreshToken
+  ) {
     throw new Error(body.message || "Đăng nhập Google không thành công.");
   }
 
-  await saveAccessToken(body.result.token);
+  await saveTokenPair(body.result.token, body.result.refreshToken);
   return body.result;
 }
 
 export async function login(request: LoginRequest): Promise<LoginResult> {
   const response = await api.post<ApiResponse<LoginResult>>(
     "/identity/auth/login",
-    request,
+    request
   );
   const body = response.data;
 
-  if (!body.success || !body.result?.success || !body.result.token) {
+  if (
+    !body.success ||
+    !body.result?.success ||
+    !body.result.token ||
+    !body.result.refreshToken
+  ) {
     throw new Error(body.message || "Đăng nhập không thành công.");
   }
 
-  await saveAccessToken(body.result.token);
+  await saveTokenPair(body.result.token, body.result.refreshToken);
   return body.result;
 }
 
@@ -54,7 +64,10 @@ export function getLoginErrorMessage(error: unknown): string {
       return "Không thể kết nối đến máy chủ. Hãy kiểm tra API Gateway và địa chỉ mạng.";
     }
 
-    return error.response.data?.message || `Đăng nhập thất bại (${error.response.status}).`;
+    return (
+      error.response.data?.message ||
+      `Đăng nhập thất bại (${error.response.status}).`
+    );
   }
 
   return error instanceof Error ? error.message : "Đăng nhập thất bại.";
