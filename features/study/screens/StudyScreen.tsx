@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { ScrollView } from "react-native";
 import { Text, XStack, YStack } from "tamagui";
 
@@ -13,11 +13,28 @@ import { SectionTitle } from "../components/SectionTitle";
 import { StudyScaffold } from "../components/StudyScaffold";
 import { TestCard } from "../components/TestCard";
 import { YearSelector } from "../components/YearSelector";
+import { ListeningResultCard } from "../components/ListeningResultCard";
+import { getListeningHistory, type ListeningHistoryItem } from "../api/listeningApi";
+import { getExamErrorMessage } from "../api/examApi";
 
 export default function StudyScreen() {
   const [selectedYear, setSelectedYear] = useState<number>(toeicYears[0]);
   const [notice, setNotice] = useState("");
   const { state, retry } = useTestsByYear(selectedYear);
+  const [recent, setRecent] = useState<ListeningHistoryItem[]>([]);
+  const [recentLoading, setRecentLoading] = useState(true);
+  const [recentError, setRecentError] = useState("");
+  const [recentRetry, setRecentRetry] = useState(0);
+  // Tai lai moi khi quay ve trang Hoc tap sau khi nop bai.
+  useFocusEffect(useCallback(() => {
+    let active = true;
+    setRecentLoading(true);
+    getListeningHistory(0, 3).then(
+      (data) => { if (active) { setRecent(data.items); setRecentError(""); setRecentLoading(false); } },
+      (error: unknown) => { if (active) { setRecentError(getExamErrorMessage(error)); setRecentLoading(false); } },
+    );
+    return () => { active = false; };
+  }, [recentRetry]));
   // back end ch co cai nay
   const openTest = (testNumber: number) => {
     router.push({
@@ -133,10 +150,12 @@ export default function StudyScreen() {
         </YStack>
 
         <YStack gap={8}>
-          <SectionTitle title="Kết quả gần đây" />
-          <Text color={homeDesign.colors.secondary} fontSize={12}>
-            Backend chưa có API lấy lịch sử kết quả nên mục này chưa có dữ liệu.
-          </Text>
+          <SectionTitle title="Kết quả Listening gần đây" hint="Các lượt đã nộp" />
+          {recentLoading ? <HomeDataMessage loading message="Đang tải kết quả..." />
+            : recentError ? <HomeDataMessage message={recentError} onRetry={() => setRecentRetry(value => value + 1)} />
+            : recent.length ? recent.map(item => <ListeningResultCard key={item.resultId} item={item} />)
+            : <Text color={homeDesign.colors.secondary} fontSize={12}>Bạn chưa nộp bài Listening nào.</Text>}
+          <AppButton appearance="text" onPress={() => router.push("/study/history")}>Xem toàn bộ lịch sử ›</AppButton>
         </YStack>
       </ScrollView>
     </StudyScaffold>

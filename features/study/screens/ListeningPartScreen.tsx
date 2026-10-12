@@ -102,10 +102,12 @@ export default function ListeningPartScreen() {
           {result ? <>
             <Text style={styles.title}>Kết quả Listening</Text>
             <Text style={styles.body}>Đúng {result.score}/{result.totalQuestions} câu · Đã trả lời {result.answeredQuestions} câu</Text>
-            <Text style={styles.muted}>Đây là số câu đúng, không phải điểm TOEIC quy đổi. API hiện chưa trả transcript và đáp án chuẩn.</Text>
-            <ScrollView>{result.answers.map(answer => <Text key={answer.questionNumber} style={styles.body}>
-              Câu {answer.questionNumber}: {answer.selectedOption} · {answer.correct ? "Đúng" : "Sai"}
-            </Text>)}</ScrollView>
+            <Text style={styles.muted}>Đây là số câu đúng, không phải điểm TOEIC quy đổi.</Text>
+            <Action text="Xem lại bài" onPress={() => {
+              const resultId = result.resultId;
+              setResult(null);
+              router.push({ pathname: "/study/history/[resultId]", params: { resultId: String(resultId) } });
+            }} />
             <Action text="Đóng kết quả" onPress={() => setResult(null)} />
           </> : confirm ? <>
             <Text style={styles.title}>Nộp toàn bộ Listening?</Text>
