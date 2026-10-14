@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { router, useLocalSearchParams } from "expo-router";
-import { ScrollView, StyleSheet } from "react-native";
+import { Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Text, XStack, YStack } from "tamagui";
 
 import { AppButton } from "@/components/ui/AppButton";
@@ -12,6 +12,8 @@ import { ReadingExamFooter } from "../components/ReadingExamFooter";
 import { ReadingExamHeader } from "../components/ReadingExamHeader";
 import { ReadingQuestionCard } from "../components/ReadingQuestionCard";
 import { StudyScaffold } from "../components/StudyScaffold";
+import { getExamErrorMessage } from "../api/examApi";
+import { submitReadingPart } from "../api/examResultApi";
 import { useExamPart } from "../hooks/useExamPart";
 import { useReadingTimer } from "../hooks/useReadingTimer";
 import type { ExamAnswers, ExamPart, ExamQuestion } from "../types";
@@ -88,7 +90,12 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<ExamAnswers>({});
   const [questionSheetVisible, setQuestionSheetVisible] = useState(false);
-  const [submissionMessage, setSubmissionMessage] = useState("");
+  const [confirmVisible, setConfirmVisible] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [result, setResult] = useState<Awaited<ReturnType<typeof submitReadingPart>> | null>(null);
+  const [startedAt] = useState(() => new Date().toISOString());
+  const submittingRef = useRef(false);
   const { label: timerLabel, expired: timerExpired } = useReadingTimer(part.partNumber);
 
   const currentQuestion = questions[currentIndex];
@@ -117,19 +124,30 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
 
   const selectAnswer = (questionNumber: number, label: string) => {
     setAnswers((current) => ({ ...current, [questionNumber]: label }));
-    setSubmissionMessage("");
     goToQuestion(questionNumber, false);
   };
 
-  const submitLocally = () => {
-    const answeredCount = Object.keys(answers).length;
-    const missingCount = Math.max(0, questions.length - answeredCount);
+  const openSubmitConfirmation = () => {
     setQuestionSheetVisible(false);
-    setSubmissionMessage(
-      missingCount === 0
-        ? `Đã hoàn thành ${answeredCount}/${questions.length} câu. Backend hiện chưa có API chấm Reading.`
-        : `Đã chọn ${answeredCount}/${questions.length} câu, còn ${missingCount} câu chưa trả lời.`
-    );
+    setSubmitError("");
+    setConfirmVisible(true);
+  };
+
+  const submit = async () => {
+    if (submittingRef.current || Object.keys(answers).length === 0) return;
+    submittingRef.current = true;
+    setSubmitting(true);
+    setSubmitError("");
+    try {
+      const saved = await submitReadingPart(part.year, part.testNumber, part.partNumber, answers, startedAt);
+      setResult(saved);
+      setConfirmVisible(false);
+    } catch (error: unknown) {
+      setSubmitError(getExamErrorMessage(error));
+    } finally {
+      submittingRef.current = false;
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -155,19 +173,6 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
             Đã hết thời gian gợi ý cho Part {part.partNumber}. Bạn vẫn có thể tiếp tục luyện tập.
           </Text>
         </XStack>
-      ) : null}
-
-      {submissionMessage ? (
-        <Text
-          paddingHorizontal={14}
-          paddingVertical={8}
-          color={homeDesign.colors.inProgress}
-          backgroundColor={homeDesign.colors.surfaceRaised}
-          fontSize={12}
-          role="status"
-        >
-          {submissionMessage}
-        </Text>
       ) : null}
 
       {part.partNumber === 5 ? (
@@ -267,15 +272,61 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
       />
 
       <QuestionSheetModal
-        visible={questionSheetVisible}
+        visible={questionSheetVisible && !confirmVisible && !result}
         questions={questions}
         answers={answers}
         currentQuestionNumber={currentQuestion.questionNumber}
         onClose={() => setQuestionSheetVisible(false)}
         onJump={goToQuestion}
         onSelect={selectAnswer}
-        onSubmit={submitLocally}
+        onSubmit={openSubmitConfirmation}
       />
+
+      <Modal
+        visible={confirmVisible || !!result}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          if (!submitting) {
+            if (result) router.push({ pathname: "/study/history/[resultId]", params: { resultId: String(result.resultId) } });
+            else setConfirmVisible(false);
+          }
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            {result ? <>
+              <Text color={homeDesign.colors.text} fontSize={19} fontWeight="800">Kết quả Reading · Part {result.partNumber}</Text>
+              <Text color={homeDesign.colors.text} fontSize={15}>
+                Đúng {result.score}/{result.totalQuestions} câu · Đã trả lời {result.answeredQuestions} câu
+              </Text>
+              <Text color={homeDesign.colors.secondary} fontSize={13}>
+                Đây là số câu đúng trên tổng câu thực tế của Part, không quy đổi sang điểm TOEIC.
+              </Text>
+              <AppButton onPress={() => {
+                const resultId = result.resultId;
+                setResult(null);
+                router.push({ pathname: "/study/history/[resultId]", params: { resultId: String(resultId) } });
+              }}>Xem lại bài</AppButton>
+              <AppButton appearance="text" onPress={() => {
+                const resultId = result.resultId;
+                setResult(null);
+                router.push({ pathname: "/study/history/[resultId]", params: { resultId: String(resultId) } });
+              }}>Đóng</AppButton>
+            </> : <>
+              <Text color={homeDesign.colors.text} fontSize={19} fontWeight="800">Nộp Reading · Part {part.partNumber}?</Text>
+              <Text color={homeDesign.colors.text} fontSize={14}>
+                Đã chọn {Object.keys(answers).length}/{questions.length} câu; còn {questions.length - Object.keys(answers).length} câu chưa trả lời. Câu bỏ trống không được tính đúng.
+              </Text>
+              {submitError ? <Text color={homeDesign.colors.inProgress} fontSize={13}>{submitError}</Text> : null}
+              <AppButton disabled={submitting || Object.keys(answers).length === 0} onPress={() => void submit()}>
+                {submitting ? "Đang chấm..." : "Xác nhận nộp"}
+              </AppButton>
+              <AppButton appearance="text" disabled={submitting} onPress={() => setConfirmVisible(false)}>Tiếp tục làm bài</AppButton>
+            </>}
+          </View>
+        </View>
+      </Modal>
     </StudyScaffold>
   );
 }
@@ -298,4 +349,6 @@ const styles = StyleSheet.create({
   singleQuestionContent: { padding: 14, paddingBottom: 28 },
   passageContent: { padding: 15, paddingBottom: 26 },
   relatedQuestionsContent: { padding: 10, paddingBottom: 24, gap: 10 },
+  modalOverlay: { flex: 1, justifyContent: "center", padding: 20, backgroundColor: "rgba(0,0,0,0.72)" },
+  modalCard: { width: "100%", maxWidth: 440, alignSelf: "center", padding: 18, gap: 12, borderRadius: 16, backgroundColor: homeDesign.colors.surface },
 });

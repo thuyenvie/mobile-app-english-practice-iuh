@@ -1,5 +1,6 @@
 import api from "@/lib/axios/axios";
 import { toListeningAnswers } from "../utils/listening";
+import { getExamHistory, getExamResult, type ExamHistoryItem, type ExamResult } from "./examResultApi";
 
 export interface ListeningAudio {
   audioId: number;
@@ -12,41 +13,17 @@ export interface QuestionAudio {
   startMs: number;
   endMs: number;
 }
-export interface ListeningResult {
-  resultId: number;
-  year: number;
-  testNumber: number;
-  score: number;
-  totalQuestions: number;
-  answeredQuestions: number;
-  submittedAt: string;
-  answers: { questionNumber: number; selectedOption: string; correct: boolean; correctOption: string | null }[];
-}
-export interface ListeningHistoryItem {
-  resultId: number;
-  year: number;
-  testNumber: number;
-  section: "LISTENING";
-  score: number;
-  totalQuestions: number;
-  answeredQuestions: number;
-  submittedAt: string;
-}
-export interface ListeningHistoryPage {
-  items: ListeningHistoryItem[];
-  page: number;
-  totalPages: number;
-  totalItems: number;
-}
+export type ListeningResult = ExamResult;
+export type ListeningHistoryItem = ExamHistoryItem;
+export type ListeningHistoryPage = { items: ListeningHistoryItem[]; page: number; totalPages: number; totalItems: number };
 const path = (year: number, test: number) => `/exam-service/exams/${year}/${test}/listening`;
-const historyPath = "/exam-service/exams/listening/results";
 
 export async function getListeningHistory(page = 0, size = 10): Promise<ListeningHistoryPage> {
-  return (await api.get<{ result: ListeningHistoryPage }>(historyPath, { params: { page, size } })).data.result;
+  return getExamHistory(page, size);
 }
 
 export async function getListeningResult(resultId: number): Promise<ListeningResult> {
-  return (await api.get<{ result: ListeningResult }>(`${historyPath}/${resultId}`)).data.result;
+  return getExamResult(resultId);
 }
 
 export async function getListeningAudio(year: number, test: number) {

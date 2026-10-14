@@ -3,16 +3,16 @@ import { router, useLocalSearchParams } from "expo-router";
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { homeDesign } from "@/theme/tokens";
 import { getExamErrorMessage, getExamPart } from "../api/examApi";
-import { getListeningResult, type ListeningResult } from "../api/listeningApi";
+import { getExamResult, type ExamResult } from "../api/examResultApi";
 import { StudyScaffold } from "../components/StudyScaffold";
 import type { ExamQuestion } from "../types";
 
-type QuestionContext = { question: ExamQuestion };
+type QuestionContext = { question: ExamQuestion; passageContent: string | null };
 
 export default function ListeningReviewScreen() {
   const { resultId } = useLocalSearchParams<{ resultId: string }>();
   const id = Number(resultId);
-  const [result, setResult] = useState<ListeningResult | null>(null);
+  const [result, setResult] = useState<ExamResult | null>(null);
   const [questions, setQuestions] = useState<Record<number, QuestionContext>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -25,18 +25,22 @@ export default function ListeningReviewScreen() {
     setLoading(true);
     setError("");
     setQuestions({});
-    getListeningResult(id).then(async (data) => {
+    getExamResult(id).then(async (data) => {
       if (!active) return;
       setResult(data);
       setLoading(false);
-      // Cau hoi hien tai chi bo sung ngu canh; dap an dung van lay tu snapshot trong ket qua.
-      const parts = await Promise.allSettled([1, 2, 3, 4].map(part => getExamPart(data.year, data.testNumber, part)));
+      // Snapshot Reading la nguon chinh; tai de hien tai chi de bo sung anh va du lieu cu.
+      const partNumbers = data.section === "READING" && data.partNumber
+        ? [data.partNumber]
+        : [1, 2, 3, 4];
+      const parts = await Promise.allSettled(partNumbers.map(part => getExamPart(data.year, data.testNumber, part)));
       if (!active) return;
       const context: Record<number, QuestionContext> = {};
       parts.forEach(part => {
         if (part.status !== "fulfilled") return;
         part.value.questions.forEach(question => {
-          context[question.questionNumber] = { question };
+          const passage = part.value.passages.find(item => item.id === question.passageId);
+          context[question.questionNumber] = { question, passageContent: passage?.content ?? null };
         });
       });
       setQuestions(context);
@@ -55,7 +59,7 @@ export default function ListeningReviewScreen() {
       <Pressable accessibilityRole="button" onPress={() => router.canGoBack() ? router.back() : router.replace("/study/history")}>
         <Text style={styles.link}>‹ Quay lại</Text>
       </Pressable>
-      <Text style={styles.title}>Xem lại bài Listening</Text>
+      <Text style={styles.title}>Xem lại bài làm</Text>
     </View>
     <ScrollView contentContainerStyle={styles.content}>
       {loading ? <ActivityIndicator /> : error ? <>
@@ -63,7 +67,7 @@ export default function ListeningReviewScreen() {
         <Pressable onPress={() => setRetry(value => value + 1)}><Text style={styles.link}>Thử lại</Text></Pressable>
       </> : result ? <>
         <View style={styles.card}>
-          <Text style={styles.title}>ETS {result.year} · Test {result.testNumber} · Listening</Text>
+          <Text style={styles.title}>ETS {result.year} · Test {result.testNumber} · {result.section === "READING" ? `Reading · Part ${result.partNumber}` : "Listening"}</Text>
           <Text style={styles.body}>Đúng {result.score}/{result.totalQuestions} câu · Đã trả lời {result.answeredQuestions} câu</Text>
           <Text style={styles.muted}>Chưa trả lời {result.totalQuestions - result.answeredQuestions} câu · Nộp lúc {date}</Text>
           <Text style={styles.muted}>Đây là số câu đúng, chưa quy đổi ra điểm TOEIC.</Text>
@@ -79,9 +83,13 @@ export default function ListeningReviewScreen() {
           const uri = image?.startsWith("data:") || image?.startsWith("http") ? image : image ? `data:image/jpeg;base64,${image}` : null;
           return <View key={answer.questionNumber} style={styles.card}>
             <Text style={styles.title}>Câu {answer.questionNumber} · {answer.correct ? "Đúng" : "Sai"}</Text>
-            {context?.question.content ? <Text style={styles.body}>{context.question.content}</Text> : null}
+            {(answer.questionContent || context?.question.content) ? <Text style={styles.body}>{answer.questionContent || context?.question.content}</Text> : null}
+            {(answer.passageContent || context?.passageContent) ? <View style={styles.passage}>
+              <Text style={styles.muted}>Đoạn văn</Text>
+              <Text style={styles.body}>{answer.passageContent || context?.passageContent}</Text>
+            </View> : null}
             {uri ? <Image source={{ uri }} resizeMode="contain" style={styles.image} /> : null}
-            {context?.question.options.map(option => <Text key={option.id} style={styles.body}>
+            {(answer.options.length ? answer.options : context?.question.options ?? []).map((option, index) => <Text key={`${option.label}-${index}`} style={styles.body}>
               {option.label}. {option.text}
             </Text>)}
             <Text style={styles.warning}>Bạn chọn: {answer.selectedOption}</Text>
@@ -107,4 +115,5 @@ const styles = StyleSheet.create({
   warning: { color: c.inProgress, fontSize: 14 },
   correct: { color: c.completed, fontSize: 14 },
   image: { width: "100%", height: 180 },
+  passage: { padding: 12, gap: 6, borderRadius: 10, backgroundColor: c.background },
 });

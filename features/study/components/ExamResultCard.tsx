@@ -1,16 +1,17 @@
 import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { homeDesign } from "@/theme/tokens";
-import type { ListeningHistoryItem } from "../api/listeningApi";
+import type { ExamHistoryItem } from "../api/examResultApi";
 
-export function ListeningResultCard({ item }: { item: ListeningHistoryItem }) {
+export function ExamResultCard({ item }: { item: ExamHistoryItem }) {
   const submitted = new Date(item.submittedAt);
   const date = Number.isNaN(submitted.getTime()) ? item.submittedAt : submitted.toLocaleString("vi-VN");
+  const label = item.section === "READING" ? `Reading · Part ${item.partNumber}` : "Listening";
   return <Pressable accessibilityRole="button" onPress={() => router.push({
     pathname: "/study/history/[resultId]", params: { resultId: String(item.resultId) },
   })} style={styles.card}>
     <View style={styles.row}>
-      <Text style={styles.title}>ETS {item.year} · Test {item.testNumber} · Listening</Text>
+      <Text style={styles.title}>ETS {item.year} · Test {item.testNumber} · {label}</Text>
       <Text style={styles.link}>Xem lại ›</Text>
     </View>
     <Text style={styles.body}>Đúng {item.score}/{item.totalQuestions} câu · Đã trả lời {item.answeredQuestions} câu</Text>
