@@ -1,5 +1,6 @@
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
+import { resetSessionExpiration } from "./sessionEvents";
 
 const ACCESS_TOKEN_KEY = "access_token";
 const REFRESH_TOKEN_KEY = "refresh_token";
@@ -21,6 +22,13 @@ export async function saveAccessToken(token: string): Promise<void> {
   }
 
   await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, token);
+}
+
+// Save refresh first so a later access-token write failure does not lose the rotated credential.
+export async function saveTokenPair(accessToken: string, refreshToken: string): Promise<void> {
+  await saveRefreshToken(refreshToken);
+  await saveAccessToken(accessToken);
+  resetSessionExpiration();
 }
 
 export async function removeAccessToken(): Promise<void> {

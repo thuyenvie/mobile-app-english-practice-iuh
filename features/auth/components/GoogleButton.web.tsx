@@ -4,6 +4,7 @@ import { YStack } from "tamagui";
 import { AppButton } from "@/components/ui/AppButton";
 
 interface GoogleButtonProps {
+  variant?: "login";
   disabled?: boolean;
   loading?: boolean;
   onError?: (message: string) => void;

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { router } from "expo-router";
 import { Text, XStack, YStack } from "tamagui";
 
-import { authDesign } from "@/theme/tokens";
+import { authDesign, loginDesign } from "@/theme/tokens";
 import { AppButton } from "@/components/ui/AppButton";
 import { AppInput } from "@/components/ui/AppInput";
 import { AuthScaffold } from "../components/AuthScaffold";
@@ -65,29 +65,29 @@ export default function LoginScreen() {
   };
 
   return (
-    <AuthScaffold>
-      <YStack gap={12}>
+    <AuthScaffold variant="login">
+      <YStack gap={8}>
         <Text
           role="heading"
           textAlign="center"
-          {...authDesign.title}
+          {...loginDesign.title}
           color={authDesign.colors.text}
         >
           Chào mừng trở lại
         </Text>
         <Text
           textAlign="center"
-          {...authDesign.subtitle}
-          color={authDesign.colors.secondary}
+          {...loginDesign.subtitle}
+          color={loginDesign.colors.secondary}
         >
           Đăng nhập để đồng bộ tiến độ giữa các thiết bị
         </Text>
       </YStack>
-      <YStack marginTop={authDesign.loginFormGap} gap={authDesign.fieldGap}>
+      <YStack marginTop={28} gap={18}>
         <AppInput
-          {...authDesign.input}
-          labelProps={authDesign.label}
-          labelGap={authDesign.labelGap}
+          {...loginDesign.input}
+          labelProps={loginDesign.label}
+          labelGap={8}
           autoCapitalize="none"
           autoCorrect={false}
           label="Tên đăng nhập"
@@ -97,9 +97,9 @@ export default function LoginScreen() {
           autoComplete="username"
         />
         <AppInput
-          {...authDesign.input}
-          labelProps={authDesign.label}
-          labelGap={authDesign.labelGap}
+          {...loginDesign.input}
+          labelProps={loginDesign.label}
+          labelGap={8}
           autoCapitalize="none"
           autoCorrect={false}
           label="Mật khẩu"
@@ -110,8 +110,8 @@ export default function LoginScreen() {
           autoComplete="current-password"
         />
         <AppButton
-          {...authDesign.button}
-          marginTop={8}
+          {...loginDesign.button}
+          marginTop={6}
           disabled={isSubmitting}
           opacity={isSubmitting ? 0.6 : 1}
           onPress={handleLogin}
@@ -119,17 +119,16 @@ export default function LoginScreen() {
           {isSubmitting ? "Đang đăng nhập..." : "Xác nhận"}
         </AppButton>
         <XStack
-          marginTop={-18}
-          marginBottom={-18}
+          marginTop={0}
           justifyContent="space-between"
           flexWrap="wrap"
           gap="$small"
         >
           <AppButton
             appearance="text"
-            fontSize={11}
+            fontSize={14}
             justifyContent="center"
-            color={authDesign.colors.secondary}
+            color={loginDesign.colors.link}
             role="button"
             onPress={() => setNotice("Khôi phục mật khẩu chưa khả dụng.")}
           >
@@ -137,9 +136,9 @@ export default function LoginScreen() {
           </AppButton>
           <AppButton
             appearance="text"
-            fontSize={11}
+            fontSize={14}
             justifyContent="center"
-            color={authDesign.colors.text}
+            color={loginDesign.colors.link}
             role="button"
             onPress={() => router.push("/auth/register")}
           >
@@ -147,8 +146,9 @@ export default function LoginScreen() {
           </AppButton>
         </XStack>
       </YStack>
-      <YStack marginTop={authDesign.googleGap}>
+      <YStack marginTop={20}>
         <GoogleButton
+          variant="login"
           disabled={isGoogleLoading}
           loading={isGoogleLoading}
           onPress={handleGoogleLogin}
@@ -161,18 +161,18 @@ export default function LoginScreen() {
           marginTop="$medium"
           aria-live="polite"
           role="status"
-          color={authDesign.colors.secondary}
+          color={loginDesign.colors.secondary}
         >
           {notice}
         </Text>
       ) : null}
       <Text
         textAlign="center"
-        color={authDesign.colors.secondary}
+        color={loginDesign.colors.secondary}
         marginTop={28}
         {...authDesign.caption}
       >
-        Bằng việc đăng nhập vào ứng dụng, bạn đồng ý với{"\n"}chính sách bảo mật
+        Bằng việc đăng nhập vào ứng dụng, bạn đồng ý với chính sách bảo mật
         của chúng tôi
       </Text>
     </AuthScaffold>

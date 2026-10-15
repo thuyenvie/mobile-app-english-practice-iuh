@@ -19,11 +19,6 @@ export default function TestOverviewScreen() {
   const validParams = Number.isInteger(year) && Number.isInteger(testNumber);
 
   const openPart = (partNumber: number) => {
-    if (partNumber < 5) {
-      setNotice("Giao diện làm bài Listening Part 1–4 sẽ được phát triển sau.");
-      return;
-    }
-
     router.push({
       pathname: "/study/[year]/[testNumber]/parts/[partNumber]",
       params: {
@@ -109,7 +104,7 @@ export default function TestOverviewScreen() {
               marginTop={6}
               onPress={() =>
                 setNotice(
-                  "Backend chưa có API nộp và chấm toàn bộ 200 câu. Hãy chọn Reading Part 5, 6 hoặc 7 để luyện tập."
+                  "Backend chưa có API chấm toàn bộ 200 câu. Hãy chọn Part 1–4 để luyện và nộp Listening, hoặc Part 5–7 để luyện Reading."
                 )
               }
             >
