@@ -1,9 +1,9 @@
-# Báo cáo cải thiện Login và Bottom Tab Navigation
+# Báo cáo công việc ngày 15/10/2026: Login, Bottom Tab và xác nhận thoát Android
 
 - Ngày: 15/10/2026.
 - Dự án: `D:/RN/mobile-app-english-practice-iuh`.
 - Nhánh đã xác minh trước khi sửa: `thuyen`.
-- Phạm vi: UI Login, Bottom Tab và component/style liên quan trực tiếp.
+- Phạm vi trong ngày: cải thiện UI Login/Bottom Tab và bổ sung xác nhận thoát ứng dụng bằng Back Android ở màn hình gốc.
 - Giữ Tamagui, dùng StyleSheet của React Native cho style thanh tab. Không thêm dependency, animation, route hoặc thay đổi cấu trúc thư mục.
 
 ## 1. File thay đổi
@@ -18,7 +18,9 @@
 | `features/auth/components/GoogleButton.d.ts` | Bổ sung kiểu variant tương ứng. |
 | `src/theme/tokens.ts` | Thêm loginDesign riêng; không sửa giá trị authDesign/homeDesign đang được các màn hình khác dùng. |
 | `src/app/(tabs)/_layout.tsx` | Màu active/inactive, icon/label, vùng bấm, chiều cao responsive và safe area. |
-| `fix/LOGIN_BOTTOM_TAB_UI_REPORT.md` | Báo cáo này và gợi ý nhóm commit. |
+| `src/app/_layout.tsx` | Một BackHandler Android ở Root Layout, chỉ xác nhận khi không còn navigation Back; cleanup và chống Alert trùng. |
+| `tests/android-exit.test.cjs` | 9 kiểm thử cho Back ở root/màn hình con, Alert, cleanup và giới hạn Android. |
+| `fix/LOGIN_BOTTOM_TAB_UI_REPORT.md` | Tổng hợp công việc trong ngày và gợi ý nhóm commit. |
 
 ## 2. Login
 
@@ -43,7 +45,26 @@
 - Giữ thanh tab ở đáy theo layout navigator; không dùng absolute positioning hay nâng tab giữa. Tắt animation chuyển tab.
 - Chưa thay đổi màu/cấu hình Android navigation bar native; nền tab kéo xuống vùng gesture inset để không đè nhãn lên thanh gesture.
 
-## 4. Kiểm tra đã thực hiện
+## 4. Xác nhận thoát ứng dụng trên Android
+
+### Phân tích navigation và vị trí xử lý
+
+- Root Layout dùng Stack, chứa các route auth, nhóm Tabs và màn hình con. Chưa có BackHandler tùy biến trước lần bổ sung này.
+- Tabs Layout có initialRouteName="home", backBehavior="initialRoute". Back từ tab khác vẫn phải đi về Trang chủ theo hành vi hiện có trước khi xét thoát.
+- Dùng useNavigationContainerRef của Expo Router tại Root Layout để kiểm tra trạng thái thực tế của cả navigation container, bao gồm navigator lồng nhau; không dựa vào tên route hay kiểm tra riêng root stack index.
+- Chỉ thêm một listener ở Root Layout, không thêm listener trong Tabs hay từng màn hình. Không thay đổi Tabs Layout trong lần bổ sung chức năng này.
+
+### Hành vi đã triển khai
+
+- Chỉ đăng ký hardwareBackPress khi Platform.OS === "android".
+- Khi navigation chưa sẵn sàng hoặc canGoBack() trả true: trả false để cơ chế Back hiện tại của Expo Router xử lý.
+- Khi đã hết lịch sử quay lại: trả true, hiển thị Alert tiêu đề **Thoát ứng dụng**, nội dung **Bạn có chắc chắn muốn thoát ứng dụng không?**.
+- Nút **Hủy** đóng Alert, tiếp tục dùng ứng dụng. Chỉ nút **Thoát** gọi BackHandler.exitApp().
+- Có cờ chặn tạo nhiều Alert đồng thời; reset khi Hủy, Thoát hoặc native dismiss.
+- Listener được remove trong cleanup của useEffect; không đăng ký lại theo mỗi thay đổi route.
+- Không gọi logout, không xóa token, không sửa session/authentication/API/backend hoặc UI đã hoàn thiện. Khi mở lại, cơ chế đăng nhập đang có tiếp tục chịu trách nhiệm khôi phục phiên.
+
+## 5. Kiểm tra đã thực hiện
 
 | Kiểm tra | Kết quả |
 | --- | --- |
@@ -52,7 +73,10 @@
 | `npm run typecheck` sau chỉnh sửa | PASS, exit code 0. |
 | `npm run lint -- --no-cache` sau chỉnh sửa | PASS, không báo lỗi. |
 | `git -c core.safecrlf=false diff --check` | PASS. |
-| So sánh state và toàn bộ handler Login với HEAD bằng Node | Không thay đổi. |
+| So sánh state và toàn bộ handler Login với HEAD bằng Node trong lần sửa UI | Không thay đổi. |
+| npm run typecheck sau bổ sung xác nhận thoát | PASS. |
+| npm run lint -- --no-cache sau bổ sung xác nhận thoát | PASS. |
+| node --test tests/android-exit.test.cjs | PASS: 9/9. |
 | Android bundling qua Metro localhost IPv4 cổng 8082 | Thành công. |
 | `adb devices` | Có emulator-5554. |
 
@@ -66,7 +90,18 @@
 - Đã khôi phục emulator về kích thước gốc 1080x2400 và font scale 1.0. Khoảng đen quanh ứng dụng trong ảnh người dùng gửi là lúc emulator tạm chạy kích thước nhỏ để thử responsive.
 - Sau phản hồi về chiều cao, thanh tab ở cấu hình bình thường được thu gọn về 64dp; vẫn giữ vùng hai dòng cho cấu hình hẹp/chữ lớn.
 
-## 5. Giới hạn và mục cần kiểm tra thủ công
+### Kiểm tra xác nhận thoát trên emulator-5554
+
+- Back tại Login gốc: xuất hiện đúng tiêu đề, nội dung và hai nút Hủy/Thoát; cây giao diện có đúng một tiêu đề Alert.
+- Bấm Hủy: Alert đóng, nội dung Login vẫn hiển thị.
+- Mở Đăng ký bằng liên kết có sẵn rồi Back Android: quay lại Login, không xuất hiện Alert thoát.
+- Back lại từ Login: Alert xuất hiện lại bình thường.
+- Chọn Thoát: Android chuyển topResumedActivity sang NexusLauncherActivity, xác nhận ứng dụng đã rời foreground bằng cơ chế BackHandler.exitApp().
+- Đã thử mở lại ứng dụng. Development client xuất hiện cảnh báo REPLACE auth/login tương tự cảnh báo navigation đã gặp khi kiểm tra UI trước đó; chưa kết luận nguyên nhân và chưa xác nhận khôi phục phiên đăng nhập hợp lệ.
+- Kiểm thử Node dùng code RootLayout thực tế được transpile và mock React Native/navigation, xác minh thêm: listener duy nhất, trạng thái canGoBack thay đổi không cần đăng ký lại, không chồng Alert khi Back liên tiếp, reset sau Hủy/native dismiss, chỉ Thoát gọi exitApp, cleanup remove listener, iOS/web không đăng ký listener Android.
+- Chưa thử luồng thoát từ Trang chủ sau đăng nhập thật và Back gesture trên thiết bị Android thật; cần xác minh thêm với session hợp lệ. Không sửa authentication/session để vượt qua giới hạn này.
+
+## 6. Giới hạn và mục cần kiểm tra thủ công
 
 - Khi mở Home trực tiếp bằng deep link, gặp cảnh báo development: `The action 'REPLACE' with payload {"name":"auth/login","params":{}} was not handled by any navigator.` Chưa kết luận nguyên nhân; không sửa session/authentication hoặc routing ngoài phạm vi UI. Cần kiểm tra lại Home bằng luồng đăng nhập thực với session hợp lệ.
 - Đã focus input và xác nhận IME báo đang mở, nhưng emulator hiển thị dạng nhập liệu thu gọn/handwriting thay vì bàn phím QWERTY đầy đủ. Cần thử bàn phím Gboard đầy đủ trên Android thật, cả username/password và khả năng cuộn tới nút khi bàn phím mở.
@@ -74,7 +109,7 @@
 - Chưa kiểm tra chế độ Android navigation ba nút, iOS, web và cỡ chữ rất lớn. Widget Google web giữ nguyên hành vi và style nhà cung cấp.
 - Màu tối hiện tại vẫn được giữ; không bổ sung chuyển theme hệ thống hay sửa cấu hình giao diện toàn ứng dụng.
 
-## 6. Lỗi môi trường/sandbox gặp trong quá trình làm
+## 7. Lỗi môi trường/sandbox gặp trong quá trình làm
 
 - Đường dẫn workspace ban đầu D:/Downloads/23636821_DoHoaiNho_Tuan7 không tồn tại trong môi trường terminal, gây CreateProcessWithLogonW error 267.
 - Đường dẫn mới D:/RN/mobile-app-english-practice-iuh đọc được, nhưng nằm ngoài writable roots ban đầu của chat. Các lần ghi file đã chạy qua cơ chế cấp quyền của công cụ.
@@ -82,9 +117,9 @@
 - Metro localhost ban đầu bind ::1 làm ADB reverse báo EOF. Đã dùng `node --dns-result-order=ipv4first node_modules/expo/bin/cli start --dev-client --localhost --port 8082` để bind 127.0.0.1 và kiểm tra thành công. Không sửa backend/cổng 8081.
 - Automatic approval review từ chối --lan vì khả năng mở mã nguồn ra mạng nội bộ; đã tiếp tục bằng localhost IPv4 qua ADB, không cần mở LAN.
 
-## 7. Gợi ý commit (chưa thực hiện)
+## 8. Gợi ý nhóm commit
 
-Có thể tách thành 3 commit theo thứ tự dưới đây. Commit tab dùng loginDesign nên đặt sau commit Login.
+Có thể nhóm toàn bộ công việc trong ngày thành 4 commit theo thứ tự dưới đây. Commit tab dùng loginDesign nên đặt sau commit Login. Các thay đổi UI trước đó đã có trong HEAD khi bắt đầu phần xác nhận thoát; không cần commit lại các file đã commit. Danh sách dưới đây giúp phân loại theo từng phần công việc.
 
 ### Commit 1: Login và style liên quan
 
@@ -106,13 +141,22 @@ Thông điệp: `style(navigation): align bottom tabs and improve responsive lab
 
 Gồm: src/app/(tabs)/_layout.tsx.
 
-### Commit 3: Báo cáo
+### Commit 3: Xác nhận thoát Android
 
-Thông điệp: `docs: record login and bottom tab UI changes`
+Thông điệp: `feat(android): confirm exit when back navigation is exhausted`
+
+Gồm:
+
+- src/app/_layout.tsx
+- tests/android-exit.test.cjs
+
+### Commit 4: Báo cáo công việc trong ngày
+
+Thông điệp: `docs: update daily UI and Android exit report`
 
 Gồm: fix/LOGIN_BOTTOM_TAB_UI_REPORT.md.
 
-Nếu nhóm muốn một commit cho toàn bộ thay đổi: `style: polish login and bottom tab navigation`.
+Nếu chỉ commit phần mới sau UI, nhóm file src/app/_layout.tsx và tests/android-exit.test.cjs vào commit tính năng; file báo cáo có thể commit riêng hoặc gộp cùng tính năng.
 
 Không tự động stage, commit hoặc push Git.
 
@@ -121,3 +165,5 @@ Không tự động stage, commit hoặc push Git.
 - [Expo SDK 57](https://docs.expo.dev/versions/v57.0.0/)
 - [Expo keyboard handling](https://docs.expo.dev/guides/keyboard-handling/)
 - [Expo Router JavaScript tabs](https://docs.expo.dev/router/advanced/tabs/)
+- [React Native BackHandler](https://reactnative.dev/docs/backhandler)
+- [React Native Alert](https://reactnative.dev/docs/alert)
