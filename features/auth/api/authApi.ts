@@ -51,6 +51,7 @@ export async function login(request: LoginRequest): Promise<LoginResult> {
   );
   const body = response.data;
 
+<<<<<<< Updated upstream
   if (!body.success || !body.result?.success || !body.result.token) {
     throw new Error(body.message || "Đăng nhập không thành công.");
 =======
