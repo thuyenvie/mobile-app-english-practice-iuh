@@ -3,12 +3,12 @@ import { router, useFocusEffect } from "expo-router";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { homeDesign } from "@/theme/tokens";
 import { getExamErrorMessage } from "../api/examApi";
-import { getListeningHistory, type ListeningHistoryItem } from "../api/listeningApi";
-import { ListeningResultCard } from "../components/ListeningResultCard";
+import { getExamHistory, type ExamHistoryItem } from "../api/examResultApi";
+import { ExamResultCard } from "../components/ExamResultCard";
 import { StudyScaffold } from "../components/StudyScaffold";
 
 export default function ListeningHistoryScreen() {
-  const [items, setItems] = useState<ListeningHistoryItem[]>([]);
+  const [items, setItems] = useState<ExamHistoryItem[]>([]);
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -24,7 +24,7 @@ export default function ListeningHistoryScreen() {
     setItems([]);
     setPage(0);
     setTotalPages(0);
-    getListeningHistory().then(
+    getExamHistory().then(
       (data) => { if (active) { setItems(data.items); setPage(data.page); setTotalPages(data.totalPages); setLoading(false); } },
       (cause: unknown) => { if (active) { setError(getExamErrorMessage(cause)); setLoading(false); } },
     );
@@ -37,7 +37,7 @@ export default function ListeningHistoryScreen() {
     setLoadingMore(true);
     setError("");
     try {
-      const data = await getListeningHistory(page + 1);
+      const data = await getExamHistory(page + 1);
       setItems(current => [...current, ...data.items]);
       setPage(data.page);
       setTotalPages(data.totalPages);
@@ -50,11 +50,11 @@ export default function ListeningHistoryScreen() {
       <Pressable accessibilityRole="button" onPress={() => router.canGoBack() ? router.back() : router.replace("/(tabs)/study")}>
         <Text style={styles.link}>‹ Quay lại</Text>
       </Pressable>
-      <Text style={styles.title}>Lịch sử Listening</Text>
+      <Text style={styles.title}>Lịch sử bài làm</Text>
     </View>
     <ScrollView contentContainerStyle={styles.content}>
-      {loading ? <ActivityIndicator /> : items.length ? items.map(item => <ListeningResultCard key={item.resultId} item={item} />)
-        : !error ? <Text style={styles.muted}>Bạn chưa nộp bài Listening nào.</Text> : null}
+      {loading ? <ActivityIndicator /> : items.length ? items.map(item => <ExamResultCard key={item.resultId} item={item} />)
+        : !error ? <Text style={styles.muted}>Bạn chưa nộp bài thi nào.</Text> : null}
       {error ? <><Text style={styles.warning}>{error}</Text>
         <Pressable onPress={() => items.length ? void loadMore() : setRetry(value => value + 1)}><Text style={styles.link}>Thử lại</Text></Pressable></> : null}
       {!loading && !error && page + 1 < totalPages ? <Pressable disabled={loadingMore} onPress={() => void loadMore()}>
