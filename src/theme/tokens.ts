@@ -39,6 +39,44 @@ export const authDesign = {
   logoHeight: 80,
 } as const;
 
+// Login-specific refinements keep the other auth screens unchanged.
+export const loginDesign = {
+  colors: {
+    ...authDesign.colors,
+    header: '#2389dc',
+    surface: '#1c2029',
+    border: '#343c49',
+    secondary: '#b0b8c6',
+    placeholder: '#8f9aab',
+    link: '#75b8ff',
+  },
+  title: { fontSize: 26, lineHeight: 34, fontWeight: '700' },
+  subtitle: { fontSize: 14, lineHeight: 21 },
+  label: { fontSize: 14, lineHeight: 20, fontWeight: '500' },
+  input: {
+    minHeight: 52,
+    height: 'auto',
+    borderRadius: 12,
+    borderWidth: 1,
+    backgroundColor: '#1c2029',
+    borderColor: '#343c49',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: '#ffffff',
+    placeholderTextColor: '$placeholderColor',
+    selectionColor: '$primary',
+    focusStyle: { borderColor: '#75b8ff' },
+  },
+  button: {
+    minHeight: 52,
+    borderRadius: 12,
+    paddingVertical: 14,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+} as const;
+
 export const homeDesign = {
   colors: {
     background: authDesign.colors.background,

@@ -3,14 +3,14 @@ import { YStack } from 'tamagui';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { authDesign } from '@/theme/tokens';
+import { authDesign, loginDesign } from '@/theme/tokens';
 
-export function AuthHeader({ onBack }: { onBack?: () => void }) {
+export function AuthHeader({ onBack, variant }: { onBack?: () => void; variant?: "login" }) {
   const insets = useSafeAreaInsets();
 
   return (
-    <YStack backgroundColor={authDesign.colors.header}
-      height={insets.top + authDesign.headerHeight} paddingTop={insets.top}
+    <YStack backgroundColor={variant === "login" ? loginDesign.colors.header : authDesign.colors.header}
+      height={insets.top + (variant === "login" ? 116 : authDesign.headerHeight)} paddingTop={insets.top}
       alignItems="center" justifyContent="center"
       borderBottomLeftRadius={authDesign.headerRadius} borderBottomRightRadius={authDesign.headerRadius}>
       {onBack && (
@@ -19,7 +19,9 @@ export function AuthHeader({ onBack }: { onBack?: () => void }) {
           icon={<MaterialIcons name="arrow-back-ios" size={24} color="#000000" />} />
       )}
       {/* Neutral wireframe placeholder; replace with the team's local logo asset later. */}
-      <YStack width={authDesign.logoWidth} height={authDesign.logoHeight}
+      <YStack width={variant === "login" ? 88 : authDesign.logoWidth}
+        height={variant === "login" ? 64 : authDesign.logoHeight}
+        borderRadius={variant === "login" ? 12 : 0}
         backgroundColor={authDesign.colors.logo} overflow="hidden"
         alignItems="center" justifyContent="center">
         <YStack position="absolute" width={132} height={1}

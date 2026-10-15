@@ -1,4 +1,5 @@
 export interface GoogleButtonProps {
+  variant?: "login";
   disabled?: boolean;
   loading?: boolean;
   onError?: (message: string) => void;
