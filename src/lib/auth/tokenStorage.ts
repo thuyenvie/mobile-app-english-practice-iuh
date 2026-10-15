@@ -22,6 +22,23 @@ export async function saveAccessToken(token: string): Promise<void> {
   await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, token);
 }
 
+<<<<<<< Updated upstream
+=======
+// Save refresh first so a later access-token write failure does not lose the rotated credential.
+export async function saveTokenPair(accessToken: string, refreshToken?: string): Promise<void> {
+  if (refreshToken) {
+    await saveRefreshToken(refreshToken);
+  } else if (Platform.OS === "web") {
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
+  } else {
+    // Current Identity API issues only an access token; clear the previous session refresh token.
+    await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
+  }
+  await saveAccessToken(accessToken);
+  resetSessionExpiration();
+}
+
+>>>>>>> Stashed changes
 export async function removeAccessToken(): Promise<void> {
   if (Platform.OS === "web") {
     localStorage.removeItem(ACCESS_TOKEN_KEY);

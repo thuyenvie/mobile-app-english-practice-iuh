@@ -12,6 +12,36 @@ export interface LoginRequest {
 export interface LoginResult {
   token: string;
   success: boolean;
+<<<<<<< Updated upstream
+=======
+  refreshToken?: string;
+}
+
+export async function loginWithGoogleIdToken(
+  idToken: string
+): Promise<LoginResult> {
+  const response = await api.post<ApiResponse<LoginResult>>(
+    // Identity service nhận Google ID token, tự tạo/tìm user và trả JWT hệ thống.
+    "/identity/auth/google",
+    { idToken }
+  );
+  const body = response.data;
+
+  if (
+    !body.success ||
+    !body.result?.success ||
+    !body.result.token
+  ) {
+    throw new Error(
+      body.message && body.message !== "authenticated"
+        ? body.message
+        : "Đăng nhập Google không thành công."
+    );
+  }
+
+  await saveTokenPair(body.result.token, body.result.refreshToken);
+  return body.result;
+>>>>>>> Stashed changes
 }
 
 export async function login(request: LoginRequest): Promise<LoginResult> {
@@ -21,8 +51,21 @@ export async function login(request: LoginRequest): Promise<LoginResult> {
   );
   const body = response.data;
 
+<<<<<<< Updated upstream
   if (!body.success || !body.result?.success || !body.result.token) {
     throw new Error(body.message || "Đăng nhập không thành công.");
+=======
+  if (
+    !body.success ||
+    !body.result?.success ||
+    !body.result.token
+  ) {
+    throw new Error(
+      body.message && body.message !== "authenticated"
+        ? body.message
+        : "Tên đăng nhập hoặc mật khẩu không đúng."
+    );
+>>>>>>> Stashed changes
   }
 
   await saveAccessToken(body.result.token);
