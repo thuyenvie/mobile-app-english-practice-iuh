@@ -1,4 +1,5 @@
 import { Button, type ButtonProps } from "tamagui";
+import { Platform } from "react-native";
 
 import { authDesign, typography } from "@/theme/tokens";
 
@@ -6,8 +7,22 @@ type AppButtonProps = ButtonProps & { appearance?: "primary" | "text" };
 
 export function AppButton({
   appearance = "primary",
+  accessibilityState,
   ...props
 }: AppButtonProps) {
+  // Web dung ARIA; khong dua accessibilityState vao the button cua DOM.
+  const accessibilityProps = accessibilityState
+    ? Platform.OS === "web"
+      ? {
+          "aria-disabled": accessibilityState.disabled,
+          "aria-pressed": accessibilityState.selected,
+          "aria-checked": accessibilityState.checked,
+          "aria-busy": accessibilityState.busy,
+          "aria-expanded": accessibilityState.expanded,
+        }
+      : { accessibilityState }
+    : {};
+
   if (appearance === "text") {
     return (
       <Button
@@ -19,6 +34,7 @@ export function AppButton({
         justifyContent="center"
         color="$color"
         role="button"
+        {...accessibilityProps}
         {...props}
       />
     );
@@ -36,6 +52,7 @@ export function AppButton({
       borderWidth={0}
       role="button"
       pressStyle={{ backgroundColor: authDesign.colors.primaryPressed }}
+      {...accessibilityProps}
       {...props}
     />
   );
