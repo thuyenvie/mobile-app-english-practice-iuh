@@ -4,7 +4,7 @@ import { ActivityIndicator, Image, Modal, Pressable, ScrollView, StyleSheet, Tex
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { homeDesign } from "@/theme/tokens";
 import { StudyScaffold } from "../components/StudyScaffold";
-import { ListeningAudioPlayer } from "../components/ListeningAudioPlayer";
+import { PracticeAudioPlayer } from "../components/PracticeAudioPlayer";
 import { useExamPart } from "../hooks/useExamPart";
 import { useListeningDraft } from "../hooks/useListeningDraft";
 import { getExamErrorMessage } from "../api/examApi";
@@ -32,6 +32,9 @@ export default function ListeningPartScreen() {
   const index = questions.indexOf(current);
   const related = current && partNumber >= 3 && current.passageId != null
     ? questions.filter(q => q.passageId === current.passageId) : current ? [current] : [];
+  const activePassage = current && current.passageId != null && state.status === "ready"
+    ? state.part.passages.find(passage => passage.id === current.passageId)
+    : undefined;
   const back = () => router.canGoBack() ? router.back() : router.replace("/(tabs)/study");
   const submit = async () => {
     if (submitting.current || !Object.keys(draft.answers).length) return;
@@ -58,7 +61,12 @@ export default function ListeningPartScreen() {
           setSelectedNumber(null);
           router.setParams({ partNumber: String(part) });
         }} />)}</View>
-      {valid ? <ListeningAudioPlayer year={year} test={test} question={current?.questionNumber ?? [1, 7, 32, 71][partNumber - 1]} paused={confirm || !!result} /> : null}
+      {current ? <PracticeAudioPlayer
+        key={`${activePassage?.id ?? current.id}-${activePassage?.audioSegment?.segmentId ?? "no-segment"}`}
+        audio={activePassage?.audioSegment ?? null}
+        activeQuestionNumber={current.questionNumber}
+        paused={confirm || !!result || sheet}
+      /> : null}
       {!valid ? <Text style={styles.message}>Thông tin đề không hợp lệ.</Text>
         : state.status === "loading" || !draft.ready ? <ActivityIndicator style={styles.message} />
         : state.status === "error" ? <><Text style={styles.message}>{state.message}</Text><Action text="Tải lại" onPress={retry} /></>

@@ -36,6 +36,23 @@ export interface ExamPassage {
   contextType: ExamContextType;
   content: string | null;
   audioUrl: string | null;
+  // One approved clip range: one question for Parts 1-2, one dialogue unit for Parts 3-4.
+  audioSegment: QuestionAudioSegment | null;
+}
+
+export interface QuestionAudioSegment {
+  audioId: number;
+  passageId: number;
+  segmentId: number;
+  questionNumber: number;
+  firstQuestionNumber: number;
+  lastQuestionNumber: number;
+  startMs: number;
+  endMs: number;
+  streamPath: string;
+  audioUrl: string;
+  startTime: number;
+  endTime: number;
 }
 
 export interface ExamPart {

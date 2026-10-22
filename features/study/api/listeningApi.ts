@@ -1,5 +1,6 @@
 import api from "@/lib/axios/axios";
 import { toListeningAnswers } from "../utils/listening";
+import type { QuestionAudioSegment } from "../types";
 import { getExamHistory, getExamResult, type ExamHistoryItem, type ExamResult } from "./examResultApi";
 
 export interface ListeningAudio {
@@ -7,12 +8,7 @@ export interface ListeningAudio {
   durationMs: number;
   streamPath: string;
 }
-export interface QuestionAudio {
-  firstQuestionNumber: number;
-  lastQuestionNumber: number;
-  startMs: number;
-  endMs: number;
-}
+export type QuestionAudio = QuestionAudioSegment;
 export type ListeningResult = ExamResult;
 export type ListeningHistoryItem = ExamHistoryItem;
 export type ListeningHistoryPage = { items: ListeningHistoryItem[]; page: number; totalPages: number; totalItems: number };
