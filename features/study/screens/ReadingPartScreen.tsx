@@ -11,8 +11,11 @@ import { QuestionSheetModal } from "../components/QuestionSheetModal";
 import { ReadingExamFooter } from "../components/ReadingExamFooter";
 import { ReadingExamHeader } from "../components/ReadingExamHeader";
 import { ReadingQuestionCard } from "../components/ReadingQuestionCard";
+import { InteractiveText } from "../components/InteractiveText";
+import { WordLookupModal } from "../components/WordLookupModal";
 import { StudyScaffold } from "../components/StudyScaffold";
 import { getExamErrorMessage } from "../api/examApi";
+import { lookupDictionaryWord, type DictionaryLookup } from "../api/dictionaryApi";
 import { submitReadingPart } from "../api/examResultApi";
 import { useExamPart } from "../hooks/useExamPart";
 import { useReadingTimer } from "../hooks/useReadingTimer";
@@ -97,6 +100,13 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
   const [startedAt] = useState(() => new Date().toISOString());
   const submittingRef = useRef(false);
   const { label: timerLabel, expired: timerExpired } = useReadingTimer(part.partNumber);
+  const [lookupVisible, setLookupVisible] = useState(false);
+  const [lookupLoading, setLookupLoading] = useState(false);
+  const [lookupError, setLookupError] = useState("");
+  const [lookupWord, setLookupWord] = useState("");
+  const [lookupContext, setLookupContext] = useState("");
+  const [lookupEntry, setLookupEntry] = useState<DictionaryLookup | null>(null);
+  const lookupRequestId = useRef(0);
 
   const currentQuestion = questions[currentIndex];
   const currentPassage = part.passages.find(
@@ -113,6 +123,36 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
   }, [currentQuestion, part.partNumber, questions]);
 
   const questionLabel = getQuestionLabel(currentQuestion, relatedQuestions);
+
+  const loadWordLookup = async (word: string, context: string) => {
+    const requestId = ++lookupRequestId.current;
+    const wordIndex = context.toLocaleLowerCase().indexOf(word.toLocaleLowerCase());
+    const snippet = wordIndex < 0
+      ? context.slice(0, 220)
+      : context.slice(Math.max(0, wordIndex - 100), Math.min(context.length, wordIndex + word.length + 100));
+    setLookupWord(word);
+    setLookupContext(snippet);
+    setLookupVisible(true);
+    setLookupLoading(true);
+    setLookupError("");
+    setLookupEntry(null);
+    try {
+      const entry = await lookupDictionaryWord(word, snippet);
+      if (requestId === lookupRequestId.current) setLookupEntry(entry);
+    } catch (error: unknown) {
+      if (requestId === lookupRequestId.current) {
+        setLookupError(getExamErrorMessage(error));
+      }
+    } finally {
+      if (requestId === lookupRequestId.current) setLookupLoading(false);
+    }
+  };
+
+  const closeWordLookup = () => {
+    lookupRequestId.current += 1;
+    setLookupVisible(false);
+    setLookupLoading(false);
+  };
 
   const goToQuestion = (questionNumber: number, closeSheet = true) => {
     const nextIndex = questions.findIndex(
@@ -187,6 +227,8 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
             selectedOption={answers[currentQuestion.questionNumber]}
             focused
             onSelect={(label) => selectAnswer(currentQuestion.questionNumber, label)}
+            onWordPress={(word, context) => void loadWordLookup(word, context)}
+            highlightedWord={lookupVisible ? lookupWord : null}
           />
         </ScrollView>
       ) : (
@@ -219,10 +261,20 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.passageContent}
             >
-              <Text color={homeDesign.colors.text} fontSize={16} lineHeight={25}>
-                {currentPassage?.content ||
-                  "Nội dung bài đọc chưa được import cho nhóm câu hỏi này."}
-              </Text>
+              {currentPassage?.content ? (
+                <InteractiveText
+                  text={currentPassage.content}
+                  textStyle={{ color: homeDesign.colors.text, fontSize: 16, lineHeight: 25 }}
+                  selectedWord={lookupVisible ? lookupWord : null}
+                  onWordPress={(word, context) =>
+                    void loadWordLookup(word, context)
+                  }
+                />
+              ) : (
+                <Text color={homeDesign.colors.text} fontSize={16} lineHeight={25}>
+                  Nội dung bài đọc chưa được import cho nhóm câu hỏi này.
+                </Text>
+              )}
             </ScrollView>
           </YStack>
 
@@ -255,6 +307,10 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
                   selectedOption={answers[question.questionNumber]}
                   focused={question.questionNumber === currentQuestion.questionNumber}
                   onSelect={(label) => selectAnswer(question.questionNumber, label)}
+                  onWordPress={(word, context) =>
+                    void loadWordLookup(word, context)
+                  }
+                  highlightedWord={lookupVisible ? lookupWord : null}
                 />
               ))}
             </ScrollView>
@@ -280,6 +336,16 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
         onJump={goToQuestion}
         onSelect={selectAnswer}
         onSubmit={openSubmitConfirmation}
+      />
+
+      <WordLookupModal
+        visible={lookupVisible}
+        loading={lookupLoading}
+        error={lookupError}
+        entry={lookupEntry}
+        word={lookupWord}
+        onClose={closeWordLookup}
+        onRetry={() => void loadWordLookup(lookupWord, lookupContext)}
       />
 
       <Modal
