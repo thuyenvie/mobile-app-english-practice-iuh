@@ -15,15 +15,11 @@ import { InteractiveText } from "../components/InteractiveText";
 import { WordLookupModal } from "../components/WordLookupModal";
 import { StudyScaffold } from "../components/StudyScaffold";
 import { getExamErrorMessage } from "../api/examApi";
-<<<<<<< HEAD
 import { submitReadingPractice, type PracticeResult } from "../api/practiceApi";
 import { useSession } from "@/lib/auth/useSession";
 import { GuestPracticeNotice } from "../components/GuestPracticeNotice";
 import { GuestResultDetails } from "../components/GuestResultDetails";
-=======
 import { lookupDictionaryWord, saveVocabularyWord, type DictionaryLookup } from "../api/dictionaryApi";
-import { submitReadingPart } from "../api/examResultApi";
->>>>>>> origin/nho
 import { useExamPart } from "../hooks/useExamPart";
 import { useReadingTimer } from "../hooks/useReadingTimer";
 import type { ExamAnswers, ExamPart, ExamQuestion } from "../types";
