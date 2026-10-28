@@ -1,16 +1,23 @@
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { Pressable, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
 import { Text, XStack, YStack } from "tamagui";
 
 import { homeDesign } from "@/theme/tokens";
 import type { SavedVocabulary } from "../api/vocabularyApi";
+import { PhoneticText } from "../../study/components/PhoneticText";
 
 export function VocabularyWordCard({
   item,
   onDelete,
+  onRepairPhonetic,
+  repairingPhonetic = false,
+  phoneticRepairFailed = false,
 }: {
   item: SavedVocabulary;
   onDelete: (item: SavedVocabulary) => void;
+  onRepairPhonetic?: (item: SavedVocabulary) => void;
+  repairingPhonetic?: boolean;
+  phoneticRepairFailed?: boolean;
 }) {
   const savedDate = new Date(item.savedAt);
   const dateLabel = Number.isNaN(savedDate.getTime())
@@ -34,10 +41,30 @@ export function VocabularyWordCard({
           <Text color={homeDesign.colors.text} fontSize={21} fontWeight="800">
             {item.word}
           </Text>
-          {item.phonetic ? (
-            <Text color={homeDesign.colors.secondary} fontSize={14}>
+          {!item.phonetic || item.phonetic.includes("?") || phoneticRepairFailed ? (
+            <View style={styles.phoneticRepairRow}>
+              <Text style={styles.phoneticRepairText}>
+                {repairingPhonetic ? "Đang khôi phục phiên âm..." : "Phiên âm chưa hiển thị đúng"}
+              </Text>
+              {onRepairPhonetic ? (
+                <Pressable
+                  onPress={() => onRepairPhonetic(item)}
+                  disabled={repairingPhonetic}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Tải lại phiên âm ${item.word}`}
+                >
+                  {repairingPhonetic ? (
+                    <ActivityIndicator size="small" color={homeDesign.colors.link} />
+                  ) : (
+                    <Text style={styles.phoneticRepairAction}>Tải lại</Text>
+                  )}
+                </Pressable>
+              ) : null}
+            </View>
+          ) : item.phonetic ? (
+            <PhoneticText style={styles.phonetic}>
               {item.phonetic}
-            </Text>
+            </PhoneticText>
           ) : null}
         </View>
         <Pressable
@@ -70,6 +97,10 @@ export function VocabularyWordCard({
 
 const styles = StyleSheet.create({
   titleGroup: { flex: 1, gap: 3 },
+  phoneticRepairRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  phoneticRepairText: { color: homeDesign.colors.inProgress, fontSize: 13 },
+  phoneticRepairAction: { color: homeDesign.colors.link, fontSize: 13, fontWeight: "700" },
+  phonetic: { color: homeDesign.colors.secondary, fontSize: 14 },
   deleteButton: { padding: 4 },
   partOfSpeech: {
     alignSelf: "flex-start",

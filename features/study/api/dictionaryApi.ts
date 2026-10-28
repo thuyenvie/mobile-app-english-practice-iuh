@@ -69,3 +69,10 @@ export async function getSavedVocabulary(options: {
 export async function deleteSavedVocabulary(id: string): Promise<void> {
   await api.delete(`/exam-service/dictionary/vocabulary/${id}`);
 }
+
+export async function refreshSavedVocabularyPhonetic(id: string): Promise<SavedVocabulary> {
+  const response = await api.post<ApiResponse<SavedVocabulary>>(
+    `/exam-service/dictionary/vocabulary/${id}/refresh-phonetic`
+  );
+  return response.data.result;
+}

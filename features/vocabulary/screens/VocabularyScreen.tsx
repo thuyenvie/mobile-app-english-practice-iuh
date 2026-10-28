@@ -19,6 +19,7 @@ import { HomeScaffold } from "../../home/components/HomeScaffold";
 import {
   deleteSavedVocabulary,
   getSavedVocabulary,
+  refreshSavedVocabularyPhonetic,
   type SavedVocabulary,
 } from "../api/vocabularyApi";
 import { VocabularyWordCard } from "../components/VocabularyWordCard";
@@ -42,6 +43,8 @@ export default function VocabularyScreen() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState("");
+  const [repairingPhoneticIds, setRepairingPhoneticIds] = useState<Set<string>>(() => new Set());
+  const [phoneticRepairFailedIds, setPhoneticRepairFailedIds] = useState<Set<string>>(() => new Set());
   const requestId = useRef(0);
   const loadingMoreRef = useRef(false);
 
@@ -56,10 +59,16 @@ export default function VocabularyScreen() {
         size: PAGE_SIZE,
       });
       if (currentRequestId !== requestId.current) return;
-      setItems(result.items);
+      const repaired = await repairLegacyPhonetics(result.items);
+      if (currentRequestId !== requestId.current) return;
+      setItems(repaired.items);
+      setPhoneticRepairFailedIds(new Set(repaired.failedIds));
       setTotalItems(result.totalItems);
       setPage(result.page);
       setHasMore(result.page + 1 < result.totalPages);
+      if (repaired.failedIds.length > 0) {
+        setError(`Chưa khôi phục được phiên âm cho ${repaired.failedIds.length} từ. Bấm “Tải lại” trên thẻ từ sau khi có mạng.`);
+      }
     } catch (loadError: unknown) {
       if (currentRequestId === requestId.current)
         setError(getExamErrorMessage(loadError));
@@ -91,9 +100,15 @@ export default function VocabularyScreen() {
         size: PAGE_SIZE,
       });
       if (currentRequestId !== requestId.current) return;
-      setItems((current) => [...current, ...result.items]);
+      const repaired = await repairLegacyPhonetics(result.items);
+      if (currentRequestId !== requestId.current) return;
+      setItems((current) => [...current, ...repaired.items]);
+      setPhoneticRepairFailedIds((current) => new Set([...current, ...repaired.failedIds]));
       setPage(result.page);
       setHasMore(result.page + 1 < result.totalPages);
+      if (repaired.failedIds.length > 0) {
+        setError(`Chưa khôi phục được phiên âm cho ${repaired.failedIds.length} từ. Bấm “Tải lại” trên thẻ từ sau khi có mạng.`);
+      }
     } catch (loadError: unknown) {
       if (currentRequestId === requestId.current)
         setError(getExamErrorMessage(loadError));
@@ -110,6 +125,29 @@ export default function VocabularyScreen() {
       setTotalItems((current) => Math.max(0, current - 1));
     } catch (deleteError: unknown) {
       setError(getExamErrorMessage(deleteError));
+    }
+  };
+
+  const repairPhonetic = async (item: SavedVocabulary) => {
+    setRepairingPhoneticIds((current) => new Set(current).add(item.id));
+    try {
+      const updated = await refreshSavedVocabularyPhonetic(item.id);
+      setItems((current) => current.map((saved) => saved.id === item.id ? updated : saved));
+      setPhoneticRepairFailedIds((current) => {
+        const next = new Set(current);
+        next.delete(item.id);
+        return next;
+      });
+      setError("");
+    } catch (repairError: unknown) {
+      setPhoneticRepairFailedIds((current) => new Set(current).add(item.id));
+      setError(getExamErrorMessage(repairError));
+    } finally {
+      setRepairingPhoneticIds((current) => {
+        const next = new Set(current);
+        next.delete(item.id);
+        return next;
+      });
     }
   };
 
@@ -198,7 +236,13 @@ export default function VocabularyScreen() {
           data={items}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <VocabularyWordCard item={item} onDelete={confirmDelete} />
+            <VocabularyWordCard
+              item={item}
+              onDelete={confirmDelete}
+              onRepairPhonetic={repairPhonetic}
+              repairingPhonetic={repairingPhoneticIds.has(item.id)}
+              phoneticRepairFailed={phoneticRepairFailedIds.has(item.id)}
+            />
           )}
           contentContainerStyle={
             items.length ? styles.listContent : styles.emptyListContent
@@ -280,6 +324,26 @@ export default function VocabularyScreen() {
       </YStack>
     </HomeScaffold>
   );
+}
+
+async function repairLegacyPhonetics(items: SavedVocabulary[]) {
+  const failedIds: string[] = [];
+  const repairedItems: SavedVocabulary[] = [];
+  // Gioi han ba request cung luc de khong gui ca lo lon vao dictionary API.
+  for (let index = 0; index < items.length; index += 3) {
+    const group = await Promise.all(items.slice(index, index + 3).map(async (item) => {
+      // Neu phonetic bi loi hoac nguon cu khong co, thu lay lai tu dictionary.
+      if (item.phonetic && !item.phonetic.includes("?")) return item;
+      try {
+        return await refreshSavedVocabularyPhonetic(item.id);
+      } catch {
+        failedIds.push(item.id);
+        return item;
+      }
+    }));
+    repairedItems.push(...group);
+  }
+  return { items: repairedItems, failedIds };
 }
 
 function getDateRange(filter: DateFilter): { from?: string; to?: string } {

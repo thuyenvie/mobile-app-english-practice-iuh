@@ -11,6 +11,7 @@ import {
 
 import { homeDesign } from "@/theme/tokens";
 import type { DictionaryLookup } from "../api/dictionaryApi";
+import { PhoneticText } from "./PhoneticText";
 
 export function WordLookupModal({
   visible,
@@ -51,7 +52,11 @@ export function WordLookupModal({
           <View style={styles.header}>
             <View style={styles.titleGroup}>
               <Text style={styles.word}>{entry?.word ?? word}</Text>
-              {entry?.phonetic ? <Text style={styles.phonetic}>{entry.phonetic}</Text> : null}
+              {entry?.phonetic ? (
+                <PhoneticText style={styles.phonetic}>{entry.phonetic}</PhoneticText>
+              ) : entry ? (
+                <Text style={styles.phoneticUnavailable}>Nguồn từ điển chưa có phiên âm cho từ này.</Text>
+              ) : null}
             </View>
             <Pressable onPress={onClose} hitSlop={12} accessibilityRole="button" accessibilityLabel="Đóng">
               <MaterialIcons name="close" size={25} color={homeDesign.colors.secondary} />
