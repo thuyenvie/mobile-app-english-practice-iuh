@@ -1,6 +1,6 @@
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useFocusEffect } from "expo-router";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -24,6 +24,7 @@ import {
 } from "../api/vocabularyApi";
 import { VocabularyFlashcard } from "../components/VocabularyFlashcard";
 import { VocabularyWordCard } from "../components/VocabularyWordCard";
+import { useVocabularyPronunciation } from "../hooks/useVocabularyPronunciation";
 
 type DateFilter = "all" | "today" | "yesterday" | "week";
 
@@ -49,8 +50,23 @@ export default function VocabularyScreen() {
   const [error, setError] = useState("");
   const [repairingPhoneticIds, setRepairingPhoneticIds] = useState<Set<string>>(() => new Set());
   const [phoneticRepairFailedIds, setPhoneticRepairFailedIds] = useState<Set<string>>(() => new Set());
+  const pronunciation = useVocabularyPronunciation();
   const requestId = useRef(0);
   const loadingMoreRef = useRef(false);
+
+  // Dung mot audio player cho toan man; dung audio cu khi doi tu hoac che do.
+  useEffect(() => {
+    pronunciation.stop();
+  }, [filter, viewMode, reviewIndex, pronunciation.stop]);
+
+  const pronunciationProps = {
+    activeUrl: pronunciation.activeUrl,
+    activeWord: pronunciation.activeWord,
+    playing: pronunciation.playing,
+    loading: pronunciation.loading,
+    error: pronunciation.error,
+    onPress: pronunciation.play,
+  };
 
   const loadFirstPage = useCallback(async () => {
     const currentRequestId = ++requestId.current;
@@ -293,6 +309,7 @@ export default function VocabularyScreen() {
             onToggleAnswer={() => setAnswerRevealed((current) => !current)}
             onPrevious={() => { setReviewIndex((current) => Math.max(0, current - 1)); setAnswerRevealed(false); }}
             onNext={() => void moveToNextCard()}
+            pronunciation={pronunciationProps}
           />
         ) : viewMode === "flashcard" ? (
           <YStack flex={1} alignItems="center" justifyContent="center" padding={24} gap={12}>
@@ -309,6 +326,7 @@ export default function VocabularyScreen() {
               onRepairPhonetic={repairPhonetic}
               repairingPhonetic={repairingPhoneticIds.has(item.id)}
               phoneticRepairFailed={phoneticRepairFailedIds.has(item.id)}
+              pronunciation={pronunciationProps}
             />
           )}
           contentContainerStyle={

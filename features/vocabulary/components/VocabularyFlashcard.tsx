@@ -6,6 +6,7 @@ import { AppButton } from "@/components/ui/AppButton";
 import { homeDesign } from "@/theme/tokens";
 import { PhoneticText } from "../../study/components/PhoneticText";
 import type { SavedVocabulary } from "../api/vocabularyApi";
+import { VocabularyPronunciationButton } from "./VocabularyPronunciationButton";
 
 export function VocabularyFlashcard({
   item,
@@ -19,6 +20,7 @@ export function VocabularyFlashcard({
   onToggleAnswer,
   onPrevious,
   onNext,
+  pronunciation,
 }: {
   item: SavedVocabulary;
   index: number;
@@ -31,6 +33,14 @@ export function VocabularyFlashcard({
   onToggleAnswer: () => void;
   onPrevious: () => void;
   onNext: () => void;
+  pronunciation: {
+    activeUrl: string | null;
+    activeWord: string;
+    playing: boolean;
+    loading: boolean;
+    error: string;
+    onPress: (audioUrl: string | null | undefined, word: string) => void;
+  };
 }) {
   const progress = total ? ((index + 1) / total) * 100 : 0;
 
@@ -65,11 +75,18 @@ export function VocabularyFlashcard({
           <Text color={homeDesign.colors.text} fontSize={30} fontWeight="800" textAlign="center">
             {item.word}
           </Text>
-          {item.phonetic ? (
-            <PhoneticText style={styles.phonetic}>{item.phonetic}</PhoneticText>
-          ) : (
-            <Text color={homeDesign.colors.secondary} fontSize={13}>Chưa có phiên âm</Text>
-          )}
+          <XStack alignItems="center" gap={9}>
+            {item.phonetic ? (
+              <PhoneticText style={styles.phonetic}>{item.phonetic}</PhoneticText>
+            ) : (
+              <Text color={homeDesign.colors.secondary} fontSize={13}>Chưa có phiên âm</Text>
+            )}
+            <VocabularyPronunciationButton
+              audioUrl={item.audioUrl}
+              word={item.word}
+              {...pronunciation}
+            />
+          </XStack>
 
           {revealed ? (
             <YStack width="100%" alignItems="center" gap={12}>

@@ -15,7 +15,7 @@ module.exports = ({ config }) => {
   if (IOS_CLIENT_ID_PATTERN.test(iosClientId)) {
     const clientIdPrefix = iosClientId.replace(
       ".apps.googleusercontent.com",
-      "",
+      ""
     );
     plugins.push([
       googleSignInPlugin,
@@ -26,8 +26,20 @@ module.exports = ({ config }) => {
   }
 
   // Chi phat audio, khong xin quyen micro.
-  if (!plugins.some((plugin) => (typeof plugin === "string" ? plugin : plugin[0]) === "expo-audio")) {
-    plugins.push(["expo-audio", { microphonePermission: false, recordAudioAndroid: false, enableBackgroundPlayback: false }]);
+  if (
+    !plugins.some(
+      (plugin) =>
+        (typeof plugin === "string" ? plugin : plugin[0]) === "expo-audio"
+    )
+  ) {
+    plugins.push([
+      "expo-audio",
+      {
+        microphonePermission: false,
+        recordAudioAndroid: false,
+        enableBackgroundPlayback: false,
+      },
+    ]);
   }
   return { ...config, plugins };
 };
