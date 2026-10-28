@@ -1,1 +1,8 @@
-export { default } from '../../../features/auth/screens/RegisterScreen';
+import { Redirect } from "expo-router";
+import { useSession } from "@/lib/auth/useSession";
+import Screen from "../../../features/auth/screens/RegisterScreen";
+
+export default function AuthRoute() {
+  const session = useSession();
+  return session.status === "authenticated" ? <Redirect href="/(tabs)/home" /> : <Screen />;
+}

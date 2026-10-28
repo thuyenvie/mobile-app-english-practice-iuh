@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { router, useLocalSearchParams } from "expo-router";
-import { Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Modal, ScrollView, StyleSheet, View } from "react-native";
 import { Text, XStack, YStack } from "tamagui";
 
 import { AppButton } from "@/components/ui/AppButton";
@@ -15,8 +15,15 @@ import { InteractiveText } from "../components/InteractiveText";
 import { WordLookupModal } from "../components/WordLookupModal";
 import { StudyScaffold } from "../components/StudyScaffold";
 import { getExamErrorMessage } from "../api/examApi";
+<<<<<<< HEAD
+import { submitReadingPractice, type PracticeResult } from "../api/practiceApi";
+import { useSession } from "@/lib/auth/useSession";
+import { GuestPracticeNotice } from "../components/GuestPracticeNotice";
+import { GuestResultDetails } from "../components/GuestResultDetails";
+=======
 import { lookupDictionaryWord, saveVocabularyWord, type DictionaryLookup } from "../api/dictionaryApi";
 import { submitReadingPart } from "../api/examResultApi";
+>>>>>>> origin/nho
 import { useExamPart } from "../hooks/useExamPart";
 import { useReadingTimer } from "../hooks/useReadingTimer";
 import type { ExamAnswers, ExamPart, ExamQuestion } from "../types";
@@ -86,6 +93,7 @@ export default function ReadingPartScreen() {
 }
 
 function ReadingPartContent({ part }: { part: ExamPart }) {
+  const session = useSession();
   const questions = useMemo(
     () => [...part.questions].sort((first, second) => first.questionNumber - second.questionNumber),
     [part.questions]
@@ -96,7 +104,7 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState<Awaited<ReturnType<typeof submitReadingPart>> | null>(null);
+  const [result, setResult] = useState<PracticeResult | null>(null);
   const [startedAt] = useState(() => new Date().toISOString());
   const submittingRef = useRef(false);
   const { label: timerLabel, expired: timerExpired } = useReadingTimer(part.partNumber);
@@ -202,7 +210,7 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
     setSubmitting(true);
     setSubmitError("");
     try {
-      const saved = await submitReadingPart(part.year, part.testNumber, part.partNumber, answers, startedAt);
+      const saved = await submitReadingPractice(session.generation, part.year, part.testNumber, part.partNumber, answers, startedAt);
       setResult(saved);
       setConfirmVisible(false);
     } catch (error: unknown) {
@@ -215,6 +223,7 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
 
   return (
     <StudyScaffold>
+      <GuestPracticeNotice hasAnswers={Object.keys(answers).length > 0} busy={submitting} />
       <ReadingExamHeader
         questionLabel={questionLabel}
         timerLabel={timerLabel}
@@ -381,7 +390,8 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
         animationType="fade"
         onRequestClose={() => {
           if (!submitting) {
-            if (result) router.push({ pathname: "/study/history/[resultId]", params: { resultId: String(result.resultId) } });
+            if (result && "resultId" in result) router.push({ pathname: "/study/history/[resultId]", params: { resultId: String(result.resultId) } });
+            else if (result) setResult(null);
             else setConfirmVisible(false);
           }
         }}
@@ -396,16 +406,21 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
               <Text color={homeDesign.colors.secondary} fontSize={13}>
                 Đây là số câu đúng trên tổng câu thực tế của Part, không quy đổi sang điểm TOEIC.
               </Text>
-              <AppButton onPress={() => {
-                const resultId = result.resultId;
-                setResult(null);
-                router.push({ pathname: "/study/history/[resultId]", params: { resultId: String(resultId) } });
-              }}>Xem lại bài</AppButton>
-              <AppButton appearance="text" onPress={() => {
-                const resultId = result.resultId;
-                setResult(null);
-                router.push({ pathname: "/study/history/[resultId]", params: { resultId: String(resultId) } });
-              }}>Đóng</AppButton>
+              {"resultId" in result ? <>
+                <AppButton onPress={() => {
+                  const resultId = result.resultId;
+                  setResult(null);
+                  router.push({ pathname: "/study/history/[resultId]", params: { resultId: String(resultId) } });
+                }}>Xem lại bài</AppButton>
+                <AppButton appearance="text" onPress={() => {
+                  const resultId = result.resultId;
+                  setResult(null);
+                  router.push({ pathname: "/study/history/[resultId]", params: { resultId: String(resultId) } });
+                }}>Đóng</AppButton>
+              </> : <>
+                <GuestResultDetails result={result} />
+                <AppButton onPress={() => setResult(null)}>Đóng kết quả tạm</AppButton>
+              </>}
             </> : <>
               <Text color={homeDesign.colors.text} fontSize={19} fontWeight="800">Nộp Reading · Part {part.partNumber}?</Text>
               <Text color={homeDesign.colors.text} fontSize={14}>

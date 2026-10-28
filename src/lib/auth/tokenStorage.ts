@@ -1,6 +1,18 @@
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 import { resetSessionExpiration } from "./sessionEvents";
+import { assertSessionGeneration, getSessionSnapshot } from "./sessionStore";
+
+interface CredentialChange {
+  generation?: number;
+  onSaved?: () => void;
+}
+let credentialWrites: Promise<unknown> = Promise.resolve();
+function serializeCredentials<T>(operation: () => Promise<T>): Promise<T> {
+  const result = credentialWrites.then(operation);
+  credentialWrites = result.catch(() => undefined);
+  return result;
+}
 
 const ACCESS_TOKEN_KEY = "access_token";
 const REFRESH_TOKEN_KEY = "refresh_token";
@@ -25,10 +37,18 @@ export async function saveAccessToken(token: string): Promise<void> {
 }
 
 // Save refresh first so a later access-token write failure does not lose the rotated credential.
-export async function saveTokenPair(accessToken: string, refreshToken: string): Promise<void> {
-  await saveRefreshToken(refreshToken);
-  await saveAccessToken(accessToken);
-  resetSessionExpiration();
+export async function saveTokenPair(
+  accessToken: string, refreshToken: string, options: CredentialChange = {},
+): Promise<void> {
+  const generation = options.generation ?? getSessionSnapshot().generation;
+  return serializeCredentials(async () => {
+    assertSessionGeneration(generation);
+    await saveRefreshToken(refreshToken);
+    await saveAccessToken(accessToken);
+    assertSessionGeneration(generation);
+    resetSessionExpiration();
+    options.onSaved?.();
+  });
 }
 
 export async function removeAccessToken(): Promise<void> {
@@ -59,15 +79,21 @@ export async function getRefreshToken(): Promise<string | null> {
   return SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
 }
 
-export async function removeTokens(): Promise<void> {
-  if (Platform.OS === "web") {
-    localStorage.removeItem(ACCESS_TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
-    return;
-  }
+export async function removeTokens(options: CredentialChange = {}): Promise<void> {
+  const generation = options.generation ?? getSessionSnapshot().generation;
+  return serializeCredentials(async () => {
+    assertSessionGeneration(generation);
+    if (Platform.OS === "web") {
+      localStorage.removeItem(ACCESS_TOKEN_KEY);
+      localStorage.removeItem(REFRESH_TOKEN_KEY);
+      options.onSaved?.();
+      return;
+    }
 
-  await Promise.all([
-    SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY),
-    SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY),
-  ]);
+    await Promise.all([
+      SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY),
+      SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY),
+    ]);
+    options.onSaved?.();
+  });
 }

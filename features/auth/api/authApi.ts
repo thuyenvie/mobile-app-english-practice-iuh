@@ -2,6 +2,7 @@ import { isAxiosError } from "axios";
 
 import api from "@/lib/axios/axios";
 import { saveTokenPair } from "@/lib/auth/tokenStorage";
+import { authenticateSession, getSessionSnapshot, readTokenSubject } from "@/lib/auth/sessionStore";
 import type { ApiResponse } from "@/types/api";
 
 export interface LoginRequest {
@@ -18,6 +19,7 @@ export interface LoginResult {
 export async function loginWithGoogleIdToken(
   idToken: string
 ): Promise<LoginResult> {
+  const generation = getSessionSnapshot().generation;
   const response = await api.post<ApiResponse<LoginResult>>(
     // Identity service nhận Google ID token, tự tạo/tìm user và trả JWT hệ thống.
     "/identity/auth/google",
@@ -34,11 +36,15 @@ export async function loginWithGoogleIdToken(
     throw new Error(body.message || "Đăng nhập Google không thành công.");
   }
 
-  await saveTokenPair(body.result.token, body.result.refreshToken);
+  const subject = readTokenSubject(body.result.token);
+  await saveTokenPair(body.result.token, body.result.refreshToken, {
+    generation, onSaved: () => authenticateSession(subject),
+  });
   return body.result;
 }
 
 export async function login(request: LoginRequest): Promise<LoginResult> {
+  const generation = getSessionSnapshot().generation;
   const response = await api.post<ApiResponse<LoginResult>>(
     "/identity/auth/login",
     request
@@ -54,7 +60,10 @@ export async function login(request: LoginRequest): Promise<LoginResult> {
     throw new Error(body.message || "Đăng nhập không thành công.");
   }
 
-  await saveTokenPair(body.result.token, body.result.refreshToken);
+  const subject = readTokenSubject(body.result.token);
+  await saveTokenPair(body.result.token, body.result.refreshToken, {
+    generation, onSaved: () => authenticateSession(subject),
+  });
   return body.result;
 }
 

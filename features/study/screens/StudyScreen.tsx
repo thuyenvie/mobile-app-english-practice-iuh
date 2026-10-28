@@ -16,8 +16,10 @@ import { YearSelector } from "../components/YearSelector";
 import { ExamResultCard } from "../components/ExamResultCard";
 import { getExamHistory, type ExamHistoryItem } from "../api/examResultApi";
 import { getExamErrorMessage } from "../api/examApi";
+import { useSession } from "@/lib/auth/useSession";
 
 export default function StudyScreen() {
+  const isGuest = useSession().status === "guest";
   const [selectedYear, setSelectedYear] = useState<number>(toeicYears[0]);
   const [notice, setNotice] = useState("");
   const { state, retry } = useTestsByYear(selectedYear);
@@ -27,6 +29,7 @@ export default function StudyScreen() {
   const [recentRetry, setRecentRetry] = useState(0);
   // Tai lai moi khi quay ve trang Hoc tap sau khi nop bai.
   useFocusEffect(useCallback(() => {
+    if (isGuest) return;
     let active = true;
     setRecentLoading(true);
     getExamHistory(0, 3).then(
@@ -34,7 +37,7 @@ export default function StudyScreen() {
       (error: unknown) => { if (active) { setRecentError(getExamErrorMessage(error)); setRecentLoading(false); } },
     );
     return () => { active = false; };
-  }, [recentRetry]));
+  }, [recentRetry, isGuest]));
   // back end ch co cai nay
   const openTest = (testNumber: number) => {
     router.push({
@@ -81,7 +84,7 @@ export default function StudyScreen() {
             </Text>
           </XStack>
           <Text color={homeDesign.colors.secondary} fontSize={12}>
-            Chưa có bài thi được lưu nháp.
+            {isGuest ? "Bạn đang học thử. Bài làm chỉ được giữ khi đang mở bài." : "Chưa có bài thi được lưu nháp."}
           </Text>
         </YStack>
 
@@ -149,14 +152,17 @@ export default function StudyScreen() {
           ) : null}
         </YStack>
 
-        <YStack gap={8}>
+        {isGuest ? <YStack gap={8}>
+          <Text color={homeDesign.colors.secondary}>Đăng nhập để lưu kết quả và xem lịch sử học tập.</Text>
+          <AppButton appearance="text" onPress={() => router.push("/auth/login")}>Đăng nhập</AppButton>
+        </YStack> : <YStack gap={8}>
           <SectionTitle title="Kết quả gần đây" hint="Listening và Reading" />
           {recentLoading ? <HomeDataMessage loading message="Đang tải kết quả..." />
             : recentError ? <HomeDataMessage message={recentError} onRetry={() => setRecentRetry(value => value + 1)} />
             : recent.length ? recent.map(item => <ExamResultCard key={item.resultId} item={item} />)
             : <Text color={homeDesign.colors.secondary} fontSize={12}>Bạn chưa nộp bài thi nào.</Text>}
           <AppButton appearance="text" onPress={() => router.push("/study/history")}>Xem toàn bộ lịch sử ›</AppButton>
-        </YStack>
+        </YStack>}
       </ScrollView>
     </StudyScaffold>
   );
