@@ -15,7 +15,7 @@ import { InteractiveText } from "../components/InteractiveText";
 import { WordLookupModal } from "../components/WordLookupModal";
 import { StudyScaffold } from "../components/StudyScaffold";
 import { getExamErrorMessage } from "../api/examApi";
-import { lookupDictionaryWord, type DictionaryLookup } from "../api/dictionaryApi";
+import { lookupDictionaryWord, saveVocabularyWord, type DictionaryLookup } from "../api/dictionaryApi";
 import { submitReadingPart } from "../api/examResultApi";
 import { useExamPart } from "../hooks/useExamPart";
 import { useReadingTimer } from "../hooks/useReadingTimer";
@@ -106,6 +106,9 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
   const [lookupWord, setLookupWord] = useState("");
   const [lookupContext, setLookupContext] = useState("");
   const [lookupEntry, setLookupEntry] = useState<DictionaryLookup | null>(null);
+  const [vocabularySaving, setVocabularySaving] = useState(false);
+  const [vocabularySaved, setVocabularySaved] = useState(false);
+  const [vocabularySaveError, setVocabularySaveError] = useState("");
   const lookupRequestId = useRef(0);
 
   const currentQuestion = questions[currentIndex];
@@ -136,6 +139,9 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
     setLookupLoading(true);
     setLookupError("");
     setLookupEntry(null);
+    setVocabularySaving(false);
+    setVocabularySaved(false);
+    setVocabularySaveError("");
     try {
       const entry = await lookupDictionaryWord(word, snippet);
       if (requestId === lookupRequestId.current) setLookupEntry(entry);
@@ -145,6 +151,23 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
       }
     } finally {
       if (requestId === lookupRequestId.current) setLookupLoading(false);
+    }
+  };
+
+  const saveCurrentWord = async () => {
+    if (!lookupEntry || vocabularySaving || vocabularySaved) return;
+    const saveRequestId = lookupRequestId.current;
+    setVocabularySaving(true);
+    setVocabularySaveError("");
+    try {
+      await saveVocabularyWord(lookupEntry);
+      if (saveRequestId === lookupRequestId.current) setVocabularySaved(true);
+    } catch (error: unknown) {
+      if (saveRequestId === lookupRequestId.current) {
+        setVocabularySaveError(getExamErrorMessage(error));
+      }
+    } finally {
+      if (saveRequestId === lookupRequestId.current) setVocabularySaving(false);
     }
   };
 
@@ -346,6 +369,10 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
         word={lookupWord}
         onClose={closeWordLookup}
         onRetry={() => void loadWordLookup(lookupWord, lookupContext)}
+        saved={vocabularySaved}
+        saving={vocabularySaving}
+        saveError={vocabularySaveError}
+        onSave={() => void saveCurrentWord()}
       />
 
       <Modal

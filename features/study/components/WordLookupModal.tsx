@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Modal,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -19,6 +20,10 @@ export function WordLookupModal({
   word,
   onClose,
   onRetry,
+  saved = false,
+  saving = false,
+  saveError = "",
+  onSave,
 }: {
   visible: boolean;
   loading: boolean;
@@ -27,6 +32,10 @@ export function WordLookupModal({
   word: string;
   onClose: () => void;
   onRetry: () => void;
+  saved?: boolean;
+  saving?: boolean;
+  saveError?: string;
+  onSave?: () => void;
 }) {
   return (
     <Modal
@@ -62,19 +71,37 @@ export function WordLookupModal({
               </Pressable>
             </View>
           ) : entry ? (
-            <View style={styles.body}>
-              {entry.partOfSpeech ? <Text style={styles.partOfSpeech}>{entry.partOfSpeech}</Text> : null}
-              <Text style={styles.sectionLabel}>Nghĩa tiếng Việt</Text>
-              <Text style={styles.translation}>{entry.vietnameseMeaning}</Text>
-              <Text style={styles.sectionLabel}>English definition</Text>
-              <Text style={styles.definition}>{entry.englishDefinition}</Text>
-              {entry.example ? (
-                <>
-                  <Text style={styles.sectionLabel}>Ví dụ</Text>
-                  <Text style={styles.example}>{entry.example}</Text>
-                </>
-              ) : null}
-              <Text style={styles.source}>Nguồn dữ liệu: Free Dictionary API</Text>
+            <ScrollView style={styles.bodyScroll} showsVerticalScrollIndicator={false}>
+                <View style={styles.body}>
+                  {entry.partOfSpeech ? <Text style={styles.partOfSpeech}>{entry.partOfSpeech}</Text> : null}
+                  <Text style={styles.sectionLabel}>Nghĩa tiếng Việt</Text>
+                  <Text style={styles.translation}>{entry.vietnameseMeaning}</Text>
+                  <Text style={styles.sectionLabel}>English definition</Text>
+                  <Text style={styles.definition}>{entry.englishDefinition}</Text>
+                  {entry.example ? (
+                    <>
+                      <Text style={styles.sectionLabel}>Ví dụ</Text>
+                      <Text style={styles.example}>{entry.example}</Text>
+                    </>
+                  ) : null}
+                  <Text style={styles.source}>Nguồn dữ liệu: Free Dictionary API</Text>
+              </View>
+            </ScrollView>
+          ) : null}
+
+          {entry && onSave ? (
+            <View style={styles.saveBlock}>
+              {saveError ? <Text style={styles.error}>{saveError}</Text> : null}
+              <Pressable
+                onPress={onSave}
+                disabled={saved || saving}
+                style={[styles.saveButton, saved && styles.savedButton]}
+                accessibilityRole="button"
+              >
+                {saving ? <ActivityIndicator color="#111111" /> : (
+                  <Text style={styles.saveButtonText}>{saved ? "Đã lưu vào Từ vựng" : "Lưu từ này"}</Text>
+                )}
+              </Pressable>
             </View>
           ) : null}
 
@@ -96,6 +123,7 @@ const styles = StyleSheet.create({
   card: {
     width: "100%",
     maxWidth: 520,
+    maxHeight: "90%",
     alignSelf: "center",
     paddingHorizontal: 22,
     paddingTop: 22,
@@ -112,6 +140,7 @@ const styles = StyleSheet.create({
   word: { color: homeDesign.colors.text, fontSize: 25, fontWeight: "800" },
   phonetic: { color: homeDesign.colors.secondary, fontSize: 15 },
   body: { gap: 8 },
+  bodyScroll: { flexShrink: 1, maxHeight: 320 },
   partOfSpeech: { alignSelf: "flex-start", color: "#111111", backgroundColor: homeDesign.colors.tabActive, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 8, fontSize: 12, fontWeight: "700" },
   sectionLabel: { marginTop: 5, color: homeDesign.colors.secondary, fontSize: 13, fontWeight: "700" },
   translation: { color: homeDesign.colors.tabActive, fontSize: 18, lineHeight: 25, fontWeight: "800" },
@@ -124,6 +153,10 @@ const styles = StyleSheet.create({
   error: { color: "#ff9d9d", fontSize: 14, textAlign: "center" },
   retryButton: { paddingHorizontal: 16, paddingVertical: 9, borderRadius: 10, backgroundColor: homeDesign.colors.surfaceRaised },
   retryText: { color: homeDesign.colors.link, fontWeight: "700" },
+  saveBlock: { gap: 8 },
+  saveButton: { minHeight: 48, justifyContent: "center", alignItems: "center", borderRadius: 12, backgroundColor: homeDesign.colors.tabActive },
+  savedButton: { backgroundColor: homeDesign.colors.completed },
+  saveButtonText: { color: "#111111", fontSize: 15, fontWeight: "800" },
   closeButton: { minHeight: 48, justifyContent: "center", alignItems: "center", borderRadius: 12, backgroundColor: homeDesign.colors.link },
   closeButtonText: { color: "#111111", fontSize: 16, fontWeight: "800" },
 });

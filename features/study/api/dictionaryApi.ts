@@ -17,6 +17,18 @@ export interface DictionaryLookup {
   sourceUrl?: string | null;
 }
 
+export interface SavedVocabulary extends DictionaryLookup {
+  id: string;
+  savedAt: string;
+}
+
+export interface VocabularyPage {
+  items: SavedVocabulary[];
+  page: number;
+  totalPages: number;
+  totalItems: number;
+}
+
 export async function lookupDictionaryWord(
   word: string,
   context?: string
@@ -31,4 +43,29 @@ export async function lookupDictionaryWord(
   }
 
   return response.data.result;
+}
+
+export async function saveVocabularyWord(entry: DictionaryLookup): Promise<SavedVocabulary> {
+  const response = await api.post<ApiResponse<SavedVocabulary>>(
+    "/exam-service/dictionary/vocabulary",
+    entry
+  );
+  return response.data.result;
+}
+
+export async function getSavedVocabulary(options: {
+  from?: string;
+  to?: string;
+  page?: number;
+  size?: number;
+} = {}): Promise<VocabularyPage> {
+  const response = await api.get<ApiResponse<VocabularyPage>>(
+    "/exam-service/dictionary/vocabulary",
+    { params: options }
+  );
+  return response.data.result;
+}
+
+export async function deleteSavedVocabulary(id: string): Promise<void> {
+  await api.delete(`/exam-service/dictionary/vocabulary/${id}`);
 }
