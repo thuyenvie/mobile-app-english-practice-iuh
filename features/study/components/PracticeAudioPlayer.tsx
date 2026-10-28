@@ -3,7 +3,6 @@ import { ActivityIndicator, AppState, Pressable, StyleSheet, Text, View, type Ge
 import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
 import { useFocusEffect } from "expo-router";
 
-import { getAccessToken } from "@/lib/auth/tokenStorage";
 import { API_BASE_URL } from "@/lib/axios/axios";
 import { homeDesign } from "@/theme/tokens";
 import type { QuestionAudioSegment } from "../types";
@@ -16,11 +15,11 @@ type Props = {
 
 const SPEEDS = [0.8, 1, 1.2, 1.5];
 
-/** Plays one approved question/dialogue range from the test's protected MP3 stream. */
+/** Plays one approved question/dialogue range from the test's public MP3 stream. */
 export function PracticeAudioPlayer({ audio, activeQuestionNumber, paused }: Props) {
   const player = useAudioPlayer(null, { updateInterval: 150 });
   const status = useAudioPlayerStatus(player);
-  const [loading, setLoading] = useState(false);
+  const [preparing, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
   const [speedIndex, setSpeedIndex] = useState(1);
@@ -43,26 +42,30 @@ export function PracticeAudioPlayer({ audio, activeQuestionNumber, paused }: Pro
     : 0;
   const streamUrl = audio ? toAbsoluteUrl(audio.audioUrl || audio.streamPath) : "";
 
+  const loading = preparing || (!!streamUrl && !status.isLoaded && !status.error && !error);
+
   useEffect(() => {
     let cancelled = false;
-    if (!audio || !streamUrl) {
-      setLoading(false);
-      setError("");
-      return;
-    }
-
-    setLoading(true);
-    setError("");
     (async () => {
-      const token = await getAccessToken();
-      if (!token) throw new Error("Vui lòng đăng nhập lại để nghe audio.");
+      await Promise.resolve();
+      if (cancelled) return;
+      if (!streamUrl) {
+        setLoading(false);
+        setError("");
+        return;
+      }
+
+      setLoading(true);
+      setError("");
+
       await setAudioModeAsync({ playsInSilentMode: true, shouldPlayInBackground: false });
       if (cancelled) return;
 
-      // API stream is protected, so the native audio request must include the same JWT as Axios.
-      player.replace({ uri: streamUrl, headers: { Authorization: `Bearer ${token}` } });
+      // Audio is public; native requests deliberately omit account credentials.
+      player.replace({ uri: streamUrl });
+      setLoading(false);
     })().catch((cause: unknown) => {
-      if (!cancelled) setError(cause instanceof Error ? cause.message : "Không tải được audio.");
+      if (!cancelled) { setLoading(false); setError(cause instanceof Error ? cause.message : "Không tải được audio."); }
     });
 
     return () => {
@@ -70,11 +73,7 @@ export function PracticeAudioPlayer({ audio, activeQuestionNumber, paused }: Pro
       pauseSafely();
       // useAudioPlayer releases its native AudioPlayer automatically on unmount.
     };
-  }, [audio?.audioUrl, audio?.streamPath, attempt, pauseSafely, player, streamUrl]);
-
-  useEffect(() => {
-    if (status.isLoaded || status.error) setLoading(false);
-  }, [status.error, status.isLoaded]);
+  }, [attempt, pauseSafely, player, streamUrl]);
 
   useEffect(() => {
     // The current question may change inside a 3-question dialogue; stop so audio never overlaps.

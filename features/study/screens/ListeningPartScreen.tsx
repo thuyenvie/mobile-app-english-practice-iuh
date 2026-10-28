@@ -8,10 +8,14 @@ import { PracticeAudioPlayer } from "../components/PracticeAudioPlayer";
 import { useExamPart } from "../hooks/useExamPart";
 import { useListeningDraft } from "../hooks/useListeningDraft";
 import { getExamErrorMessage } from "../api/examApi";
-import { submitListening, type ListeningResult } from "../api/listeningApi";
+import { submitListeningPractice, type PracticeResult } from "../api/practiceApi";
+import { useSession } from "@/lib/auth/useSession";
+import { GuestPracticeNotice } from "../components/GuestPracticeNotice";
+import { GuestResultDetails } from "../components/GuestResultDetails";
 import type { ExamQuestion } from "../types";
 
 export default function ListeningPartScreen() {
+  const session = useSession();
   const params = useLocalSearchParams<{ year: string; testNumber: string; partNumber: string }>();
   const year = Number(params.year), test = Number(params.testNumber), partNumber = Number(params.partNumber);
   const valid = Number.isInteger(year) && year > 0 && Number.isInteger(test) && test > 0 &&
@@ -24,7 +28,7 @@ export default function ListeningPartScreen() {
   const [busy, setBusy] = useState(false);
   const submitting = useRef(false);
   const [error, setError] = useState("");
-  const [result, setResult] = useState<ListeningResult | null>(null);
+  const [result, setResult] = useState<PracticeResult | null>(null);
   const insets = useSafeAreaInsets();
   const questions = useMemo(() => state.status === "ready"
     ? [...state.part.questions].sort((a, b) => a.questionNumber - b.questionNumber) : [], [state]);
@@ -41,7 +45,7 @@ export default function ListeningPartScreen() {
     submitting.current = true;
     setBusy(true); setError("");
     try {
-      setResult(await submitListening(year, test, draft.answers, draft.startedAt));
+      setResult(await submitListeningPractice(session.generation, year, test, draft.answers, draft.startedAt));
       setConfirm(false); setSheet(false);
     } catch (e) { setError(getExamErrorMessage(e)); }
     finally { submitting.current = false; setBusy(false); }
@@ -56,6 +60,7 @@ export default function ListeningPartScreen() {
         </View>
         <Action text="☰" label="Mở bảng câu hỏi" onPress={() => setSheet(true)} disabled={!current || busy} />
       </View>
+      <GuestPracticeNotice hasAnswers={Object.keys(draft.answers).length > 0} busy={busy} />
       <View style={styles.row}>{[1, 2, 3, 4].map(part => <Action key={part} text={`Part ${part}`} disabled={busy || part === partNumber}
         onPress={() => {
           setSelectedNumber(null);
@@ -111,16 +116,16 @@ export default function ListeningPartScreen() {
             <Text style={styles.title}>Kết quả Listening</Text>
             <Text style={styles.body}>Đúng {result.score}/{result.totalQuestions} câu · Đã trả lời {result.answeredQuestions} câu</Text>
             <Text style={styles.muted}>Đây là số câu đúng, không phải điểm TOEIC quy đổi.</Text>
-            <Action text="Xem lại bài" onPress={() => {
+            {"resultId" in result ? <Action text="Xem lại bài" onPress={() => {
               const resultId = result.resultId;
               setResult(null);
               router.push({ pathname: "/study/history/[resultId]", params: { resultId: String(resultId) } });
-            }} />
+            }} /> : <GuestResultDetails result={result} />}
             <Action text="Đóng kết quả" onPress={() => setResult(null)} />
           </> : confirm ? <>
             <Text style={styles.title}>Nộp toàn bộ Listening?</Text>
             <Text style={styles.body}>Bạn đã chọn {Object.keys(draft.answers).length}/100 câu. Câu chưa trả lời không có điểm. Backend cần đủ đề và đáp án của cả Part 1–4.</Text>
-            <Text style={styles.muted}>Bản nháp được giữ để bạn luyện tiếp. Mỗi lần nộp thành công tạo một kết quả mới.</Text>
+            <Text style={styles.muted}>{session.status === "guest" ? "Kết quả chỉ hiển thị trong bài học thử này, không lưu vào tài khoản hoặc lịch sử." : "Bản nháp được giữ để bạn luyện tiếp. Mỗi lần nộp thành công tạo một kết quả mới."}</Text>
             {error ? <Text style={styles.warning}>{error}</Text> : null}
             <Action text={busy ? "Đang chấm..." : "Xác nhận nộp"} disabled={busy || !Object.keys(draft.answers).length} onPress={() => void submit()} />
             <Action text="Tiếp tục làm bài" disabled={busy} onPress={() => setConfirm(false)} />

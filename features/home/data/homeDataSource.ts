@@ -9,7 +9,10 @@ interface UserProfileResponse {
   userName?: string | null;
 }
 
-export async function loadHomeData(): Promise<HomeData> {
+export async function loadHomeData(mode: "guest" | "authenticated"): Promise<HomeData> {
+  if (mode === "guest") {
+    return { ...homeMock, profile: { fullName: "bạn" }, welcomeText: "Khám phá và luyện tập tiếng Anh" };
+  }
   const { data } = await api.get<ApiResponse<UserProfileResponse>>('/identity/user/my-info');
   if (!data.success || !data.result) {
     throw new Error('Không thể tải thông tin người dùng.');

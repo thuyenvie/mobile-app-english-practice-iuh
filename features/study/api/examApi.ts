@@ -1,6 +1,7 @@
 import { isAxiosError } from "axios";
 
-import api from "@/lib/axios/axios";
+import { publicApi as api } from "@/lib/axios/axios";
+import { getSessionSnapshot } from "@/lib/auth/sessionStore";
 import type { ExamPart } from "../types";
 
 // ApiResponse của exam-service chưa có field success như identity-service.
@@ -48,7 +49,9 @@ export function getExamErrorMessage(error: unknown): string {
     }
 
     if (error.response.status === 401) {
-      return "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
+      return getSessionSnapshot().status === "guest"
+        ? "Tài nguyên này yêu cầu đăng nhập. Bạn vẫn có thể học các đề công khai."
+        : "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
     }
 
     if (error.response.status === 403) {
