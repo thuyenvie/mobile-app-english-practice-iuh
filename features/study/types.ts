@@ -53,6 +53,8 @@ export interface QuestionAudioSegment {
   audioUrl: string;
   startTime: number;
   endTime: number;
+  // Wait before playback only when the source has insufficient leading silence.
+  preparationDelayMs?: number;
 }
 
 export interface ExamPart {
