@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
 
 import { loadHomeData } from '../data/homeDataSource';
 import type { HomeData } from '../types';
@@ -18,15 +19,18 @@ export function useHomeData() {
     setAttempt((value) => value + 1);
   }, []);
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     if (session.status === "loading") return;
     let active = true;
+    setState({ status: 'loading' });
     loadHomeData(session.status).then(
       (data) => { if (active) setState({ status: 'ready', data }); },
       () => { if (active) setState({ status: 'error', message: 'Không thể tải dữ liệu trang chủ. Vui lòng thử lại.' }); },
     );
     return () => { active = false; };
-  }, [attempt, session.status, session.generation]);
+  // Retry and session changes must reload even when the screen remains focused.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [attempt, session.status, session.generation]));
 
   return { state, retry };
 }
