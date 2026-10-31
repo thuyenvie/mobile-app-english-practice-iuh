@@ -66,40 +66,53 @@ export default function AiTutorScreen() {
 
   const pickImage = async (source: 'camera' | 'library') => {
     setLocalNotice('');
+    try {
+      if (source === 'camera') {
+        const permission = await ImagePicker.requestCameraPermissionsAsync();
+        if (!permission.granted) {
+          setLocalNotice('Ứng dụng cần quyền camera để chụp câu hỏi.');
+          return;
+        }
+      } else {
+        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!permission.granted) {
+          setLocalNotice('Ứng dụng cần quyền thư viện để chọn ảnh câu hỏi.');
+          return;
+        }
+      }
 
-    if (source === 'camera') {
-      const permission = await ImagePicker.requestCameraPermissionsAsync();
-      if (!permission.granted) {
-        setLocalNotice('Ứng dụng cần quyền camera để chụp câu hỏi.');
+      const options: ImagePicker.ImagePickerOptions = {
+        mediaTypes: ['images'],
+        quality: 0.8,
+        allowsEditing: false,
+      };
+      const result =
+        source === 'camera'
+          ? await ImagePicker.launchCameraAsync(options)
+          : await ImagePicker.launchImageLibraryAsync(options);
+
+      if (result.canceled) return;
+      const asset = result.assets?.[0];
+      if (!asset?.uri) {
+        setLocalNotice('Không nhận được ảnh. Vui lòng thử lại hoặc chọn ảnh từ thư viện.');
         return;
       }
-    } else {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permission.granted) {
-        setLocalNotice('Ứng dụng cần quyền thư viện để chọn ảnh câu hỏi.');
+      if (asset.fileSize && asset.fileSize > MAX_IMAGE_SIZE) {
+        setLocalNotice('Ảnh quá lớn. Vui lòng chọn ảnh nhỏ hơn 10 MB.');
         return;
       }
+
+      const sent = await sendImage(asset, question);
+      if (sent) setQuestion('');
+    } catch (error) {
+      // iOS Simulator khong co camera that; launcher co the reject thay vi tra ket qua.
+      console.warn(`Khong mo duoc ${source === 'camera' ? 'camera' : 'thu vien anh'}:`, error);
+      setLocalNotice(
+        source === 'camera'
+          ? 'Không mở được camera trên thiết bị này. Nếu đang dùng Simulator, hãy chọn ảnh từ Thư viện.'
+          : 'Không mở được thư viện ảnh. Vui lòng thử lại.',
+      );
     }
-
-    const options: ImagePicker.ImagePickerOptions = {
-      mediaTypes: ['images'],
-      quality: 0.8,
-      allowsEditing: false,
-    };
-    const result =
-      source === 'camera'
-        ? await ImagePicker.launchCameraAsync(options)
-        : await ImagePicker.launchImageLibraryAsync(options);
-
-    if (result.canceled) return;
-    const asset = result.assets[0];
-    if (asset.fileSize && asset.fileSize > MAX_IMAGE_SIZE) {
-      setLocalNotice('Ảnh quá lớn. Vui lòng chọn ảnh nhỏ hơn 10 MB.');
-      return;
-    }
-
-    const sent = await sendImage(asset, question);
-    if (sent) setQuestion('');
   };
 
   const confirmNewConversation = () => {
