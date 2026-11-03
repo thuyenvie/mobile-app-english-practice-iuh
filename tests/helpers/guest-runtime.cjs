@@ -88,6 +88,7 @@ function environment(extraMocks = {}) {
     react: hooks.react,
     "react/jsx-runtime": { jsx, jsxs: jsx, Fragment: "Fragment" },
     "react-native": native,
+    "expo-font": { isLoaded: () => true, loadAsync: async () => {} },
     "expo-secure-store": {
       getItemAsync: async key => { storageCalls.push(["secure:get", key]); return secure.get(key) ?? null; },
       setItemAsync: async (key, value) => { storageCalls.push(["secure:set", key]); secure.set(key, value); },
@@ -136,6 +137,12 @@ function environment(extraMocks = {}) {
     }).outputText;
     const sourceRequire = name => {
       if (name in modules) return modules[name];
+      // Native font loading is mocked; verify that the referenced Metro asset still exists.
+      if (name.endsWith(".ttf")) {
+        const assetPath = path.resolve(path.dirname(filename), name);
+        if (!fs.existsSync(assetPath)) throw new Error("Missing font asset " + assetPath);
+        return assetPath;
+      }
       if (name.startsWith("@expo/vector-icons/")) return { __esModule: true, default: "Icon" };
       if (name.startsWith("@/")) return load("src/" + name.slice(2));
       if (name.startsWith(".")) return load(path.resolve(path.dirname(filename), name));

@@ -17,9 +17,19 @@ test("startup without credentials becomes Guest and never requests profile", asy
   await app.load("src/lib/auth/restoreSession.ts").restoreSession();
   assert.equal(app.session.getSessionSnapshot().status, "guest");
   assert.equal(app.requests.length, 0);
+  const years = plain(app.load("features/study/data/toeicCatalog.ts").toeicYears);
+  app.handler = async config => {
+    assert.equal(config.method, "get");
+    assert.match(config.url, /^\/exam-service\/exams\/ets-[0-9]+$/);
+    assert.equal(config.headers.get("Authorization"), undefined);
+    return { code: 1000, result: [1] };
+  };
   const home = await app.load("features/home/data/homeDataSource.ts").loadHomeData("guest");
   assert.ok(home.sections.length > 0);
-  assert.equal(app.requests.length, 0);
+  assert.equal(home.sections.length, years.length);
+  assert.deepEqual(app.requests.map(request => request.url).sort(),
+    years.map(year => `/exam-service/exams/ets-${year}`).sort());
+  assert.equal(app.requests.some(request => request.url.startsWith("/identity/")), false);
   const entry = app.load("src/app/index.tsx").default();
   assert.equal(entry.props.href, "/(tabs)/home");
 });
