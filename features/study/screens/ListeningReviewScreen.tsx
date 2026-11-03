@@ -1,10 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { homeDesign } from "@/theme/tokens";
 import { getExamErrorMessage, getExamPart } from "../api/examApi";
 import { getExamResult, type ExamResult } from "../api/examResultApi";
 import { StudyScaffold } from "../components/StudyScaffold";
+import { InteractiveText } from "../components/InteractiveText";
+import { WordLookupModal } from "../components/WordLookupModal";
+import { lookupDictionaryWord, saveVocabularyWord, type DictionaryLookup } from "../api/dictionaryApi";
 import type { ExamQuestion } from "../types";
 
 type QuestionContext = { question: ExamQuestion; passageContent: string | null };
@@ -18,6 +21,16 @@ export default function ListeningReviewScreen() {
   const [error, setError] = useState("");
   const [showAll, setShowAll] = useState(false);
   const [retry, setRetry] = useState(0);
+  const [lookupVisible, setLookupVisible] = useState(false);
+  const [lookupLoading, setLookupLoading] = useState(false);
+  const [lookupError, setLookupError] = useState("");
+  const [lookupWord, setLookupWord] = useState("");
+  const [lookupContext, setLookupContext] = useState("");
+  const [lookupEntry, setLookupEntry] = useState<DictionaryLookup | null>(null);
+  const [vocabularySaving, setVocabularySaving] = useState(false);
+  const [vocabularySaved, setVocabularySaved] = useState(false);
+  const [vocabularySaveError, setVocabularySaveError] = useState("");
+  const lookupRequestId = useRef(0);
 
   useEffect(() => {
     if (!Number.isSafeInteger(id) || id <= 0) { setError("Mã kết quả không hợp lệ."); setLoading(false); return; }
@@ -47,6 +60,56 @@ export default function ListeningReviewScreen() {
     }).catch((cause: unknown) => { if (active) { setError(getExamErrorMessage(cause)); setLoading(false); } });
     return () => { active = false; };
   }, [id, retry]);
+
+  useEffect(() => () => {
+    lookupRequestId.current += 1;
+  }, []);
+
+  const loadWordLookup = async (word: string, context: string) => {
+    const requestId = ++lookupRequestId.current;
+    const wordIndex = context.toLocaleLowerCase().indexOf(word.toLocaleLowerCase());
+    const snippet = wordIndex < 0
+      ? context.slice(0, 220)
+      : context.slice(Math.max(0, wordIndex - 100), Math.min(context.length, wordIndex + word.length + 100));
+    setLookupWord(word);
+    setLookupContext(snippet);
+    setLookupVisible(true);
+    setLookupLoading(true);
+    setLookupError("");
+    setLookupEntry(null);
+    setVocabularySaving(false);
+    setVocabularySaved(false);
+    setVocabularySaveError("");
+    try {
+      const entry = await lookupDictionaryWord(word, snippet);
+      if (requestId === lookupRequestId.current) setLookupEntry(entry);
+    } catch (cause: unknown) {
+      if (requestId === lookupRequestId.current) setLookupError(getExamErrorMessage(cause));
+    } finally {
+      if (requestId === lookupRequestId.current) setLookupLoading(false);
+    }
+  };
+
+  const saveCurrentWord = async () => {
+    if (!lookupEntry || vocabularySaving || vocabularySaved) return;
+    const requestId = lookupRequestId.current;
+    setVocabularySaving(true);
+    setVocabularySaveError("");
+    try {
+      await saveVocabularyWord(lookupEntry);
+      if (requestId === lookupRequestId.current) setVocabularySaved(true);
+    } catch (cause: unknown) {
+      if (requestId === lookupRequestId.current) setVocabularySaveError(getExamErrorMessage(cause));
+    } finally {
+      if (requestId === lookupRequestId.current) setVocabularySaving(false);
+    }
+  };
+
+  const closeWordLookup = () => {
+    lookupRequestId.current += 1;
+    setLookupVisible(false);
+    setLookupLoading(false);
+  };
 
   const answers = [...(result?.answers ?? [])].sort((a, b) => a.questionNumber - b.questionNumber);
   const wrongCount = answers.filter(answer => !answer.correct).length;
@@ -83,21 +146,56 @@ export default function ListeningReviewScreen() {
           const uri = image?.startsWith("data:") || image?.startsWith("http") ? image : image ? `data:image/jpeg;base64,${image}` : null;
           return <View key={answer.questionNumber} style={styles.card}>
             <Text style={styles.title}>Câu {answer.questionNumber} · {answer.correct ? "Đúng" : "Sai"}</Text>
-            {(answer.questionContent || context?.question.content) ? <Text style={styles.body}>{answer.questionContent || context?.question.content}</Text> : null}
+            {(answer.questionContent || context?.question.content) ? (
+              <InteractiveText
+                text={answer.questionContent || context?.question.content || ""}
+                textStyle={styles.body}
+                selectedWord={lookupVisible ? lookupWord : null}
+                onWordPress={(word, text) => void loadWordLookup(word, text)}
+              />
+            ) : null}
             {(answer.passageContent || context?.passageContent) ? <View style={styles.passage}>
               <Text style={styles.muted}>Đoạn văn</Text>
-              <Text style={styles.body}>{answer.passageContent || context?.passageContent}</Text>
+              <InteractiveText
+                text={answer.passageContent || context?.passageContent || ""}
+                textStyle={styles.body}
+                selectedWord={lookupVisible ? lookupWord : null}
+                onWordPress={(word, text) => void loadWordLookup(word, text)}
+              />
             </View> : null}
             {uri ? <Image source={{ uri }} resizeMode="contain" style={styles.image} /> : null}
-            {(answer.options.length ? answer.options : context?.question.options ?? []).map((option, index) => <Text key={`${option.label}-${index}`} style={styles.body}>
-              {option.label}. {option.text}
-            </Text>)}
+            {(answer.options.length ? answer.options : context?.question.options ?? []).map((option, index) => (
+              <View key={`${option.label}-${index}`} style={styles.optionRow}>
+                <Text style={styles.body}>{option.label}.</Text>
+                {option.text ? (
+                  <InteractiveText
+                    text={option.text}
+                    textStyle={styles.optionText}
+                    selectedWord={lookupVisible ? lookupWord : null}
+                    onWordPress={(word, text) => void loadWordLookup(word, text)}
+                  />
+                ) : null}
+              </View>
+            ))}
             <Text style={styles.warning}>Bạn chọn: {answer.selectedOption}</Text>
             <Text style={styles.correct}>Đáp án đúng: {answer.correctOption ?? "Không có snapshot cho lượt làm cũ"}</Text>
           </View>;
         })}
       </> : null}
     </ScrollView>
+    <WordLookupModal
+      visible={lookupVisible}
+      loading={lookupLoading}
+      error={lookupError}
+      entry={lookupEntry}
+      word={lookupWord}
+      onClose={closeWordLookup}
+      onRetry={() => void loadWordLookup(lookupWord, lookupContext)}
+      saved={vocabularySaved}
+      saving={vocabularySaving}
+      saveError={vocabularySaveError}
+      onSave={() => void saveCurrentWord()}
+    />
   </StudyScaffold>;
 }
 
@@ -107,8 +205,10 @@ const styles = StyleSheet.create({
   content: { padding: 16, paddingBottom: 36, gap: 12 },
   card: { backgroundColor: c.surface, borderRadius: 14, padding: 16, gap: 8 },
   row: { flexDirection: "row", gap: 20 },
+  optionRow: { flexDirection: "row", alignItems: "flex-start", gap: 6 },
   title: { color: c.text, fontSize: 17, fontWeight: "700" },
   body: { color: c.text, fontSize: 14, lineHeight: 21 },
+  optionText: { flex: 1, color: c.text, fontSize: 14, lineHeight: 21 },
   muted: { color: c.secondary, fontSize: 13, lineHeight: 20 },
   link: { color: c.link, fontSize: 14, paddingVertical: 8 },
   active: { fontWeight: "700", textDecorationLine: "underline" },

@@ -166,6 +166,9 @@ export default function LoginScreen() {
           {notice}
         </Text>
       ) : null}
+      <AppButton appearance="text" marginTop={16} onPress={() => router.replace("/(tabs)/home")}>
+        Tiếp tục học thử
+      </AppButton>
       <Text
         textAlign="center"
         color={loginDesign.colors.secondary}

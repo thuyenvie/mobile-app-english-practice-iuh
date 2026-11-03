@@ -4,6 +4,7 @@ import { Text, XStack, YStack } from "tamagui";
 import { AppButton } from "@/components/ui/AppButton";
 import { homeDesign } from "@/theme/tokens";
 import type { ExamQuestion } from "../types";
+import { InteractiveText } from "./InteractiveText";
 
 function getQuestionImage(question: ExamQuestion) {
   if (question.imageUrl) return question.imageUrl;
@@ -22,11 +23,15 @@ export function ReadingQuestionCard({
   selectedOption,
   focused,
   onSelect,
+  onWordPress,
+  highlightedWord,
 }: {
   question: ExamQuestion;
   selectedOption?: string;
   focused: boolean;
   onSelect: (label: string) => void;
+  onWordPress?: (word: string, context: string) => void;
+  highlightedWord?: string | null;
 }) {
   const imageUri = getQuestionImage(question);
 
@@ -44,9 +49,18 @@ export function ReadingQuestionCard({
       </Text>
 
       {question.content ? (
-        <Text color={homeDesign.colors.text} fontSize={16} lineHeight={24}>
-          {normalizeInlineText(question.content)}
-        </Text>
+        onWordPress ? (
+          <InteractiveText
+            text={normalizeInlineText(question.content)}
+            textStyle={{ color: homeDesign.colors.text, fontSize: 16, lineHeight: 24 }}
+            selectedWord={highlightedWord}
+            onWordPress={onWordPress}
+          />
+        ) : (
+          <Text color={homeDesign.colors.text} fontSize={16} lineHeight={24}>
+            {normalizeInlineText(question.content)}
+          </Text>
+        )
       ) : null}
 
       {imageUri ? (

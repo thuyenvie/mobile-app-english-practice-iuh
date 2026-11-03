@@ -1,6 +1,7 @@
 export type LessonStatus = 'completed' | 'in-progress' | 'not-started';
 
 export interface Lesson {
+  exam?: { year: number; testNumber: number };
   id: string;
   label: string;
   title: string;

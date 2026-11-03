@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { router } from 'expo-router';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Image, Text, XStack, YStack } from 'tamagui';
@@ -29,6 +30,9 @@ export function LessonListCard({ lesson }: { lesson: Lesson }) {
   const level = lesson.level ? levelColors[lesson.level] : undefined;
   return (
     <XStack backgroundColor={homeDesign.colors.surface} borderWidth={1} borderColor={homeDesign.colors.border}
+      role="button" accessible accessibilityLabel={lesson.title}
+      onPress={() => lesson.exam && router.push({ pathname: '/study/[year]/[testNumber]',
+        params: { year: String(lesson.exam.year), testNumber: String(lesson.exam.testNumber) } })}
       borderRadius={20} padding={12} gap={12} alignItems="center">
       <YStack width="34%" minHeight={102} alignSelf="stretch" borderRadius={13} overflow="hidden"
         backgroundColor={homeDesign.colors.surfaceRaised} alignItems="center" justifyContent="center">
@@ -70,7 +74,6 @@ export function LessonListCard({ lesson }: { lesson: Lesson }) {
           <PracticeBadge label="Nói theo" completed={lesson.shadowingCompleted} />
         </XStack>
       </YStack>
-      {/* Detail/player navigation is outside the current Home scope. */}
       <MaterialIcons name="chevron-right" size={22} color={homeDesign.colors.notStarted} accessible={false} />
     </XStack>
   );
