@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
+import { useFocusEffect } from "expo-router";
 
 import { getExamErrorMessage, getTestNumbersByYear } from "../api/examApi";
 
@@ -16,7 +17,7 @@ export function useTestsByYear(year: number) {
     setAttempt((value) => value + 1);
   }, []);
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     let active = true;
     setState({ status: "loading" });
 
@@ -33,7 +34,9 @@ export function useTestsByYear(year: number) {
     return () => {
       active = false;
     };
-  }, [attempt, year]);
+  // Changing attempt retries the request while this screen remains focused.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [attempt, year]));
 
   return { state, retry };
 }

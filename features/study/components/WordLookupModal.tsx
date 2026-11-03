@@ -144,6 +144,7 @@ const styles = StyleSheet.create({
   titleGroup: { flex: 1, gap: 4 },
   word: { color: homeDesign.colors.text, fontSize: 25, fontWeight: "800" },
   phonetic: { color: homeDesign.colors.secondary, fontSize: 15 },
+  phoneticUnavailable: { color: homeDesign.colors.secondary, fontSize: 13 },
   body: { gap: 8 },
   bodyScroll: { flexShrink: 1, maxHeight: 320 },
   partOfSpeech: { alignSelf: "flex-start", color: "#111111", backgroundColor: homeDesign.colors.tabActive, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 8, fontSize: 12, fontWeight: "700" },

@@ -29,6 +29,13 @@ export default function TestOverviewScreen() {
     });
   };
 
+  const startFullTest = () => {
+    router.push({
+      pathname: "/study/[year]/[testNumber]/full",
+      params: { year: String(year), testNumber: String(testNumber) },
+    });
+  };
+
   return (
     <StudyScaffold>
       <XStack
@@ -102,11 +109,7 @@ export default function TestOverviewScreen() {
             </Text>
             <AppButton
               marginTop={6}
-              onPress={() =>
-                setNotice(
-                  "Backend chưa có API chấm toàn bộ 200 câu. Hãy chọn Part 1–4 để luyện và nộp Listening, hoặc Part 5–7 để luyện Reading."
-                )
-              }
+              onPress={startFullTest}
             >
               Bắt đầu Full Test
             </AppButton>

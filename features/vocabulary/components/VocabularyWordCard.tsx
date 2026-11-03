@@ -5,6 +5,7 @@ import { Text, XStack, YStack } from "tamagui";
 import { homeDesign } from "@/theme/tokens";
 import type { SavedVocabulary } from "../api/vocabularyApi";
 import { PhoneticText } from "../../study/components/PhoneticText";
+import { VocabularyPronunciationButton } from "./VocabularyPronunciationButton";
 
 export function VocabularyWordCard({
   item,
@@ -12,12 +13,21 @@ export function VocabularyWordCard({
   onRepairPhonetic,
   repairingPhonetic = false,
   phoneticRepairFailed = false,
+  pronunciation,
 }: {
   item: SavedVocabulary;
   onDelete: (item: SavedVocabulary) => void;
   onRepairPhonetic?: (item: SavedVocabulary) => void;
   repairingPhonetic?: boolean;
   phoneticRepairFailed?: boolean;
+  pronunciation: {
+    activeUrl: string | null;
+    activeWord: string;
+    playing: boolean;
+    loading: boolean;
+    error: string;
+    onPress: (audioUrl: string | null | undefined, word: string) => void;
+  };
 }) {
   const savedDate = new Date(item.savedAt);
   const dateLabel = Number.isNaN(savedDate.getTime())
@@ -67,6 +77,12 @@ export function VocabularyWordCard({
             </PhoneticText>
           ) : null}
         </View>
+        <VocabularyPronunciationButton
+          audioUrl={item.audioUrl}
+          word={item.word}
+          compact
+          {...pronunciation}
+        />
         <Pressable
           onPress={() => onDelete(item)}
           hitSlop={10}

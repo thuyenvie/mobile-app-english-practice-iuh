@@ -1,6 +1,6 @@
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useFocusEffect } from "expo-router";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -22,7 +22,9 @@ import {
   refreshSavedVocabularyPhonetic,
   type SavedVocabulary,
 } from "../api/vocabularyApi";
+import { VocabularyFlashcard } from "../components/VocabularyFlashcard";
 import { VocabularyWordCard } from "../components/VocabularyWordCard";
+import { useVocabularyPronunciation } from "../hooks/useVocabularyPronunciation";
 
 type DateFilter = "all" | "today" | "yesterday" | "week";
 
@@ -40,13 +42,31 @@ export default function VocabularyScreen() {
   const [totalItems, setTotalItems] = useState(0);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(false);
+  const [viewMode, setViewMode] = useState<"list" | "flashcard">("list");
+  const [reviewIndex, setReviewIndex] = useState(0);
+  const [answerRevealed, setAnswerRevealed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState("");
   const [repairingPhoneticIds, setRepairingPhoneticIds] = useState<Set<string>>(() => new Set());
   const [phoneticRepairFailedIds, setPhoneticRepairFailedIds] = useState<Set<string>>(() => new Set());
+  const pronunciation = useVocabularyPronunciation();
   const requestId = useRef(0);
   const loadingMoreRef = useRef(false);
+
+  // Dung mot audio player cho toan man; dung audio cu khi doi tu hoac che do.
+  useEffect(() => {
+    pronunciation.stop();
+  }, [filter, viewMode, reviewIndex, pronunciation.stop]);
+
+  const pronunciationProps = {
+    activeUrl: pronunciation.activeUrl,
+    activeWord: pronunciation.activeWord,
+    playing: pronunciation.playing,
+    loading: pronunciation.loading,
+    error: pronunciation.error,
+    onPress: pronunciation.play,
+  };
 
   const loadFirstPage = useCallback(async () => {
     const currentRequestId = ++requestId.current;
@@ -87,8 +107,8 @@ export default function VocabularyScreen() {
     }, [loadFirstPage])
   );
 
-  const loadNextPage = async () => {
-    if (!hasMore || loading || loadingMoreRef.current) return;
+  const loadNextPage = async (): Promise<SavedVocabulary[] | null> => {
+    if (!hasMore || loading || loadingMoreRef.current) return null;
     loadingMoreRef.current = true;
     setLoadingMore(true);
     const nextPage = page + 1;
@@ -99,9 +119,9 @@ export default function VocabularyScreen() {
         page: nextPage,
         size: PAGE_SIZE,
       });
-      if (currentRequestId !== requestId.current) return;
+      if (currentRequestId !== requestId.current) return null;
       const repaired = await repairLegacyPhonetics(result.items);
-      if (currentRequestId !== requestId.current) return;
+      if (currentRequestId !== requestId.current) return null;
       setItems((current) => [...current, ...repaired.items]);
       setPhoneticRepairFailedIds((current) => new Set([...current, ...repaired.failedIds]));
       setPage(result.page);
@@ -109,13 +129,37 @@ export default function VocabularyScreen() {
       if (repaired.failedIds.length > 0) {
         setError(`Chưa khôi phục được phiên âm cho ${repaired.failedIds.length} từ. Bấm “Tải lại” trên thẻ từ sau khi có mạng.`);
       }
+      return repaired.items;
     } catch (loadError: unknown) {
       if (currentRequestId === requestId.current)
         setError(getExamErrorMessage(loadError));
+      return null;
     } finally {
       loadingMoreRef.current = false;
       setLoadingMore(false);
     }
+  };
+
+  const moveToNextCard = async () => {
+    if (reviewIndex < items.length - 1) {
+      setReviewIndex((current) => current + 1);
+      setAnswerRevealed(false);
+      return;
+    }
+    if (!hasMore || loadingMoreRef.current) return;
+
+    const nextPageItems = await loadNextPage();
+    if (nextPageItems?.length) {
+      setReviewIndex(items.length);
+      setAnswerRevealed(false);
+    }
+  };
+
+  const chooseFilter = (nextFilter: DateFilter) => {
+    setFilter(nextFilter);
+    setViewMode("list");
+    setReviewIndex(0);
+    setAnswerRevealed(false);
   };
 
   const deleteItem = async (item: SavedVocabulary) => {
@@ -177,33 +221,53 @@ export default function VocabularyScreen() {
           <Text color={homeDesign.colors.secondary} fontSize={14}>
             {totalItems} từ đã lưu · Chọn từ khi đọc bài để lưu lại học sau
           </Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.filters}
-          >
-            {FILTERS.map((item) => {
-              const active = filter === item.id;
-              return (
-                <Pressable
-                  key={item.id}
-                  onPress={() => setFilter(item.id)}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: active }}
-                  style={[styles.filterChip, active && styles.activeFilterChip]}
-                >
-                  <Text
-                    style={[
-                      styles.filterText,
-                      active && styles.activeFilterText,
-                    ]}
+          <XStack gap={8}>
+            <Pressable
+              onPress={() => setViewMode("list")}
+              accessibilityRole="button"
+              accessibilityState={{ selected: viewMode === "list" }}
+              style={[styles.modeChip, viewMode === "list" && styles.activeFilterChip]}
+            >
+              <Text style={[styles.filterText, viewMode === "list" && styles.activeFilterText]}>Danh sách</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => { setReviewIndex(0); setAnswerRevealed(false); setViewMode("flashcard"); }}
+              disabled={loading || items.length === 0}
+              accessibilityRole="button"
+              accessibilityState={{ selected: viewMode === "flashcard", disabled: loading || items.length === 0 }}
+              style={[styles.modeChip, viewMode === "flashcard" && styles.activeFilterChip, (loading || items.length === 0) && styles.disabledChip]}
+            >
+              <Text style={[styles.filterText, viewMode === "flashcard" && styles.activeFilterText]}>Ôn Flashcard</Text>
+            </Pressable>
+          </XStack>
+          {viewMode === "list" ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.filters}
+            >
+              {FILTERS.map((item) => {
+                const active = filter === item.id;
+                return (
+                  <Pressable
+                    key={item.id}
+                    onPress={() => chooseFilter(item.id)}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: active }}
+                    style={[styles.filterChip, active && styles.activeFilterChip]}
                   >
-                    {item.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
+                    <Text style={[styles.filterText, active && styles.activeFilterText]}>
+                      {item.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          ) : (
+            <Text color={homeDesign.colors.secondary} fontSize={12}>
+              Bộ lọc: {FILTERS.find((item) => item.id === filter)?.label}
+            </Text>
+          )}
         </YStack>
 
         {error ? (
@@ -232,7 +296,27 @@ export default function VocabularyScreen() {
           </XStack>
         ) : null}
 
-        <FlatList
+        {viewMode === "flashcard" && items[reviewIndex] ? (
+          <VocabularyFlashcard
+            item={items[reviewIndex]}
+            index={reviewIndex}
+            total={totalItems}
+            revealed={answerRevealed}
+            canGoPrevious={reviewIndex > 0}
+            canGoNext={reviewIndex < items.length - 1}
+            loadingNext={loadingMore}
+            hasMore={hasMore}
+            onToggleAnswer={() => setAnswerRevealed((current) => !current)}
+            onPrevious={() => { setReviewIndex((current) => Math.max(0, current - 1)); setAnswerRevealed(false); }}
+            onNext={() => void moveToNextCard()}
+            pronunciation={pronunciationProps}
+          />
+        ) : viewMode === "flashcard" ? (
+          <YStack flex={1} alignItems="center" justifyContent="center" padding={24} gap={12}>
+            <Text color={homeDesign.colors.text} fontSize={17} fontWeight="700">Chưa có từ để ôn</Text>
+            <Text color={homeDesign.colors.secondary} textAlign="center">Hãy lưu từ trong bài Reading hoặc chọn bộ lọc khác.</Text>
+          </YStack>
+        ) : <FlatList
           data={items}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
@@ -242,6 +326,7 @@ export default function VocabularyScreen() {
               onRepairPhonetic={repairPhonetic}
               repairingPhonetic={repairingPhoneticIds.has(item.id)}
               phoneticRepairFailed={phoneticRepairFailedIds.has(item.id)}
+              pronunciation={pronunciationProps}
             />
           )}
           contentContainerStyle={
@@ -320,7 +405,7 @@ export default function VocabularyScreen() {
               />
             ) : null
           }
-        />
+        />}
       </YStack>
     </HomeScaffold>
   );
@@ -378,6 +463,16 @@ const styles = StyleSheet.create({
     borderColor: homeDesign.colors.border,
     backgroundColor: homeDesign.colors.surfaceRaised,
   },
+  modeChip: {
+    minHeight: 36,
+    justifyContent: "center",
+    paddingHorizontal: 13,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: homeDesign.colors.border,
+    backgroundColor: homeDesign.colors.surfaceRaised,
+  },
+  disabledChip: { opacity: 0.5 },
   activeFilterChip: {
     borderColor: homeDesign.colors.tabActive,
     backgroundColor: homeDesign.colors.tabActive,

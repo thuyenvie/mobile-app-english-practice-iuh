@@ -26,6 +26,9 @@ export function HomeSection({ section }: { section: LessonSection }) {
           contentContainerStyle={{ gap: 26, paddingHorizontal: 2 }}>
           {preview.map((lesson) => (
             <YStack key={lesson.id} width={cardWidth} height={cardWidth} borderRadius={7}
+              role="button" accessible accessibilityLabel={lesson.title}
+              onPress={() => lesson.exam && router.push({ pathname: '/study/[year]/[testNumber]',
+                params: { year: String(lesson.exam.year), testNumber: String(lesson.exam.testNumber) } })}
               backgroundColor={homeDesign.colors.card} alignItems="center" justifyContent="center">
               <Text color={homeDesign.colors.cardText} fontSize={13} fontWeight="700">{lesson.label}</Text>
             </YStack>
