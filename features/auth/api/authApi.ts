@@ -67,6 +67,18 @@ export async function login(request: LoginRequest): Promise<LoginResult> {
   return body.result;
 }
 
+export async function logout(token: string): Promise<void> {
+  const response = await api.post<ApiResponse<null>>(
+    "/identity/auth/logout",
+    { token },
+    { timeout: 8_000 },
+  );
+
+  if (!response.data.success) {
+    throw new Error(response.data.message || "Đăng xuất không thành công.");
+  }
+}
+
 export function getLoginErrorMessage(error: unknown): string {
   if (isAxiosError<ApiResponse<unknown>>(error)) {
     if (!error.response) {
