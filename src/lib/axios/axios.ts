@@ -8,6 +8,11 @@ import {
   saveTokenPair,
 } from "@/lib/auth/tokenStorage";
 import { notifySessionExpired } from "@/lib/auth/sessionEvents";
+import { assertSessionGeneration, enterGuestSession, getSessionSnapshot } from "@/lib/auth/sessionStore";
+
+declare module "axios" {
+  interface AxiosRequestConfig { sessionGeneration?: number; }
+}
 
 /**
  * Gateway base URL. Override it with EXPO_PUBLIC_API_BASE_URL per device/environment.
@@ -28,6 +33,21 @@ const api = create({
   baseURL: API_BASE_URL,
   timeout: 30_000,
   headers: { Accept: "application/json" },
+});
+
+// Public practice never attaches account credentials, even if storage still contains a token.
+export const publicApi = create({
+  baseURL: API_BASE_URL, timeout: 30_000, headers: { Accept: "application/json" },
+});
+publicApi.interceptors.request.use(config => {
+  config.sessionGeneration ??= getSessionSnapshot().generation;
+  assertSessionGeneration(config.sessionGeneration);
+  config.headers.delete("Authorization");
+  return config;
+});
+publicApi.interceptors.response.use(response => {
+  assertSessionGeneration(response.config.sessionGeneration ?? -1);
+  return response;
 });
 
 // Keep refresh traffic outside the main interceptors to prevent recursive refresh.
@@ -69,10 +89,12 @@ class InvalidRefreshSessionError extends Error {
   }
 }
 
-let refreshInFlight: Promise<string> | null = null;
+let refreshInFlight: { generation: number; promise: Promise<string> } | null = null;
 
-async function refreshAccessToken(): Promise<string> {
+async function refreshAccessToken(generation: number): Promise<string> {
+  assertSessionGeneration(generation);
   const refreshToken = await getRefreshToken();
+  assertSessionGeneration(generation);
   if (!refreshToken) throw new InvalidRefreshSessionError();
 
   try {
@@ -91,7 +113,7 @@ async function refreshAccessToken(): Promise<string> {
     }
 
     // Backend rotates both credentials; persist the new refresh token before retrying requests.
-    await saveTokenPair(result.token, result.refreshToken);
+    await saveTokenPair(result.token, result.refreshToken, { generation });
     return result.token;
   } catch (error) {
     if (error instanceof InvalidRefreshSessionError) throw error;
@@ -110,12 +132,12 @@ async function refreshAccessToken(): Promise<string> {
   }
 }
 
-async function expireLocalSession(): Promise<void> {
-  try {
-    await removeTokens();
-  } finally {
+async function expireLocalSession(generation: number): Promise<void> {
+  assertSessionGeneration(generation);
+  await removeTokens({ generation, onSaved: () => {
+    enterGuestSession();
     notifySessionExpired();
-  }
+  } });
 }
 
 const loginEndpoints = new Set([
@@ -127,6 +149,8 @@ const loginEndpoints = new Set([
 ]);
 
 api.interceptors.request.use(async (config) => {
+  config.sessionGeneration ??= getSessionSnapshot().generation;
+  assertSessionGeneration(config.sessionGeneration);
   const requestPath = config.url?.split("?")[0].replace(/\/+$/, "");
   if (
     config.method?.toLowerCase() === "post" &&
@@ -136,14 +160,24 @@ api.interceptors.request.use(async (config) => {
     return config;
   }
 
+  if (getSessionSnapshot().status === "guest") {
+    throw new Error("Vui lòng đăng nhập để sử dụng chức năng này.");
+  }
   const token = await getAccessToken();
+  assertSessionGeneration(config.sessionGeneration);
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    assertSessionGeneration(response.config.sessionGeneration ?? -1);
+    return response;
+  },
   async (error: unknown) => {
+    if (isAxiosError(error) && error.config?.sessionGeneration !== undefined) {
+      assertSessionGeneration(error.config.sessionGeneration);
+    }
     if (
       !isAxiosError(error) ||
       error.response?.status !== 401 ||
@@ -153,6 +187,8 @@ api.interceptors.response.use(
     }
 
     const request = error.config as RetriableRequest;
+    const generation = request.sessionGeneration ?? -1;
+    assertSessionGeneration(generation);
     const requestPath = request.url?.split("?")[0].replace(/\/+$/, "");
     if (request._skipAuthRefresh || loginEndpoints.has(requestPath ?? "")) {
       return Promise.reject(error);
@@ -160,25 +196,28 @@ api.interceptors.response.use(
 
     // A retried request failing with 401 means the new access token cannot authorize this API.
     if (request._accessTokenRetried) {
-      await expireLocalSession();
+      await expireLocalSession(generation);
       return Promise.reject(error);
     }
 
     request._accessTokenRetried = true;
     request._skipAuthRefresh = true;
     try {
-      if (!refreshInFlight) {
-        refreshInFlight = refreshAccessToken().finally(() => {
-          refreshInFlight = null;
-        });
+      if (!refreshInFlight || refreshInFlight.generation !== generation) {
+        const pending = { generation, promise: refreshAccessToken(generation) };
+        refreshInFlight = pending;
+        void pending.promise.finally(() => {
+          if (refreshInFlight === pending) refreshInFlight = null;
+        }).catch(() => undefined);
       }
-      const newAccessToken = await refreshInFlight;
+      const newAccessToken = await refreshInFlight.promise;
+      assertSessionGeneration(generation);
       request.headers.Authorization = `Bearer ${newAccessToken}`;
       request._skipAuthRefresh = false;
       return api(request);
     } catch (refreshError) {
       if (refreshError instanceof InvalidRefreshSessionError) {
-        await expireLocalSession();
+        await expireLocalSession(generation);
       }
       return Promise.reject(refreshError);
     }

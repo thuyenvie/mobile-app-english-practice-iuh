@@ -1,5 +1,5 @@
-import { TabPlaceholderScreen } from '../../../features/home/screens/TabPlaceholderScreen';
+import VocabularyScreenContent from '../../../features/vocabulary/screens/VocabularyScreen';
 
 export default function VocabularyScreen() {
-  return <TabPlaceholderScreen title="Từ vựng" />;
+  return <VocabularyScreenContent />;
 }

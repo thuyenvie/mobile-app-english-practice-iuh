@@ -1,12 +1,13 @@
-import { Stack, router, useNavigationContainerRef } from "expo-router";
+import { Stack, useNavigationContainerRef } from "expo-router";
 import { useEffect } from "react";
 import { Alert, BackHandler, Platform } from "react-native";
-import { subscribeToSessionExpiration } from "@/lib/auth/sessionEvents";
+import { SessionProvider } from "@/providers/SessionProvider";
 import { TamaguiProvider } from "tamagui";
 
 import { config } from "../../tamagui.config";
 import { GoogleAuthProvider } from "@/providers/GoogleAuthProvider";
 import { authDesign } from "@/theme/tokens";
+import { PushNotificationRuntime } from "../../features/notifications/PushNotificationRuntime";
 
 export default function RootLayout() {
   const navigationRef = useNavigationContainerRef();
@@ -46,22 +47,19 @@ export default function RootLayout() {
     return () => subscription.remove();
   }, [navigationRef]);
 
-  useEffect(() => {
-    const subscription = subscribeToSessionExpiration(() =>
-      router.replace("/auth/login")
-    );
-    return () => subscription.remove();
-  }, []);
-
   return (
     <TamaguiProvider config={config} defaultTheme="light_auth">
       <GoogleAuthProvider>
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: authDesign.colors.background },
-          }}
-        />
+        <PushNotificationRuntime>
+          <SessionProvider>
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: authDesign.colors.background },
+              }}
+            />
+          </SessionProvider>
+        </PushNotificationRuntime>
       </GoogleAuthProvider>
     </TamaguiProvider>
   );

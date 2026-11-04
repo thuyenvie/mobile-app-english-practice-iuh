@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AppState, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
 import { useFocusEffect } from "expo-router";
-import { getAccessToken } from "@/lib/auth/tokenStorage";
 import { API_BASE_URL } from "@/lib/axios/axios";
 import { getExamErrorMessage } from "../api/examApi";
 import { getListeningAudio, getQuestionAudio, type QuestionAudio } from "../api/listeningApi";
@@ -26,14 +25,11 @@ export function ListeningAudioPlayer({ year, test, question, paused }: { year: n
     (async () => {
       if (Platform.OS === "web") throw new Error("Player này dành cho Android/iOS. Hãy mở ứng dụng native để nghe.");
       await getListeningAudio(year, test);
-      const token = await getAccessToken();
-      if (!token) throw new Error("Vui lòng đăng nhập lại để nghe audio.");
       await setAudioModeAsync({ playsInSilentMode: true, shouldPlayInBackground: false });
       if (!active) return;
-      // Player khong di qua axios: phai tu gan JWT vao header.
+      // Public audio source does not require account credentials.
       player.replace({
         uri: listeningStreamUrl(API_BASE_URL, year, test),
-        headers: { Authorization: `Bearer ${token}` },
       });
     })().catch(e => { if (active) setError(getExamErrorMessage(e)); });
     return () => { active = false; };
