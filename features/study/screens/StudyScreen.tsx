@@ -182,7 +182,7 @@ export default function StudyScreen() {
             <>
               <Text color={homeDesign.colors.secondary} fontSize={12}>
                 Mục tiêu TOEIC {todaySchedule.plan.targetScore} ·{" "}
-                {todaySchedule.plan.dailyMinutes} phút/ngày
+                Mục tiêu gốc: {todaySchedule.plan.dailyMinutes} phút/ngày
               </Text>
               {todaySchedule.tasks.length ? (
                 todaySchedule.tasks.map((task) => (
@@ -200,9 +200,14 @@ export default function StudyScreen() {
                           : homeDesign.colors.inProgress
                       }
                     />
-                    <Text flex={1} color={homeDesign.colors.text} fontSize={12}>
-                      {task.title}
-                    </Text>
+                    <YStack flex={1} gap={4}>
+                      <Text color={homeDesign.colors.text} fontSize={12}>
+                        {task.title}
+                      </Text>
+                      <Text color={homeDesign.colors.secondary} fontSize={11}>
+                        {task.description}
+                      </Text>
+                    </YStack>
                     <Text color={homeDesign.colors.secondary} fontSize={11}>
                       {task.estimatedMinutes} phút
                     </Text>

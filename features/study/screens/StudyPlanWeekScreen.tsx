@@ -124,7 +124,7 @@ export default function StudyPlanWeekScreen() {
                   </Text>
                 </View>
                 <Text style={styles.muted}>
-                  {schedule.plan.dailyMinutes} phút mỗi ngày ·{" "}
+                  Mục tiêu gốc: {schedule.plan.dailyMinutes} phút/ngày ·{" "}
                   {schedule.completedTasks}/{schedule.totalTasks} nhiệm vụ hoàn
                   thành
                 </Text>

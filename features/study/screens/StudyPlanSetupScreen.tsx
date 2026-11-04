@@ -130,6 +130,11 @@ export default function StudyPlanSetupScreen() {
       return;
     }
 
+    if (reminderDays.length === 0) {
+      setError("Chọn ít nhất một ngày học trong tuần.");
+      return;
+    }
+
     setSaving(true);
     try {
       await saveStudyPlan({
@@ -142,7 +147,7 @@ export default function StudyPlanSetupScreen() {
           "Asia/Ho_Chi_Minh",
         reminderEnabled,
         reminderTime: reminderEnabled ? reminderTime : null,
-        reminderDays: reminderEnabled ? reminderDays : [],
+        reminderDays,
         quietStart: reminderEnabled ? quietStart : null,
         quietEnd: reminderEnabled ? quietEnd : null,
       });
@@ -251,11 +256,36 @@ export default function StudyPlanSetupScreen() {
               />
 
               <View style={styles.section}>
+                <Text style={styles.label}>Ngày học và nhắc lịch</Text>
+                <View style={styles.daysRow}>
+                  {weekDays.map((day) => {
+                    const selected = reminderDays.includes(day.value);
+                    return (
+                      <Pressable
+                        key={day.value}
+                        onPress={() => toggleDay(day.value)}
+                        style={[
+                          styles.dayChip,
+                          selected && styles.dayChipSelected,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.dayText,
+                            selected && styles.dayTextSelected,
+                          ]}
+                        >
+                          {day.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
                 <View style={styles.switchRow}>
                   <View style={styles.flex}>
                     <Text style={styles.label}>Nhắc lịch học</Text>
                     <Text style={styles.hint}>
-                      Cấu hình được lưu; thông báo sẽ nối ở giai đoạn sau.
+                      Nhận thông báo vào ngày học đã chọn, ngoài giờ yên lặng.
                     </Text>
                   </View>
                   <Switch
@@ -273,31 +303,6 @@ export default function StudyPlanSetupScreen() {
                       placeholder="20:00"
                       hint="Định dạng 24 giờ, ví dụ 20:00"
                     />
-                    <Text style={styles.label}>Ngày nhắc</Text>
-                    <View style={styles.daysRow}>
-                      {weekDays.map((day) => {
-                        const selected = reminderDays.includes(day.value);
-                        return (
-                          <Pressable
-                            key={day.value}
-                            onPress={() => toggleDay(day.value)}
-                            style={[
-                              styles.dayChip,
-                              selected && styles.dayChipSelected,
-                            ]}
-                          >
-                            <Text
-                              style={[
-                                styles.dayText,
-                                selected && styles.dayTextSelected,
-                              ]}
-                            >
-                              {day.label}
-                            </Text>
-                          </Pressable>
-                        );
-                      })}
-                    </View>
                     <View style={styles.timeRow}>
                       <View style={styles.flex}>
                         <Field
