@@ -10,6 +10,15 @@ module.exports = ({ config }) => {
     return plugin[0] !== googleSignInPlugin;
   });
 
+  if (
+    !plugins.some(
+      (plugin) =>
+        (typeof plugin === "string" ? plugin : plugin[0]) === "expo-notifications"
+    )
+  ) {
+    plugins.push(["expo-notifications", { defaultChannel: "study-reminders" }]);
+  }
+
   // FIX Android: plugin phải luôn có trong native build, kể cả chưa cấu hình iOS.
   // Android được Google nhận diện bằng package name + SHA-1.
   if (IOS_CLIENT_ID_PATTERN.test(iosClientId)) {

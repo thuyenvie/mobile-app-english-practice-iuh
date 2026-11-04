@@ -9,6 +9,7 @@ import { getSessionSnapshot, enterGuestSession } from "@/lib/auth/sessionStore";
 import { removeTokens } from "@/lib/auth/tokenStorage";
 import { useSession } from "@/lib/auth/useSession";
 import { homeDesign } from "@/theme/tokens";
+import { deactivateCurrentPushToken } from "../../../features/notifications/api/pushNotificationApi";
 
 export default function SettingsScreen() {
   const session = useSession();
@@ -34,7 +35,20 @@ export default function SettingsScreen() {
     setError("");
     try {
       const generation = getSessionSnapshot().generation;
+      let pushTokenDeactivated = true;
+      try {
+        await deactivateCurrentPushToken();
+      } catch {
+        // Van dang xuat local du offline; dang nhap tai khoan khac se gan lai token.
+        pushTokenDeactivated = false;
+      }
       await removeTokens({ generation, onSaved: enterGuestSession });
+      if (!pushTokenDeactivated) {
+        Alert.alert(
+          "Đã chuyển sang học thử",
+          "Thiết bị chưa kết nối được máy chủ để hủy token thông báo. Khi có mạng, hãy đăng nhập lại để đồng bộ thiết bị.",
+        );
+      }
       router.replace("/(tabs)/home");
     } catch {
       setError("Không thể xóa phiên đăng nhập. Hãy thử lại.");

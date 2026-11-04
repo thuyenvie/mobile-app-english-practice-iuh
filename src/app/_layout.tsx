@@ -7,6 +7,7 @@ import { TamaguiProvider } from "tamagui";
 import { config } from "../../tamagui.config";
 import { GoogleAuthProvider } from "@/providers/GoogleAuthProvider";
 import { authDesign } from "@/theme/tokens";
+import { PushNotificationRuntime } from "../../features/notifications/PushNotificationRuntime";
 
 export default function RootLayout() {
   const navigationRef = useNavigationContainerRef();
@@ -49,14 +50,16 @@ export default function RootLayout() {
   return (
     <TamaguiProvider config={config} defaultTheme="light_auth">
       <GoogleAuthProvider>
-        <SessionProvider>
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              contentStyle: { backgroundColor: authDesign.colors.background },
-            }}
-          />
-        </SessionProvider>
+        <PushNotificationRuntime>
+          <SessionProvider>
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: authDesign.colors.background },
+              }}
+            />
+          </SessionProvider>
+        </PushNotificationRuntime>
       </GoogleAuthProvider>
     </TamaguiProvider>
   );

@@ -29,35 +29,67 @@ export default function StudyScreen() {
   const [recentLoading, setRecentLoading] = useState(true);
   const [recentError, setRecentError] = useState("");
   const [recentRetry, setRecentRetry] = useState(0);
-  const [todaySchedule, setTodaySchedule] = useState<StudySchedule | null>(null);
+  const [todaySchedule, setTodaySchedule] = useState<StudySchedule | null>(
+    null
+  );
   const [studyPlanLoading, setStudyPlanLoading] = useState(true);
   const [studyPlanError, setStudyPlanError] = useState("");
   const [studyPlanRetry, setStudyPlanRetry] = useState(0);
   // Tai lai moi khi quay ve trang Hoc tap sau khi nop bai.
-  useFocusEffect(useCallback(() => {
-    if (isGuest) return;
-    let active = true;
-    setRecentLoading(true);
-    getExamHistory(0, 3).then(
-      (data) => { if (active) { setRecent(data.items); setRecentError(""); setRecentLoading(false); } },
-      (error: unknown) => { if (active) { setRecentError(getExamErrorMessage(error)); setRecentLoading(false); } },
-    );
-    return () => { active = false; };
-  }, [recentRetry, isGuest]));
-  useFocusEffect(useCallback(() => {
-    if (session.status !== "authenticated") {
-      setStudyPlanLoading(false);
-      setTodaySchedule(null);
-      return;
-    }
-    let active = true;
-    setStudyPlanLoading(true);
-    getTodaySchedule().then(
-      (data) => { if (active) { setTodaySchedule(data); setStudyPlanError(""); setStudyPlanLoading(false); } },
-      (error: unknown) => { if (active) { setStudyPlanError(getExamErrorMessage(error)); setStudyPlanLoading(false); } },
-    );
-    return () => { active = false; };
-  }, [session.status, studyPlanRetry]));
+  useFocusEffect(
+    useCallback(() => {
+      if (isGuest) return;
+      let active = true;
+      setRecentLoading(true);
+      getExamHistory(0, 3).then(
+        (data) => {
+          if (active) {
+            setRecent(data.items);
+            setRecentError("");
+            setRecentLoading(false);
+          }
+        },
+        (error: unknown) => {
+          if (active) {
+            setRecentError(getExamErrorMessage(error));
+            setRecentLoading(false);
+          }
+        }
+      );
+      return () => {
+        active = false;
+      };
+    }, [recentRetry, isGuest])
+  );
+  useFocusEffect(
+    useCallback(() => {
+      if (session.status !== "authenticated") {
+        setStudyPlanLoading(false);
+        setTodaySchedule(null);
+        return;
+      }
+      let active = true;
+      setStudyPlanLoading(true);
+      getTodaySchedule().then(
+        (data) => {
+          if (active) {
+            setTodaySchedule(data);
+            setStudyPlanError("");
+            setStudyPlanLoading(false);
+          }
+        },
+        (error: unknown) => {
+          if (active) {
+            setStudyPlanError(getExamErrorMessage(error));
+            setStudyPlanLoading(false);
+          }
+        }
+      );
+      return () => {
+        active = false;
+      };
+    }, [session.status, studyPlanRetry])
+  );
   // back end ch co cai nay
   const openTest = (testNumber: number) => {
     router.push({
@@ -86,45 +118,119 @@ export default function StudyScreen() {
           </Text>
         </YStack>
 
-        <YStack backgroundColor={homeDesign.colors.surface} borderRadius={18} padding={16} gap={11} marginBottom={20}>
+        <YStack
+          backgroundColor={homeDesign.colors.surface}
+          borderRadius={18}
+          padding={16}
+          gap={11}
+          marginBottom={20}
+        >
           <XStack alignItems="center" justifyContent="space-between" gap={8}>
             <XStack alignItems="center" gap={9} flex={1}>
-              <MaterialCommunityIcons name="calendar-check" size={23} color={homeDesign.colors.tabActive} />
-              <Text color={homeDesign.colors.text} fontSize={15} fontWeight="800">Lộ trình học của bạn</Text>
-            </XStack>
-            {todaySchedule?.plan ? <Text color={homeDesign.colors.link} fontSize={12}>
-              {todaySchedule.completedTasks}/{todaySchedule.totalTasks} hôm nay
-            </Text> : null}
-          </XStack>
-          {session.status === "guest" ? <>
-            <Text color={homeDesign.colors.secondary} fontSize={12}>Đăng nhập để lưu mục tiêu và tiến độ học.</Text>
-            <AppButton appearance="text" onPress={() => router.push("/auth/login")}>Đăng nhập</AppButton>
-          </> : session.status !== "authenticated" ? <HomeDataMessage loading message="Đang kiểm tra tài khoản..." />
-            : studyPlanLoading ? <HomeDataMessage loading message="Đang tải kế hoạch học..." />
-            : studyPlanError ? <HomeDataMessage message={studyPlanError} onRetry={() => setStudyPlanRetry((value) => value + 1)} />
-            : !todaySchedule?.plan ? <>
-              <Text color={homeDesign.colors.secondary} fontSize={12}>Đặt mục tiêu TOEIC và thời gian học mỗi ngày để tạo lộ trình 7 ngày.</Text>
-              <AppButton onPress={() => router.push("/study-plan/setup")}>Thiết lập mục tiêu</AppButton>
-            </> : <>
-              <Text color={homeDesign.colors.secondary} fontSize={12}>
-                Mục tiêu TOEIC {todaySchedule.plan.targetScore} · {todaySchedule.plan.dailyMinutes} phút/ngày
+              <MaterialCommunityIcons
+                name="calendar-check"
+                size={23}
+                color={homeDesign.colors.tabActive}
+              />
+              <Text
+                color={homeDesign.colors.text}
+                fontSize={15}
+                fontWeight="800"
+              >
+                Lộ trình học của bạn
               </Text>
-              {todaySchedule.tasks.length ? todaySchedule.tasks.map((task) => (
-                <XStack key={task.id} alignItems="center" gap={9}>
-                  <MaterialCommunityIcons
-                    name={task.status === "COMPLETED" ? "check-circle" : "circle-outline"}
-                    size={18}
-                    color={task.status === "COMPLETED" ? homeDesign.colors.completed : homeDesign.colors.inProgress}
-                  />
-                  <Text flex={1} color={homeDesign.colors.text} fontSize={12}>{task.title}</Text>
-                  <Text color={homeDesign.colors.secondary} fontSize={11}>{task.estimatedMinutes} phút</Text>
-                </XStack>
-              )) : <Text color={homeDesign.colors.secondary} fontSize={12}>Hôm nay không có nhiệm vụ trong lộ trình.</Text>}
+            </XStack>
+            {todaySchedule?.plan ? (
+              <Text color={homeDesign.colors.link} fontSize={12}>
+                {todaySchedule.completedTasks}/{todaySchedule.totalTasks} hôm
+                nay
+              </Text>
+            ) : null}
+          </XStack>
+          {session.status === "guest" ? (
+            <>
+              <Text color={homeDesign.colors.secondary} fontSize={12}>
+                Đăng nhập để lưu mục tiêu và tiến độ học.
+              </Text>
+              <AppButton
+                appearance="text"
+                onPress={() => router.push("/auth/login")}
+              >
+                Đăng nhập
+              </AppButton>
+            </>
+          ) : session.status !== "authenticated" ? (
+            <HomeDataMessage loading message="Đang kiểm tra tài khoản..." />
+          ) : studyPlanLoading ? (
+            <HomeDataMessage loading message="Đang tải kế hoạch học..." />
+          ) : studyPlanError ? (
+            <HomeDataMessage
+              message={studyPlanError}
+              onRetry={() => setStudyPlanRetry((value) => value + 1)}
+            />
+          ) : !todaySchedule?.plan ? (
+            <>
+              <Text color={homeDesign.colors.secondary} fontSize={12}>
+                Đặt mục tiêu TOEIC và thời gian học mỗi ngày để tạo lộ trình 7
+                ngày.
+              </Text>
+              <AppButton onPress={() => router.push("/study-plan/setup")}>
+                Thiết lập mục tiêu
+              </AppButton>
+            </>
+          ) : (
+            <>
+              <Text color={homeDesign.colors.secondary} fontSize={12}>
+                Mục tiêu TOEIC {todaySchedule.plan.targetScore} ·{" "}
+                {todaySchedule.plan.dailyMinutes} phút/ngày
+              </Text>
+              {todaySchedule.tasks.length ? (
+                todaySchedule.tasks.map((task) => (
+                  <XStack key={task.id} alignItems="center" gap={9}>
+                    <MaterialCommunityIcons
+                      name={
+                        task.status === "COMPLETED"
+                          ? "check-circle"
+                          : "circle-outline"
+                      }
+                      size={18}
+                      color={
+                        task.status === "COMPLETED"
+                          ? homeDesign.colors.completed
+                          : homeDesign.colors.inProgress
+                      }
+                    />
+                    <Text flex={1} color={homeDesign.colors.text} fontSize={12}>
+                      {task.title}
+                    </Text>
+                    <Text color={homeDesign.colors.secondary} fontSize={11}>
+                      {task.estimatedMinutes} phút
+                    </Text>
+                  </XStack>
+                ))
+              ) : (
+                <Text color={homeDesign.colors.secondary} fontSize={12}>
+                  Hôm nay không có nhiệm vụ trong lộ trình.
+                </Text>
+              )}
               <XStack gap={10} marginTop={3}>
-                <AppButton flex={1} onPress={() => router.push("/study-plan/week")}>Xem lộ trình tuần</AppButton>
-                <AppButton flex={1} appearance="text" color={homeDesign.colors.link} onPress={() => router.push("/study-plan/setup")}>Chỉnh mục tiêu</AppButton>
+                <AppButton
+                  flex={1}
+                  onPress={() => router.push("/study-plan/week")}
+                >
+                  Xem lộ trình tuần
+                </AppButton>
+                <AppButton
+                  flex={1}
+                  appearance="text"
+                  color={homeDesign.colors.link}
+                  onPress={() => router.push("/study-plan/setup")}
+                >
+                  Chỉnh mục tiêu
+                </AppButton>
               </XStack>
-            </>}
+            </>
+          )}
         </YStack>
 
         <YStack
@@ -145,7 +251,9 @@ export default function StudyScreen() {
             </Text>
           </XStack>
           <Text color={homeDesign.colors.secondary} fontSize={12}>
-            {isGuest ? "Bạn đang học thử. Bài làm chỉ được giữ khi đang mở bài." : "Chưa có bài thi được lưu nháp."}
+            {isGuest
+              ? "Bạn đang học thử. Bài làm chỉ được giữ khi đang mở bài."
+              : "Chưa có bài thi được lưu nháp."}
           </Text>
         </YStack>
 
@@ -213,17 +321,45 @@ export default function StudyScreen() {
           ) : null}
         </YStack>
 
-        {isGuest ? <YStack gap={8}>
-          <Text color={homeDesign.colors.secondary}>Đăng nhập để lưu kết quả và xem lịch sử học tập.</Text>
-          <AppButton appearance="text" onPress={() => router.push("/auth/login")}>Đăng nhập</AppButton>
-        </YStack> : <YStack gap={8}>
-          <SectionTitle title="Kết quả gần đây" hint="Listening và Reading" />
-          {recentLoading ? <HomeDataMessage loading message="Đang tải kết quả..." />
-            : recentError ? <HomeDataMessage message={recentError} onRetry={() => setRecentRetry(value => value + 1)} />
-            : recent.length ? recent.map(item => <ExamResultCard key={item.resultId} item={item} />)
-            : <Text color={homeDesign.colors.secondary} fontSize={12}>Bạn chưa nộp bài thi nào.</Text>}
-          <AppButton appearance="text" onPress={() => router.push("/study/history")}>Xem toàn bộ lịch sử ›</AppButton>
-        </YStack>}
+        {isGuest ? (
+          <YStack gap={8}>
+            <Text color={homeDesign.colors.secondary}>
+              Đăng nhập để lưu kết quả và xem lịch sử học tập.
+            </Text>
+            <AppButton
+              appearance="text"
+              onPress={() => router.push("/auth/login")}
+            >
+              Đăng nhập
+            </AppButton>
+          </YStack>
+        ) : (
+          <YStack gap={8}>
+            <SectionTitle title="Kết quả gần đây" hint="Listening và Reading" />
+            {recentLoading ? (
+              <HomeDataMessage loading message="Đang tải kết quả..." />
+            ) : recentError ? (
+              <HomeDataMessage
+                message={recentError}
+                onRetry={() => setRecentRetry((value) => value + 1)}
+              />
+            ) : recent.length ? (
+              recent.map((item) => (
+                <ExamResultCard key={item.resultId} item={item} />
+              ))
+            ) : (
+              <Text color={homeDesign.colors.secondary} fontSize={12}>
+                Bạn chưa nộp bài thi nào.
+              </Text>
+            )}
+            <AppButton
+              appearance="text"
+              onPress={() => router.push("/study/history")}
+            >
+              Xem toàn bộ lịch sử ›
+            </AppButton>
+          </YStack>
+        )}
       </ScrollView>
     </StudyScaffold>
   );

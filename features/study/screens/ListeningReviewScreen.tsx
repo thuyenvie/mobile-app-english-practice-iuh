@@ -1,22 +1,39 @@
 import { useEffect, useRef, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { homeDesign } from "@/theme/tokens";
 import { getExamErrorMessage, getExamPart } from "../api/examApi";
 import { getExamResult, type ExamResult } from "../api/examResultApi";
 import { StudyScaffold } from "../components/StudyScaffold";
 import { InteractiveText } from "../components/InteractiveText";
 import { WordLookupModal } from "../components/WordLookupModal";
-import { lookupDictionaryWord, saveVocabularyWord, type DictionaryLookup } from "../api/dictionaryApi";
+import {
+  lookupDictionaryWord,
+  saveVocabularyWord,
+  type DictionaryLookup,
+} from "../api/dictionaryApi";
 import type { ExamQuestion } from "../types";
 
-type QuestionContext = { question: ExamQuestion; passageContent: string | null };
+type QuestionContext = {
+  question: ExamQuestion;
+  passageContent: string | null;
+};
 
 export default function ListeningReviewScreen() {
   const { resultId } = useLocalSearchParams<{ resultId: string }>();
   const id = Number(resultId);
   const [result, setResult] = useState<ExamResult | null>(null);
-  const [questions, setQuestions] = useState<Record<number, QuestionContext>>({});
+  const [questions, setQuestions] = useState<Record<number, QuestionContext>>(
+    {}
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showAll, setShowAll] = useState(false);
@@ -33,44 +50,76 @@ export default function ListeningReviewScreen() {
   const lookupRequestId = useRef(0);
 
   useEffect(() => {
-    if (!Number.isSafeInteger(id) || id <= 0) { setError("Mã kết quả không hợp lệ."); setLoading(false); return; }
+    if (!Number.isSafeInteger(id) || id <= 0) {
+      setError("Mã kết quả không hợp lệ.");
+      setLoading(false);
+      return;
+    }
     let active = true;
     setLoading(true);
     setError("");
     setQuestions({});
-    getExamResult(id).then(async (data) => {
-      if (!active) return;
-      setResult(data);
-      setLoading(false);
-      // Snapshot Reading la nguon chinh; tai de hien tai chi de bo sung anh va du lieu cu.
-      const partNumbers = data.section === "READING" && data.partNumber
-        ? [data.partNumber]
-        : [1, 2, 3, 4];
-      const parts = await Promise.allSettled(partNumbers.map(part => getExamPart(data.year, data.testNumber, part)));
-      if (!active) return;
-      const context: Record<number, QuestionContext> = {};
-      parts.forEach(part => {
-        if (part.status !== "fulfilled") return;
-        part.value.questions.forEach(question => {
-          const passage = part.value.passages.find(item => item.id === question.passageId);
-          context[question.questionNumber] = { question, passageContent: passage?.content ?? null };
+    getExamResult(id)
+      .then(async (data) => {
+        if (!active) return;
+        setResult(data);
+        setLoading(false);
+        // Snapshot Reading la nguon chinh; tai de hien tai chi de bo sung anh va du lieu cu.
+        const partNumbers =
+          data.section === "READING" && data.partNumber
+            ? [data.partNumber]
+            : [1, 2, 3, 4];
+        const parts = await Promise.allSettled(
+          partNumbers.map((part) =>
+            getExamPart(data.year, data.testNumber, part)
+          )
+        );
+        if (!active) return;
+        const context: Record<number, QuestionContext> = {};
+        parts.forEach((part) => {
+          if (part.status !== "fulfilled") return;
+          part.value.questions.forEach((question) => {
+            const passage = part.value.passages.find(
+              (item) => item.id === question.passageId
+            );
+            context[question.questionNumber] = {
+              question,
+              passageContent: passage?.content ?? null,
+            };
+          });
         });
+        setQuestions(context);
+      })
+      .catch((cause: unknown) => {
+        if (active) {
+          setError(getExamErrorMessage(cause));
+          setLoading(false);
+        }
       });
-      setQuestions(context);
-    }).catch((cause: unknown) => { if (active) { setError(getExamErrorMessage(cause)); setLoading(false); } });
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [id, retry]);
 
-  useEffect(() => () => {
-    lookupRequestId.current += 1;
-  }, []);
+  useEffect(
+    () => () => {
+      lookupRequestId.current += 1;
+    },
+    []
+  );
 
   const loadWordLookup = async (word: string, context: string) => {
     const requestId = ++lookupRequestId.current;
-    const wordIndex = context.toLocaleLowerCase().indexOf(word.toLocaleLowerCase());
-    const snippet = wordIndex < 0
-      ? context.slice(0, 220)
-      : context.slice(Math.max(0, wordIndex - 100), Math.min(context.length, wordIndex + word.length + 100));
+    const wordIndex = context
+      .toLocaleLowerCase()
+      .indexOf(word.toLocaleLowerCase());
+    const snippet =
+      wordIndex < 0
+        ? context.slice(0, 220)
+        : context.slice(
+            Math.max(0, wordIndex - 100),
+            Math.min(context.length, wordIndex + word.length + 100)
+          );
     setLookupWord(word);
     setLookupContext(snippet);
     setLookupVisible(true);
@@ -84,7 +133,8 @@ export default function ListeningReviewScreen() {
       const entry = await lookupDictionaryWord(word, snippet);
       if (requestId === lookupRequestId.current) setLookupEntry(entry);
     } catch (cause: unknown) {
-      if (requestId === lookupRequestId.current) setLookupError(getExamErrorMessage(cause));
+      if (requestId === lookupRequestId.current)
+        setLookupError(getExamErrorMessage(cause));
     } finally {
       if (requestId === lookupRequestId.current) setLookupLoading(false);
     }
@@ -99,7 +149,8 @@ export default function ListeningReviewScreen() {
       await saveVocabularyWord(lookupEntry);
       if (requestId === lookupRequestId.current) setVocabularySaved(true);
     } catch (cause: unknown) {
-      if (requestId === lookupRequestId.current) setVocabularySaveError(getExamErrorMessage(cause));
+      if (requestId === lookupRequestId.current)
+        setVocabularySaveError(getExamErrorMessage(cause));
     } finally {
       if (requestId === lookupRequestId.current) setVocabularySaving(false);
     }
@@ -111,92 +162,186 @@ export default function ListeningReviewScreen() {
     setLookupLoading(false);
   };
 
-  const answers = [...(result?.answers ?? [])].sort((a, b) => a.questionNumber - b.questionNumber);
-  const wrongCount = answers.filter(answer => !answer.correct).length;
-  const visible = showAll ? answers : answers.filter(answer => !answer.correct);
+  const answers = [...(result?.answers ?? [])].sort(
+    (a, b) => a.questionNumber - b.questionNumber
+  );
+  const wrongCount = answers.filter((answer) => !answer.correct).length;
+  const visible = showAll
+    ? answers
+    : answers.filter((answer) => !answer.correct);
   const submitted = result ? new Date(result.submittedAt) : null;
-  const date = submitted && !Number.isNaN(submitted.getTime()) ? submitted.toLocaleString("vi-VN") : result?.submittedAt;
+  const date =
+    submitted && !Number.isNaN(submitted.getTime())
+      ? submitted.toLocaleString("vi-VN")
+      : result?.submittedAt;
 
-  return <StudyScaffold>
-    <View style={styles.header}>
-      <Pressable accessibilityRole="button" onPress={() => router.canGoBack() ? router.back() : router.replace("/study/history")}>
-        <Text style={styles.link}>‹ Quay lại</Text>
-      </Pressable>
-      <Text style={styles.title}>Xem lại bài làm</Text>
-    </View>
-    <ScrollView contentContainerStyle={styles.content}>
-      {loading ? <ActivityIndicator /> : error ? <>
-        <Text style={styles.warning}>{error}</Text>
-        <Pressable onPress={() => setRetry(value => value + 1)}><Text style={styles.link}>Thử lại</Text></Pressable>
-      </> : result ? <>
-        <View style={styles.card}>
-          <Text style={styles.title}>ETS {result.year} · Test {result.testNumber} · {result.section === "READING" ? `Reading · Part ${result.partNumber}` : "Listening"}</Text>
-          <Text style={styles.body}>Đúng {result.score}/{result.totalQuestions} câu · Đã trả lời {result.answeredQuestions} câu</Text>
-          <Text style={styles.muted}>Chưa trả lời {result.totalQuestions - result.answeredQuestions} câu · Nộp lúc {date}</Text>
-          <Text style={styles.muted}>Đây là số câu đúng, chưa quy đổi ra điểm TOEIC.</Text>
-        </View>
-        <View style={styles.row}>
-          <Pressable onPress={() => setShowAll(false)}><Text style={[styles.link, !showAll && styles.active]}>Câu sai ({wrongCount})</Text></Pressable>
-          <Pressable onPress={() => setShowAll(true)}><Text style={[styles.link, showAll && styles.active]}>Đã trả lời ({answers.length})</Text></Pressable>
-        </View>
-        {!visible.length ? <Text style={styles.muted}>{showAll ? "Chưa có câu trả lời." : "Không có câu sai trong các câu đã trả lời."}</Text> : null}
-        {visible.map(answer => {
-          const context = questions[answer.questionNumber];
-          const image = context?.question.imageUrl || context?.question.imageBase64;
-          const uri = image?.startsWith("data:") || image?.startsWith("http") ? image : image ? `data:image/jpeg;base64,${image}` : null;
-          return <View key={answer.questionNumber} style={styles.card}>
-            <Text style={styles.title}>Câu {answer.questionNumber} · {answer.correct ? "Đúng" : "Sai"}</Text>
-            {(answer.questionContent || context?.question.content) ? (
-              <InteractiveText
-                text={answer.questionContent || context?.question.content || ""}
-                textStyle={styles.body}
-                selectedWord={lookupVisible ? lookupWord : null}
-                onWordPress={(word, text) => void loadWordLookup(word, text)}
-              />
+  return (
+    <StudyScaffold>
+      <View style={styles.header}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() =>
+            router.canGoBack()
+              ? router.back()
+              : router.replace("/study/history")
+          }
+        >
+          <Text style={styles.link}>‹ Quay lại</Text>
+        </Pressable>
+        <Text style={styles.title}>Xem lại bài làm</Text>
+      </View>
+      <ScrollView contentContainerStyle={styles.content}>
+        {loading ? (
+          <ActivityIndicator />
+        ) : error ? (
+          <>
+            <Text style={styles.warning}>{error}</Text>
+            <Pressable onPress={() => setRetry((value) => value + 1)}>
+              <Text style={styles.link}>Thử lại</Text>
+            </Pressable>
+          </>
+        ) : result ? (
+          <>
+            <View style={styles.card}>
+              <Text style={styles.title}>
+                ETS {result.year} · Test {result.testNumber} ·{" "}
+                {result.section === "READING"
+                  ? `Reading · Part ${result.partNumber}`
+                  : "Listening"}
+              </Text>
+              <Text style={styles.body}>
+                Đúng {result.score}/{result.totalQuestions} câu · Đã trả lời{" "}
+                {result.answeredQuestions} câu
+              </Text>
+              <Text style={styles.muted}>
+                Chưa trả lời {result.totalQuestions - result.answeredQuestions}{" "}
+                câu · Nộp lúc {date}
+              </Text>
+              <Text style={styles.muted}>
+                Đây là số câu đúng, chưa quy đổi ra điểm TOEIC.
+              </Text>
+            </View>
+            <View style={styles.row}>
+              <Pressable onPress={() => setShowAll(false)}>
+                <Text style={[styles.link, !showAll && styles.active]}>
+                  Câu sai ({wrongCount})
+                </Text>
+              </Pressable>
+              <Pressable onPress={() => setShowAll(true)}>
+                <Text style={[styles.link, showAll && styles.active]}>
+                  Đã trả lời ({answers.length})
+                </Text>
+              </Pressable>
+            </View>
+            {!visible.length ? (
+              <Text style={styles.muted}>
+                {showAll
+                  ? "Chưa có câu trả lời."
+                  : "Không có câu sai trong các câu đã trả lời."}
+              </Text>
             ) : null}
-            {(answer.passageContent || context?.passageContent) ? <View style={styles.passage}>
-              <Text style={styles.muted}>Đoạn văn</Text>
-              <InteractiveText
-                text={answer.passageContent || context?.passageContent || ""}
-                textStyle={styles.body}
-                selectedWord={lookupVisible ? lookupWord : null}
-                onWordPress={(word, text) => void loadWordLookup(word, text)}
-              />
-            </View> : null}
-            {uri ? <Image source={{ uri }} resizeMode="contain" style={styles.image} /> : null}
-            {(answer.options.length ? answer.options : context?.question.options ?? []).map((option, index) => (
-              <View key={`${option.label}-${index}`} style={styles.optionRow}>
-                <Text style={styles.body}>{option.label}.</Text>
-                {option.text ? (
-                  <InteractiveText
-                    text={option.text}
-                    textStyle={styles.optionText}
-                    selectedWord={lookupVisible ? lookupWord : null}
-                    onWordPress={(word, text) => void loadWordLookup(word, text)}
-                  />
-                ) : null}
-              </View>
-            ))}
-            <Text style={styles.warning}>Bạn chọn: {answer.selectedOption}</Text>
-            <Text style={styles.correct}>Đáp án đúng: {answer.correctOption ?? "Không có snapshot cho lượt làm cũ"}</Text>
-          </View>;
-        })}
-      </> : null}
-    </ScrollView>
-    <WordLookupModal
-      visible={lookupVisible}
-      loading={lookupLoading}
-      error={lookupError}
-      entry={lookupEntry}
-      word={lookupWord}
-      onClose={closeWordLookup}
-      onRetry={() => void loadWordLookup(lookupWord, lookupContext)}
-      saved={vocabularySaved}
-      saving={vocabularySaving}
-      saveError={vocabularySaveError}
-      onSave={() => void saveCurrentWord()}
-    />
-  </StudyScaffold>;
+            {visible.map((answer) => {
+              const context = questions[answer.questionNumber];
+              const image =
+                context?.question.imageUrl || context?.question.imageBase64;
+              const uri =
+                image?.startsWith("data:") || image?.startsWith("http")
+                  ? image
+                  : image
+                  ? `data:image/jpeg;base64,${image}`
+                  : null;
+              return (
+                <View key={answer.questionNumber} style={styles.card}>
+                  <Text style={styles.title}>
+                    Câu {answer.questionNumber} ·{" "}
+                    {answer.correct ? "Đúng" : "Sai"}
+                  </Text>
+                  {answer.questionContent || context?.question.content ? (
+                    <InteractiveText
+                      text={
+                        answer.questionContent ||
+                        context?.question.content ||
+                        ""
+                      }
+                      textStyle={styles.body}
+                      selectedWord={lookupVisible ? lookupWord : null}
+                      onWordPress={(word, text) =>
+                        void loadWordLookup(word, text)
+                      }
+                    />
+                  ) : null}
+                  {answer.passageContent || context?.passageContent ? (
+                    <View style={styles.passage}>
+                      <Text style={styles.muted}>Đoạn văn</Text>
+                      <InteractiveText
+                        text={
+                          answer.passageContent || context?.passageContent || ""
+                        }
+                        textStyle={styles.body}
+                        selectedWord={lookupVisible ? lookupWord : null}
+                        onWordPress={(word, text) =>
+                          void loadWordLookup(word, text)
+                        }
+                      />
+                    </View>
+                  ) : null}
+                  {uri ? (
+                    <Image
+                      source={{ uri }}
+                      resizeMode="contain"
+                      style={styles.image}
+                    />
+                  ) : null}
+                  {(answer.options.length
+                    ? answer.options
+                    : context?.question.options ?? []
+                  ).map((option, index) => (
+                    <View
+                      key={`${option.label}-${index}`}
+                      style={styles.optionRow}
+                    >
+                      <Text style={styles.body}>{option.label}.</Text>
+                      {option.text ? (
+                        <InteractiveText
+                          text={option.text}
+                          textStyle={styles.optionText}
+                          selectedWord={lookupVisible ? lookupWord : null}
+                          onWordPress={(word, text) =>
+                            void loadWordLookup(word, text)
+                          }
+                        />
+                      ) : null}
+                    </View>
+                  ))}
+                  <Text style={styles.warning}>
+                    Bạn chọn: {answer.selectedOption}
+                  </Text>
+                  <Text style={styles.correct}>
+                    Đáp án đúng:{" "}
+                    {answer.correctOption ??
+                      "Không có snapshot cho lượt làm cũ"}
+                  </Text>
+                </View>
+              );
+            })}
+          </>
+        ) : null}
+      </ScrollView>
+      <WordLookupModal
+        visible={lookupVisible}
+        loading={lookupLoading}
+        error={lookupError}
+        entry={lookupEntry}
+        word={lookupWord}
+        onClose={closeWordLookup}
+        onRetry={() => void loadWordLookup(lookupWord, lookupContext)}
+        saved={vocabularySaved}
+        saving={vocabularySaving}
+        saveError={vocabularySaveError}
+        onSave={() => void saveCurrentWord()}
+      />
+    </StudyScaffold>
+  );
 }
 
 const c = homeDesign.colors;
@@ -215,5 +360,10 @@ const styles = StyleSheet.create({
   warning: { color: c.inProgress, fontSize: 14 },
   correct: { color: c.completed, fontSize: 14 },
   image: { width: "100%", height: 180 },
-  passage: { padding: 12, gap: 6, borderRadius: 10, backgroundColor: c.background },
+  passage: {
+    padding: 12,
+    gap: 6,
+    borderRadius: 10,
+    backgroundColor: c.background,
+  },
 });

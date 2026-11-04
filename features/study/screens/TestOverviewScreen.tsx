@@ -107,10 +107,7 @@ export default function TestOverviewScreen() {
             >
               Listening 45 phút · Reading 75 phút · Tổng cộng 200 câu
             </Text>
-            <AppButton
-              marginTop={6}
-              onPress={startFullTest}
-            >
+            <AppButton marginTop={6} onPress={startFullTest}>
               Bắt đầu Full Test
             </AppButton>
           </YStack>

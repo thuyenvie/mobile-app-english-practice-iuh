@@ -4,5 +4,9 @@ import Screen from "../../../features/auth/screens/LoginScreen";
 
 export default function AuthRoute() {
   const session = useSession();
-  return session.status === "authenticated" ? <Redirect href="/(tabs)/home" /> : <Screen />;
+  return session.status === "authenticated" ? (
+    <Redirect href="/(tabs)/home" />
+  ) : (
+    <Screen />
+  );
 }
