@@ -17,6 +17,7 @@ import { ExamResultCard } from "../components/ExamResultCard";
 import { getExamHistory, type ExamHistoryItem } from "../api/examResultApi";
 import { getExamErrorMessage } from "../api/examApi";
 import { useSession } from "@/lib/auth/useSession";
+import { StartStudyButton } from "../session/StudySessionControls";
 import { getTodaySchedule, type StudySchedule } from "../api/studyPlanApi";
 
 export default function StudyScreen() {
@@ -184,34 +185,38 @@ export default function StudyScreen() {
                 Mục tiêu TOEIC {todaySchedule.plan.targetScore} ·{" "}
                 Mục tiêu gốc: {todaySchedule.plan.dailyMinutes} phút/ngày
               </Text>
+              <Text color={homeDesign.colors.secondary} fontSize={12}>Thời gian phiên học: {Math.floor((todaySchedule.sessionSeconds ?? 0) / 60)} phút</Text>
               {todaySchedule.tasks.length ? (
                 todaySchedule.tasks.map((task) => (
-                  <XStack key={task.id} alignItems="center" gap={9}>
-                    <MaterialCommunityIcons
-                      name={
-                        task.status === "COMPLETED"
-                          ? "check-circle"
-                          : "circle-outline"
-                      }
-                      size={18}
-                      color={
-                        task.status === "COMPLETED"
-                          ? homeDesign.colors.completed
-                          : homeDesign.colors.inProgress
-                      }
-                    />
-                    <YStack flex={1} gap={4}>
-                      <Text color={homeDesign.colors.text} fontSize={12}>
-                        {task.title}
-                      </Text>
+                  <YStack key={task.id} gap={3}>
+                    <XStack alignItems="center" gap={9}>
+                      <MaterialCommunityIcons
+                        name={
+                          task.status === "COMPLETED"
+                            ? "check-circle"
+                            : "circle-outline"
+                        }
+                        size={18}
+                        color={
+                          task.status === "COMPLETED"
+                            ? homeDesign.colors.completed
+                            : homeDesign.colors.inProgress
+                        }
+                      />
+                      <YStack flex={1} gap={4}>
+                        <Text color={homeDesign.colors.text} fontSize={12}>
+                          {task.title}
+                        </Text>
+                        <Text color={homeDesign.colors.secondary} fontSize={11}>
+                          {task.description}
+                        </Text>
+                      </YStack>
                       <Text color={homeDesign.colors.secondary} fontSize={11}>
-                        {task.description}
+                        {task.estimatedMinutes} phút
                       </Text>
-                    </YStack>
-                    <Text color={homeDesign.colors.secondary} fontSize={11}>
-                      {task.estimatedMinutes} phút
-                    </Text>
-                  </XStack>
+                    </XStack>
+                    <StartStudyButton task={task} />
+                  </YStack>
                 ))
               ) : (
                 <Text color={homeDesign.colors.secondary} fontSize={12}>

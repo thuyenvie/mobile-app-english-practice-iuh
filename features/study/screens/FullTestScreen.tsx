@@ -1,3 +1,4 @@
+import { useStudySession } from "../session/StudySessionProvider";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
@@ -50,6 +51,7 @@ export default function FullTestScreen() {
     Number.isInteger(testNumber) &&
     testNumber > 0;
   const session = useSession();
+  const { refresh: refreshStudySession } = useStudySession();
   const insets = useSafeAreaInsets();
   const [loadState, setLoadState] = useState<LoadState>({ status: "loading" });
   const [questionNumber, setQuestionNumber] = useState(1);
@@ -407,6 +409,7 @@ export default function FullTestScreen() {
     } catch (error: unknown) {
       setSubmitError(getExamErrorMessage(error));
     } finally {
+      if (session.status === "authenticated") void refreshStudySession().catch(() => undefined);
       submitLock.current = false;
       setSubmitting(false);
     }
@@ -414,6 +417,7 @@ export default function FullTestScreen() {
     allQuestions,
     answers,
     savedResults,
+    refreshStudySession,
     session.generation,
     session.status,
     startedAt,

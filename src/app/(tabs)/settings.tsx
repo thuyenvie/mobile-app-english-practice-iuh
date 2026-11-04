@@ -11,10 +11,12 @@ import { useSession } from "@/lib/auth/useSession";
 import { homeDesign } from "@/theme/tokens";
 import { deactivateCurrentPushToken } from "../../../features/notifications/api/pushNotificationApi";
 import { logout } from "../../../features/auth/api/authApi";
+import { useStudySession } from "../../../features/study/session/StudySessionProvider";
 import { RecentStudyTimeCard } from "../../../features/home/components/RecentStudyTimeCard";
 
 export default function SettingsScreen() {
   const session = useSession();
+  const { pause } = useStudySession();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -38,6 +40,8 @@ export default function SettingsScreen() {
     setError("");
     try {
       const generation = getSessionSnapshot().generation;
+      let studySessionPaused = true;
+      try { await pause(); } catch { studySessionPaused = false; }
       let pushTokenDeactivated = true;
       try {
         // Huy push truoc khi thu hoi JWT de request van duoc xac thuc.
@@ -61,8 +65,9 @@ export default function SettingsScreen() {
 
       await removeTokens({ generation, onSaved: enterGuestSession });
       router.replace("/(tabs)/home");
-      if (!pushTokenDeactivated || serverRevocationFailed) {
+      if (!studySessionPaused || !pushTokenDeactivated || serverRevocationFailed) {
         const warnings: string[] = [];
+        if (!studySessionPaused) warnings.push("Phiên học chưa được đồng bộ tạm dừng.");
         if (!pushTokenDeactivated) {
           warnings.push("Chưa thể hủy đăng ký thông báo trên máy chủ.");
         }

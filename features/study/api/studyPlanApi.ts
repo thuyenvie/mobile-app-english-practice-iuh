@@ -41,6 +41,7 @@ export interface StudySchedule {
   completedTasks: number;
   totalTasks: number;
   tasks: StudyTask[];
+  sessionSeconds: number;
 }
 
 export interface SaveStudyPlanInput {

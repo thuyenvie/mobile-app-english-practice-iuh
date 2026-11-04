@@ -179,7 +179,7 @@ export function RecentStudyTimeCard({ authenticated }: { authenticated: boolean 
   return (
     <View style={styles.section}>
       <Text accessibilityRole="header" style={styles.sectionTitle}>
-        Thời gian học gần đây (phút)
+        Thời gian làm bài gần đây (phút)
       </Text>
 
       <View style={styles.card}>

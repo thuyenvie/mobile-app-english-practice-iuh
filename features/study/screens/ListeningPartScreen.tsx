@@ -1,3 +1,4 @@
+import { useStudySession } from "../session/StudySessionProvider";
 import { useMemo, useRef, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import {
@@ -28,6 +29,7 @@ import type { ExamQuestion } from "../types";
 
 export default function ListeningPartScreen() {
   const session = useSession();
+  const { refresh: refreshStudySession } = useStudySession();
   const params = useLocalSearchParams<{
     year: string;
     testNumber: string;
@@ -98,6 +100,7 @@ export default function ListeningPartScreen() {
     } catch (e) {
       setError(getExamErrorMessage(e));
     } finally {
+      if (session.status === "authenticated") void refreshStudySession().catch(() => undefined);
       submitting.current = false;
       setBusy(false);
     }
