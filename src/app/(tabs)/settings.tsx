@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ActivityIndicator, Alert, Pressable, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { router } from "expo-router";
 import { Text, YStack } from "tamagui";
 
@@ -11,6 +11,7 @@ import { useSession } from "@/lib/auth/useSession";
 import { homeDesign } from "@/theme/tokens";
 import { deactivateCurrentPushToken } from "../../../features/notifications/api/pushNotificationApi";
 import { logout } from "../../../features/auth/api/authApi";
+import { RecentStudyTimeCard } from "../../../features/home/components/RecentStudyTimeCard";
 
 export default function SettingsScreen() {
   const session = useSession();
@@ -82,7 +83,10 @@ export default function SettingsScreen() {
 
   return (
     <HomeScaffold>
-      <YStack flex={1} padding={24} gap={16} backgroundColor={homeDesign.colors.background}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.content}
+      >
         <Text color={homeDesign.colors.text} fontSize={26} fontWeight="800">
           Cài đặt
         </Text>
@@ -112,11 +116,13 @@ export default function SettingsScreen() {
             </Pressable>
           </YStack>
         )}
-      </YStack>
+        <RecentStudyTimeCard authenticated={session.status === "authenticated"} />
+      </ScrollView>
     </HomeScaffold>
   );
 }
 
 const styles = StyleSheet.create({
+  content: { flexGrow: 1, padding: 24, paddingBottom: 32, gap: 18, backgroundColor: homeDesign.colors.background },
   statusRow: { flexDirection: "row", alignItems: "center", gap: 10 },
 });
