@@ -5,53 +5,76 @@ import { Text, YStack } from "tamagui";
 
 import { AppButton } from "@/components/ui/AppButton";
 import { HomeScaffold } from "../../../features/home/components/HomeScaffold";
-import { getSessionSnapshot, enterGuestSession } from "@/lib/auth/sessionStore";
-import { removeTokens } from "@/lib/auth/tokenStorage";
+import { assertSessionGeneration, getSessionSnapshot, enterGuestSession } from "@/lib/auth/sessionStore";
+import { getAccessToken, removeTokens } from "@/lib/auth/tokenStorage";
 import { useSession } from "@/lib/auth/useSession";
 import { homeDesign } from "@/theme/tokens";
 import { deactivateCurrentPushToken } from "../../../features/notifications/api/pushNotificationApi";
+import { logout } from "../../../features/auth/api/authApi";
 
 export default function SettingsScreen() {
   const session = useSession();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  const switchToGuest = () => {
+  const confirmLogout = () => {
     Alert.alert(
-      "Chuyển sang học thử",
-      "Phiên đăng nhập sẽ bị xóa khỏi thiết bị. Bài học thử tiếp theo không được lưu vào lịch sử.",
+      "Đăng xuất",
+      "Bạn sẽ đăng xuất khỏi tài khoản trên thiết bị này. Sau đó bạn vẫn có thể học thử, nhưng kết quả sẽ không được lưu vào tài khoản.",
       [
         { text: "Hủy", style: "cancel" },
         {
-          text: "Chuyển sang học thử",
-          onPress: () => void confirmSwitchToGuest(),
+          text: "Đăng xuất",
+          style: "destructive",
+          onPress: () => void handleLogout(),
         },
       ],
     );
   };
 
-  const confirmSwitchToGuest = async () => {
+  const handleLogout = async () => {
     setBusy(true);
     setError("");
     try {
       const generation = getSessionSnapshot().generation;
       let pushTokenDeactivated = true;
       try {
+        // Huy push truoc khi thu hoi JWT de request van duoc xac thuc.
         await deactivateCurrentPushToken();
       } catch {
         // Van dang xuat local du offline; dang nhap tai khoan khac se gan lai token.
         pushTokenDeactivated = false;
       }
+      const token = await getAccessToken();
+      assertSessionGeneration(generation);
+      let serverRevocationFailed = false;
+
+      if (token) {
+        try {
+          await logout(token);
+        } catch {
+          // Local sign-out must still work when the API is offline.
+          serverRevocationFailed = true;
+        }
+      }
+
       await removeTokens({ generation, onSaved: enterGuestSession });
-      if (!pushTokenDeactivated) {
+      router.replace("/(tabs)/home");
+      if (!pushTokenDeactivated || serverRevocationFailed) {
+        const warnings: string[] = [];
+        if (!pushTokenDeactivated) {
+          warnings.push("Chưa thể hủy đăng ký thông báo trên máy chủ.");
+        }
+        if (serverRevocationFailed) {
+          warnings.push("Chưa thể xác nhận thu hồi phiên trên máy chủ.");
+        }
         Alert.alert(
-          "Đã chuyển sang học thử",
-          "Thiết bị chưa kết nối được máy chủ để hủy token thông báo. Khi có mạng, hãy đăng nhập lại để đồng bộ thiết bị.",
+          "Đã đăng xuất trên thiết bị",
+          `${warnings.join(" ")} Token đăng nhập đã được xóa khỏi thiết bị.`,
         );
       }
-      router.replace("/(tabs)/home");
     } catch {
-      setError("Không thể xóa phiên đăng nhập. Hãy thử lại.");
+      setError("Không thể đăng xuất. Hãy thử lại.");
     } finally {
       setBusy(false);
     }
@@ -75,8 +98,8 @@ export default function SettingsScreen() {
               Đang đăng nhập: {session.subject ?? "tài khoản"}
             </Text>
             {error ? <Text color={homeDesign.colors.inProgress}>{error}</Text> : null}
-            <AppButton disabled={busy} onPress={switchToGuest}>
-              {busy ? "Đang chuyển..." : "Chuyển sang học thử"}
+            <AppButton disabled={busy} onPress={confirmLogout}>
+              {busy ? "Đang đăng xuất..." : "Đăng xuất"}
             </AppButton>
           </YStack>
         ) : (
