@@ -6,7 +6,8 @@ import type { ExamHistoryItem } from "../api/examResultApi";
 export function ExamResultCard({ item }: { item: ExamHistoryItem }) {
   const submitted = new Date(item.submittedAt);
   const date = Number.isNaN(submitted.getTime()) ? item.submittedAt : submitted.toLocaleString("vi-VN");
-  const label = item.section === "READING" ? `Reading · Part ${item.partNumber}` : "Listening";
+  const section = item.section === "READING" ? "Reading" : "Listening";
+  const label = item.partNumber != null ? `${section} · Part ${item.partNumber}` : section;
   return <Pressable accessibilityRole="button" onPress={() => router.push({
     pathname: "/study/history/[resultId]", params: { resultId: String(item.resultId) },
   })} style={styles.card}>

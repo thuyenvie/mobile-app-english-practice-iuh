@@ -239,27 +239,27 @@ test("concurrent 401 requests share one refresh", async () => {
 test("Guest Listening answers stay in RAM and vanish on a fresh attempt", async () => {
   const app = environment(); app.session.enterGuestSession();
   const hook = app.load("features/study/hooks/useListeningDraft.ts").useListeningDraft;
-  app.hooks.render(() => hook(2026, 1)); await app.hooks.flush();
+  app.hooks.render(() => hook(2026, 1, 1)); await app.hooks.flush();
   assert.equal(app.hooks.output.ready, true);
   app.hooks.output.select(1, "A"); await app.hooks.flush();
   assert.deepEqual(plain(app.hooks.output.answers), {1:"A"});
   assert.deepEqual(app.storageCalls, []);
   app.hooks.dispose();
-  app.hooks.render(() => hook(2026, 1)); await app.hooks.flush();
+  app.hooks.render(() => hook(2026, 1, 1)); await app.hooks.flush();
   assert.deepEqual(plain(app.hooks.output.answers), {});
   assert.deepEqual(app.storageCalls, []);
 });
 
-test("User Listening draft reads and writes only its existing account key", async () => {
+test("User Listening draft migrates legacy answers to a separate account and Part key", async () => {
   const app = environment(); app.session.authenticateSession("alice");
   app.local.set("listening:v1:alice:2026:1", JSON.stringify({ answers: {1:"B"}, startedAt: "2026-01-01T00:00:00Z" }));
   const hook = app.load("features/study/hooks/useListeningDraft.ts").useListeningDraft;
-  app.hooks.render(() => hook(2026, 1)); await app.hooks.flush();
+  app.hooks.render(() => hook(2026, 1, 1)); await app.hooks.flush();
   assert.deepEqual(plain(app.hooks.output.answers), {1:"B"});
   app.hooks.output.select(2, "A"); await app.hooks.flush();
-  assert.deepEqual(JSON.parse(app.local.get("listening:v1:alice:2026:1")).answers, {1:"B",2:"A"});
+  assert.deepEqual(JSON.parse(app.local.get("listening:v1:alice:2026:1:part:1")).answers, {1:"B",2:"A"});
   app.hooks.dispose(); app.session.authenticateSession("bob");
-  app.hooks.render(() => hook(2026, 1)); await app.hooks.flush();
+  app.hooks.render(() => hook(2026, 1, 1)); await app.hooks.flush();
   assert.deepEqual(plain(app.hooks.output.answers), {});
   assert.ok(app.storageCalls.some(([kind,key]) => kind==="local:get" && key==="listening:v1:bob:2026:1"));
 });
@@ -441,3 +441,32 @@ for (const mode of ["guest", "authenticated"]) {
     }
   });
 }
+
+
+test("Guest can switch Listening Parts without mixing answers or persistent storage", async () => {
+  const app = environment(); app.session.enterGuestSession();
+  const hook = app.load("features/study/hooks/useListeningDraft.ts").useListeningDraft;
+  let part = 1;
+  const render = () => hook(2026, 1, part);
+  app.hooks.render(render); await app.hooks.flush();
+  app.hooks.output.select(1, "A"); await app.hooks.flush();
+  part = 2; app.hooks.render(render); await app.hooks.flush();
+  assert.deepEqual(plain(app.hooks.output.answers), {});
+  app.hooks.output.select(7, "B"); await app.hooks.flush();
+  part = 1; app.hooks.render(render); await app.hooks.flush();
+  assert.deepEqual(plain(app.hooks.output.answers), {1:"A"});
+  assert.deepEqual(app.storageCalls, []);
+});
+
+test("Guest submits only selected Listening Part and does not attach JWT", async () => {
+  const app = environment(); app.session.enterGuestSession();
+  app.handler = async config => {
+    assert.equal(config.url, "/exam-service/exams/guest/2026/1/listening/parts/2/submit");
+    assert.equal(config.headers.get("Authorization"), undefined);
+    assert.deepEqual(JSON.parse(config.data).answers, [{questionNumber:7,selectedOption:"B"}]);
+    return {result:{...result("LISTENING"),partNumber:2,totalQuestions:25}};
+  };
+  const value = await app.load("features/study/api/practiceApi.ts").submitListeningPartPractice(
+    app.session.getSessionSnapshot().generation,2026,1,2,{7:"B"},new Date().toISOString());
+  assert.equal(value.partNumber,2); assert.equal(value.totalQuestions,25);
+});

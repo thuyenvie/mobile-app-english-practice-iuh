@@ -19,7 +19,7 @@ import { useExamPart } from "../hooks/useExamPart";
 import { useListeningDraft } from "../hooks/useListeningDraft";
 import { getExamErrorMessage } from "../api/examApi";
 import {
-  submitListeningPractice,
+  submitListeningPartPractice,
   type PracticeResult,
 } from "../api/practiceApi";
 import { useSession } from "@/lib/auth/useSession";
@@ -47,7 +47,7 @@ export default function ListeningPartScreen() {
     partNumber >= 1 &&
     partNumber <= 4;
   const { state, retry } = useExamPart(year, test, partNumber, valid);
-  const draft = useListeningDraft(year, test);
+  const draft = useListeningDraft(year, test, partNumber);
   const [selectedNumber, setSelectedNumber] = useState<number | null>(null);
   const [sheet, setSheet] = useState(false);
   const [confirm, setConfirm] = useState(false);
@@ -58,13 +58,18 @@ export default function ListeningPartScreen() {
   const insets = useSafeAreaInsets();
   const questions = useMemo(
     () =>
-      state.status === "ready"
+      state.status === "ready" && state.part.partNumber === partNumber
         ? [...state.part.questions].sort(
             (a, b) => a.questionNumber - b.questionNumber
           )
         : [],
-    [state]
+    [state, partNumber]
   );
+  const partAnswers = useMemo(() => {
+    const numbers = new Set(questions.map(question => question.questionNumber));
+    return Object.fromEntries(Object.entries(draft.answers).filter(([number]) => numbers.has(Number(number))));
+  }, [questions, draft.answers]);
+  const answeredCount = Object.keys(partAnswers).length;
   const current =
     questions.find((q) => q.questionNumber === selectedNumber) ?? questions[0];
   const index = questions.indexOf(current);
@@ -81,17 +86,18 @@ export default function ListeningPartScreen() {
   const back = () =>
     router.canGoBack() ? router.back() : router.replace("/(tabs)/study");
   const submit = async () => {
-    if (submitting.current || !Object.keys(draft.answers).length) return;
+    if (submitting.current || !answeredCount) return;
     submitting.current = true;
     setBusy(true);
     setError("");
     try {
       setResult(
-        await submitListeningPractice(
+        await submitListeningPartPractice(
           session.generation,
           year,
           test,
-          draft.answers,
+          partNumber,
+          partAnswers,
           draft.startedAt
         )
       );
@@ -124,22 +130,9 @@ export default function ListeningPartScreen() {
           />
         </View>
         <GuestPracticeNotice
-          hasAnswers={Object.keys(draft.answers).length > 0}
+          hasAnswers={answeredCount > 0}
           busy={busy}
         />
-        <View style={styles.row}>
-          {[1, 2, 3, 4].map((part) => (
-            <Action
-              key={part}
-              text={`Part ${part}`}
-              disabled={busy || part === partNumber}
-              onPress={() => {
-                setSelectedNumber(null);
-                router.setParams({ partNumber: String(part) });
-              }}
-            />
-          ))}
-        </View>
         {current ? (
           <PracticeAudioPlayer
             key={`${activePassage?.id ?? current.id}-${
@@ -165,7 +158,7 @@ export default function ListeningPartScreen() {
           <>
             <Text style={styles.progress}>
               Câu {current.questionNumber} · Đã chọn{" "}
-              {Object.keys(draft.answers).length}/100
+              {answeredCount}/{questions.length}
             </Text>
             {draft.error ? (
               <Text style={styles.warning}>{draft.error}</Text>
@@ -246,9 +239,9 @@ export default function ListeningPartScreen() {
                 }
               />
               <Action
-                text="Nộp Listening"
-                disabled={busy || !!result}
-                onPress={() => setConfirm(true)}
+                text="Nộp"
+                disabled={busy || !!result || !answeredCount}
+                onPress={() => { setError(""); setConfirm(true); }}
               />
               <Action
                 text="Câu sau ›"
@@ -276,7 +269,7 @@ export default function ListeningPartScreen() {
             <View style={styles.dialog}>
               {result ? (
                 <>
-                  <Text style={styles.title}>Kết quả Listening</Text>
+                  <Text style={styles.title}>Kết quả Listening · Part {result.partNumber}</Text>
                   <Text style={styles.body}>
                     Đúng {result.score}/{result.totalQuestions} câu · Đã trả lời{" "}
                     {result.answeredQuestions} câu
@@ -303,11 +296,10 @@ export default function ListeningPartScreen() {
                 </>
               ) : confirm ? (
                 <>
-                  <Text style={styles.title}>Nộp toàn bộ Listening?</Text>
+                  <Text style={styles.title}>Nộp Listening Part {partNumber}?</Text>
                   <Text style={styles.body}>
-                    Bạn đã chọn {Object.keys(draft.answers).length}/100 câu. Câu
-                    chưa trả lời không có điểm. Backend cần đủ đề và đáp án của
-                    cả Part 1–4.
+                    Bạn đã chọn {answeredCount}/{questions.length} câu. Câu
+                    chưa trả lời không có điểm. Chỉ Part {partNumber} được chấm và lưu kết quả.
                   </Text>
                   <Text style={styles.muted}>
                     {session.status === "guest"
@@ -316,8 +308,8 @@ export default function ListeningPartScreen() {
                   </Text>
                   {error ? <Text style={styles.warning}>{error}</Text> : null}
                   <Action
-                    text={busy ? "Đang chấm..." : "Xác nhận nộp"}
-                    disabled={busy || !Object.keys(draft.answers).length}
+                    text={busy ? "Đang chấm..." : "Nộp"}
+                    disabled={busy || !answeredCount}
                     onPress={() => void submit()}
                   />
                   <Action
@@ -360,7 +352,7 @@ export default function ListeningPartScreen() {
                     ))}
                   </ScrollView>
                   <Action
-                    text="Nộp Listening (100 câu)"
+                    text="Nộp"
                     onPress={() => setConfirm(true)}
                   />
                   <Action text="Đóng" onPress={() => setSheet(false)} />

@@ -1,7 +1,7 @@
 import { publicApi } from "@/lib/axios/axios";
 import { assertSessionGeneration, getSessionSnapshot } from "@/lib/auth/sessionStore";
 import { submitReadingPart, type ExamResult } from "./examResultApi";
-import { submitListening } from "./listeningApi";
+import { submitListening, submitListeningPart } from "./listeningApi";
 import { toListeningAnswers } from "../utils/listening";
 import type { ExamAnswers } from "../types";
 
@@ -32,6 +32,16 @@ export async function submitListeningPractice(
 ): Promise<PracticeResult> {
   if (!isGuestAttempt(generation)) return submitListening(year, testNumber, answers, startedAt);
   const path = "/exam-service/exams/guest/" + year + "/" + testNumber + "/listening/submit";
+  return (await publicApi.post<{ result: GuestExamResult }>(path, {
+    startedAt, answers: toListeningAnswers(answers),
+  })).data.result;
+}
+
+export async function submitListeningPartPractice(
+  generation: number, year: number, testNumber: number, partNumber: number, answers: ExamAnswers, startedAt: string,
+): Promise<PracticeResult> {
+  if (!isGuestAttempt(generation)) return submitListeningPart(year, testNumber, partNumber, answers, startedAt);
+  const path = `/exam-service/exams/guest/${year}/${testNumber}/listening/parts/${partNumber}/submit`;
   return (await publicApi.post<{ result: GuestExamResult }>(path, {
     startedAt, answers: toListeningAnswers(answers),
   })).data.result;

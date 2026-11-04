@@ -25,10 +25,14 @@ import { getExamErrorMessage, getExamPart } from "../api/examApi";
 import { getListeningAudio } from "../api/listeningApi";
 import {
   submitListeningPractice,
+  submitListeningPartPractice,
   submitReadingPractice,
   type PracticeResult,
 } from "../api/practiceApi";
 import { StudyScaffold } from "../components/StudyScaffold";
+import { PracticeAudioPlayer } from "../components/PracticeAudioPlayer";
+import { GuestResultDetails } from "../components/GuestResultDetails";
+import { answersForPart, parseSelectedParts } from "../utils/selectedParts";
 import { useSession } from "@/lib/auth/useSession";
 import { toeicParts } from "../data/toeicCatalog";
 import type { ExamPart, ExamQuestion } from "../types";
@@ -39,17 +43,18 @@ type LoadState =
   | { status: "loading" }
   | { status: "error"; message: string }
   | { status: "ready"; parts: ExamPart[] };
-type ResultKey = "listening" | "reading-5" | "reading-6" | "reading-7";
+type ResultKey = "listening" | `reading-${number}` | `listening-${number}`;
 
-export default function FullTestScreen() {
-  const params = useLocalSearchParams<{ year?: string; testNumber?: string }>();
+export default function FullTestScreen({ practice = false }: { practice?: boolean } = {}) {
+  const params = useLocalSearchParams<{ year?: string; testNumber?: string; parts?: string }>();
+  const partNumbers = useMemo(() => practice ? parseSelectedParts(params.parts) : PART_NUMBERS, [practice, params.parts]);
   const year = Number(params.year);
   const testNumber = Number(params.testNumber);
   const valid =
     Number.isInteger(year) &&
     year > 0 &&
     Number.isInteger(testNumber) &&
-    testNumber > 0;
+    testNumber > 0 && partNumbers.length > 0;
   const session = useSession();
   const { refresh: refreshStudySession } = useStudySession();
   const insets = useSafeAreaInsets();
@@ -78,14 +83,16 @@ export default function FullTestScreen() {
   const c = homeDesign.colors;
   const draftKey =
     session.status === "authenticated" && session.subject
-      ? `full-test:v1:${encodeURIComponent(
+      ? `${practice ? "practice-parts:v1" : "full-test:v1"}:${encodeURIComponent(
           session.subject
-        )}:${year}:${testNumber}`
+        )}:${year}:${testNumber}${practice ? ":" + partNumbers.join("-") : ""}`
       : null;
   const results = Object.values(savedResults).filter(
     (item): item is PracticeResult => Boolean(item)
   );
-  const expectedResultCount = [
+  const expectedResultCount = practice
+    ? (loadState.status === "ready" ? loadState.parts.filter((part) => Object.keys(answersForPart(part, answers)).length > 0).length : 0)
+    : [
     Object.keys(answers).some((number) => Number(number) <= 100),
     ...[5, 6, 7].map((part) =>
       Object.keys(answers).some((number) => {
@@ -172,7 +179,7 @@ export default function FullTestScreen() {
     let active = true;
     setLoadState({ status: "loading" });
     Promise.all(
-      PART_NUMBERS.map((part) => getExamPart(year, testNumber, part))
+      partNumbers.map((part) => getExamPart(year, testNumber, part))
     ).then(
       (parts) => {
         if (active) setLoadState({ status: "ready", parts });
@@ -188,12 +195,12 @@ export default function FullTestScreen() {
     return () => {
       active = false;
     };
-  }, [testNumber, valid, year]);
+  }, [testNumber, valid, year, partNumbers]);
 
   // Nap san file nghe lien tuc cua de truoc khi bat dau lam bai.
   useEffect(() => {
     let active = true;
-    if (!valid) return;
+    if (!valid || practice) return;
     getListeningAudio(year, testNumber)
       .then(async (audio) => {
         const uri = toAbsoluteUrl(audio.streamPath);
@@ -215,7 +222,7 @@ export default function FullTestScreen() {
         /* Audio da duoc giai phong. */
       }
     };
-  }, [fullAudioPlayer, testNumber, valid, year]);
+  }, [fullAudioPlayer, testNumber, valid, year, practice]);
 
   const allQuestions = useMemo(
     () =>
@@ -230,7 +237,7 @@ export default function FullTestScreen() {
     (question) => question.questionNumber === questionNumber
   );
   const currentPartNumber =
-    PART_NUMBERS.find(
+    partNumbers.find(
       (number) =>
         loadState.status === "ready" &&
         loadState.parts
@@ -264,7 +271,7 @@ export default function FullTestScreen() {
 
   useEffect(() => {
     if (
-      !startedAt ||
+      practice || !startedAt ||
       !audioStatus.isLoaded ||
       fullAudioStarted.current ||
       questionNumber > 100
@@ -276,7 +283,7 @@ export default function FullTestScreen() {
     } catch {
       setFullAudioError("Không phát được audio Listening.");
     }
-  }, [audioStatus.isLoaded, fullAudioPlayer, questionNumber, startedAt]);
+  }, [audioStatus.isLoaded, fullAudioPlayer, questionNumber, startedAt, practice]);
 
   useEffect(() => {
     if (questionNumber > 100 && audioStatus.playing) {
@@ -330,7 +337,7 @@ export default function FullTestScreen() {
   const begin = () => {
     const now = Date.now();
     setStartedAt(new Date(now).toISOString());
-    setExpiresAt(now + TEST_SECONDS * 1000);
+    setExpiresAt(practice ? null : now + TEST_SECONDS * 1000);
     setQuestionNumber(allQuestions[0]?.questionNumber ?? 1);
   };
 
@@ -342,7 +349,7 @@ export default function FullTestScreen() {
   const submit = useCallback(async () => {
     if (submitLock.current || !startedAt || !Object.keys(answers).length)
       return;
-    if (session.status === "guest") {
+    if (session.status === "guest" && !practice) {
       setSubmitError(
         "Backend hiện yêu cầu đăng nhập để chấm và lưu kết quả Full Test."
       );
@@ -352,6 +359,22 @@ export default function FullTestScreen() {
     setSubmitting(true);
     setSubmitError("");
     try {
+      if (practice) {
+        if (loadState.status !== "ready") return;
+        if (Object.keys(answers).some((number) => !allQuestions.some((question) => question.questionNumber === Number(number)))) {
+          throw new Error("Có đáp án không thuộc các Part đã chọn. Hãy mở lại bài luyện tập.");
+        }
+        // Chi gui Part co dap an. Giu ket qua da nhan de thu lai phan loi.
+        for (const part of loadState.parts) {
+          const partAnswers = answersForPart(part, answers);
+          const key: ResultKey = `${part.partNumber <= 4 ? "listening" : "reading"}-${part.partNumber}`;
+          if (!Object.keys(partAnswers).length || savedResults[key]) continue;
+          const submitPart = part.partNumber <= 4 ? submitListeningPartPractice : submitReadingPractice;
+          const result = await submitPart(session.generation, year, testNumber, part.partNumber, partAnswers, startedAt);
+          setSavedResults((current) => ({ ...current, [key]: result }));
+        }
+        return;
+      }
       const byNumber = new Map(
         allQuestions.map((question) => [question.questionNumber, question])
       );
@@ -423,6 +446,8 @@ export default function FullTestScreen() {
     startedAt,
     testNumber,
     year,
+    practice,
+    loadState,
   ]);
 
   useEffect(() => {
@@ -447,7 +472,7 @@ export default function FullTestScreen() {
       <StudyScaffold>
         <View style={styles.center}>
           <ActivityIndicator color={c.tabActive} />
-          <Text style={styles.muted}>Đang tải đủ 7 Part của đề thi...</Text>
+          <Text style={styles.muted}>{practice ? "Đang tải các Part đã chọn..." : "Đang tải đủ 7 Part của đề thi..."}</Text>
         </View>
       </StudyScaffold>
     );
@@ -460,13 +485,12 @@ export default function FullTestScreen() {
         </View>
       </StudyScaffold>
     );
-  if (allQuestions.length !== 200)
+  if ((!practice && allQuestions.length !== 200) || (practice && loadState.parts.some((part) => !part.questions.length)))
     return (
       <StudyScaffold>
         <View style={styles.center}>
           <Text style={styles.notice}>
-            Đề hiện có {allQuestions.length}/200 câu, chưa đủ dữ liệu để bắt đầu
-            Full Test.
+            {practice ? "Một Part đã chọn chưa có câu hỏi. Hãy quay lại chọn Part khác." : `Đề hiện có ${allQuestions.length}/200 câu, chưa đủ dữ liệu để bắt đầu Full Test.`}
           </Text>
           <Action title="Quay lại" onPress={back} />
         </View>
@@ -485,10 +509,10 @@ export default function FullTestScreen() {
           />
           <View style={styles.heading}>
             <Text style={styles.title}>
-              Full Test · ETS {year} Test {testNumber}
+              {practice ? "Luyện tập" : "Full Test"} · ETS {year} Test {testNumber}
             </Text>
             <Text style={styles.muted}>
-              {startedAt
+              {practice ? `Part ${partNumbers.join(", ")} · ${allQuestions.length} câu` : startedAt
                 ? `Còn lại ${formatTime(secondsLeft)}`
                 : "200 câu · 120 phút"}
             </Text>
@@ -504,15 +528,14 @@ export default function FullTestScreen() {
 
         {!startedAt ? (
           <ScrollView contentContainerStyle={styles.intro}>
-            <Text style={styles.title}>Bài thi TOEIC đầy đủ</Text>
+            <Text style={styles.title}>{practice ? `Luyện Part ${partNumbers.join(", ")}` : "Bài thi TOEIC đầy đủ"}</Text>
             <Text style={styles.body}>
-              Làm liên tục Part 1–7 trong 120 phút. Audio Listening phát theo
+              {practice ? "Làm các Part đã chọn trong cùng một lượt, không giới hạn thời gian. Audio nghe riêng theo câu hoặc nhóm hội thoại. Chuyển câu bằng nút điều hướng hoặc bảng câu hỏi." : <>Làm liên tục Part 1–7 trong 120 phút. Audio Listening phát theo
               một track toàn bài. Bạn có thể chuyển câu bằng nút điều hướng hoặc
-              bảng câu hỏi.
+              bảng câu hỏi.</>}
             </Text>
             <Text style={styles.muted}>
-              Đề đã tải đủ 200 câu. Khi nộp, backend sẽ lưu một kết quả
-              Listening và tối đa ba kết quả Reading theo Part.
+              {practice ? `Đã tải ${allQuestions.length} câu. Kết quả lưu riêng từng Part; Part chưa trả lời câu nào sẽ không được gửi chấm.` : "Đề đã tải đủ 200 câu. Khi nộp, backend sẽ lưu một kết quả Listening và tối đa ba kết quả Reading theo Part."}
             </Text>
             {session.status === "guest" ? (
               <Text style={styles.muted}>
@@ -520,7 +543,7 @@ export default function FullTestScreen() {
                 bản nháp và lịch sử.
               </Text>
             ) : null}
-            {fullAudioError ? (
+            {practice ? null : fullAudioError ? (
               <Text style={styles.warning}>
                 Không tải được audio: {fullAudioError}. Bạn vẫn có thể bắt đầu,
                 nhưng phần nghe sẽ không có âm thanh.
@@ -531,7 +554,8 @@ export default function FullTestScreen() {
               </Text>
             )}
             <Action
-              title="Bắt đầu làm bài · 120 phút"
+              title={practice ? "Bắt đầu làm bài" : "Bắt đầu làm bài · 120 phút"}
+              disabled={!draftReady}
               onPress={begin}
               primary
             />
@@ -540,7 +564,14 @@ export default function FullTestScreen() {
           <>
             {currentQuestion ? (
               <>
-                {currentPartNumber <= 4 ? (
+                {practice && currentPartNumber <= 4 ? (
+                  <PracticeAudioPlayer
+                    key={`${currentPartNumber}-${currentPassage?.id ?? currentQuestion.id}`}
+                    audio={currentPassage?.audioSegment ?? null}
+                    activeQuestionNumber={questionNumber}
+                    paused={confirmSubmit || questionSheet || results.length > 0}
+                  />
+                ) : currentPartNumber <= 4 ? (
                   <View style={styles.audioBanner}>
                     {audioStatus.isBuffering ? (
                       <ActivityIndicator color={c.tabActive} />
@@ -590,8 +621,7 @@ export default function FullTestScreen() {
                 ) : null}
                 <View style={styles.progressRow}>
                   <Text style={styles.progress}>
-                    Câu {questionNumber}/200 · {Object.keys(answers).length} câu
-                    đã chọn
+                    Câu {questionNumber} · Đã chọn {Object.keys(answers).length}/{allQuestions.length}
                   </Text>
                   <Text style={styles.partLabel}>Part {currentPartNumber}</Text>
                 </View>
@@ -643,7 +673,7 @@ export default function FullTestScreen() {
                           >
                             <Text style={styles.optionLabel}>{label}</Text>
                             {currentPartNumber >= 3 && option?.text ? (
-                              <Text style={styles.body}>{option.text}</Text>
+                              <Text style={[styles.body, styles.optionText]}>{option.text}</Text>
                             ) : null}
                           </Pressable>
                         );
@@ -662,7 +692,7 @@ export default function FullTestScreen() {
                     }
                   />
                   <Action
-                    title="Nộp bài"
+                    title="Nộp"
                     disabled={submitting || results.length > 0}
                     onPress={() => setConfirmSubmit(true)}
                   />
@@ -705,12 +735,12 @@ export default function FullTestScreen() {
                   </Text>
                   <Text style={styles.body}>
                     Đúng {totalScore}/{totalScoredQuestions} câu đã chấm · Đã
-                    trả lời {totalAnswered}/200 câu
+                    trả lời {totalAnswered}/{allQuestions.length} câu
                   </Text>
                   <Text style={styles.muted}>
-                    Backend lưu từng phần riêng, nên lịch sử có một kết quả
-                    Listening và các kết quả Reading đã nộp.
+                    {practice ? "Mỗi Part đã làm có một kết quả riêng. Part chưa trả lời câu nào không được gửi chấm." : "Backend lưu từng phần riêng, nên lịch sử có một kết quả Listening và các kết quả Reading đã nộp."}
                   </Text>
+                  <ScrollView style={styles.sheetScroll}>
                   {results.map((result) => (
                     <View
                       key={
@@ -721,7 +751,7 @@ export default function FullTestScreen() {
                       style={styles.resultRow}
                     >
                       <Text style={styles.body}>
-                        {result.section === "LISTENING"
+                        {result.partNumber != null ? `${result.section === "LISTENING" ? "Listening" : "Reading"} · Part ${result.partNumber}` : result.section === "LISTENING"
                           ? "Listening · Part 1–4"
                           : `Reading · Part ${result.partNumber}`}
                         : {result.score}/{result.totalQuestions}
@@ -738,8 +768,10 @@ export default function FullTestScreen() {
                           }}
                         />
                       ) : null}
+                      {practice && !("resultId" in result) ? <GuestResultDetails result={result} /> : null}
                     </View>
                   ))}
+                  </ScrollView>
                   {submitError ? (
                     <Text style={styles.warning}>{submitError}</Text>
                   ) : null}
@@ -769,12 +801,11 @@ export default function FullTestScreen() {
                 </>
               ) : confirmSubmit ? (
                 <>
-                  <Text style={styles.title}>Nộp bài Full Test?</Text>
+                  <Text style={styles.title}>{practice ? "Nộp bài luyện tập?" : "Nộp bài Full Test?"}</Text>
                   <Text style={styles.body}>
-                    Đã chọn {Object.keys(answers).length}/200 câu. Câu bỏ trống
-                    sẽ không được gửi để chấm.
+                    Đã chọn {Object.keys(answers).length}/{allQuestions.length} câu. Câu bỏ trống không có điểm. Part chưa có đáp án sẽ không được gửi chấm.
                   </Text>
-                  {session.status === "guest" ? (
+                  {session.status === "guest" && !practice ? (
                     <Text style={styles.warning}>
                       Hãy đăng nhập trước khi nộp để backend chấm điểm và lưu
                       lịch sử.
@@ -783,7 +814,7 @@ export default function FullTestScreen() {
                   {submitError ? (
                     <Text style={styles.warning}>{submitError}</Text>
                   ) : null}
-                  {session.status === "guest" ? (
+                  {session.status === "guest" && !practice ? (
                     <Action
                       title="Đăng nhập"
                       onPress={() => router.push("/auth/login")}
@@ -792,7 +823,7 @@ export default function FullTestScreen() {
                   ) : (
                     <Action
                       title={
-                        submitting ? "Đang nộp các phần..." : "Xác nhận nộp"
+                        submitting ? "Đang nộp..." : "Nộp"
                       }
                       disabled={submitting || !Object.keys(answers).length}
                       onPress={() => void submit()}
@@ -809,7 +840,7 @@ export default function FullTestScreen() {
                 <>
                   <Text style={styles.title}>Bảng câu hỏi</Text>
                   <ScrollView style={styles.sheetScroll}>
-                    {toeicParts.map((part) => {
+                    {toeicParts.filter((part) => partNumbers.includes(part.number)).map((part) => {
                       const partData = loadState.parts.find(
                         (item) => item.partNumber === part.number
                       );
@@ -859,7 +890,7 @@ export default function FullTestScreen() {
                     onPress={() => setQuestionSheet(false)}
                   />
                   <Action
-                    title="Nộp bài"
+                    title="Nộp"
                     onPress={() => {
                       setQuestionSheet(false);
                       setConfirmSubmit(true);
@@ -1016,6 +1047,7 @@ const styles = StyleSheet.create({
     borderColor: c.border,
   },
   optionLabel: { color: c.text, fontSize: 16, fontWeight: "800" },
+  optionText: { flex: 1, flexShrink: 1 },
   selected: { borderColor: c.tabActive, backgroundColor: "#334018" },
   footer: {
     flexDirection: "row",

@@ -31,3 +31,11 @@ test("stream di qua cung gateway va khong lap dau slash", () => {
     "http://10.0.2.2:9999/api/exam-service/exams/2026/1/listening/audio/stream");
 });
 
+
+test("ban nhap Part duoc tach dung pham vi cau hoi", () => {
+  const all={1:"A",6:"D",7:"C",31:"A",32:"D",70:"B",71:"C",100:"A"};
+  assert.deepEqual(plain(context.exports.listeningPartAnswers(all,1)),{1:"A",6:"D"});
+  assert.deepEqual(plain(context.exports.listeningPartAnswers(all,2)),{7:"C",31:"A"});
+  assert.deepEqual(plain(context.exports.listeningPartAnswers(all,3)),{32:"D",70:"B"});
+  assert.deepEqual(plain(context.exports.listeningPartAnswers(all,4)),{71:"C",100:"A"});
+});

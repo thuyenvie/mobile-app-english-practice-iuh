@@ -1,7 +1,8 @@
 import { useState } from "react";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { router, useLocalSearchParams } from "expo-router";
-import { ScrollView } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text as NativeText, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Text, XStack, YStack } from "tamagui";
 
 import { AppButton } from "@/components/ui/AppButton";
@@ -15,16 +16,33 @@ export default function TestOverviewScreen() {
   const params = useLocalSearchParams<{ year?: string; testNumber?: string }>();
   const year = Number(params.year);
   const testNumber = Number(params.testNumber);
-  const [notice, setNotice] = useState("");
-  const validParams = Number.isInteger(year) && Number.isInteger(testNumber);
+  const [selectedParts, setSelectedParts] = useState<number[]>([]);
+  const insets = useSafeAreaInsets();
+  const validParams = Number.isInteger(year) && year > 0 && Number.isInteger(testNumber) && testNumber > 0;
+  const selectedQuestionCount = toeicParts.filter((part) => selectedParts.includes(part.number))
+    .reduce((total, part) => total + part.questionCount, 0);
 
-  const openPart = (partNumber: number) => {
+  const togglePart = (partNumber: number) => {
+    setSelectedParts((current) => current.includes(partNumber)
+      ? current.filter((part) => part !== partNumber)
+      : [...current, partNumber].sort((a, b) => a - b));
+  };
+
+  const startPractice = () => {
+    if (!selectedParts.length) return;
+    if (selectedParts.length === 1) {
+      router.push({
+        pathname: "/study/[year]/[testNumber]/parts/[partNumber]",
+        params: { year: String(year), testNumber: String(testNumber), partNumber: String(selectedParts[0]) },
+      });
+      return;
+    }
     router.push({
-      pathname: "/study/[year]/[testNumber]/parts/[partNumber]",
+      pathname: "/study/[year]/[testNumber]/practice",
       params: {
         year: String(year),
         testNumber: String(testNumber),
-        partNumber: String(partNumber),
+        parts: selectedParts.join(","),
       },
     });
   };
@@ -86,7 +104,9 @@ export default function TestOverviewScreen() {
           </AppButton>
         </YStack>
       ) : (
+        <>
         <ScrollView
+          style={styles.scroll}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ padding: 16, paddingBottom: 36 }}
         >
@@ -112,18 +132,12 @@ export default function TestOverviewScreen() {
             </AppButton>
           </YStack>
 
-          {notice ? (
-            <Text
-              role="status"
-              color={homeDesign.colors.inProgress}
-              backgroundColor={homeDesign.colors.surface}
-              borderRadius={12}
-              padding={12}
-              marginBottom={18}
-            >
-              {notice}
+          <YStack gap={10} marginBottom={20}>
+            <Text color={homeDesign.colors.text} fontSize={17} fontWeight="700">Chọn Part để luyện tập</Text>
+            <Text color={homeDesign.colors.secondary} fontSize={12}>
+              Chọn một hoặc nhiều Part Listening và Reading để làm trong cùng lượt.
             </Text>
-          ) : null}
+          </YStack>
 
           <YStack gap={12} marginBottom={24}>
             <SectionTitle title="Listening · 45 phút" hint="Part 1–4" />
@@ -133,7 +147,8 @@ export default function TestOverviewScreen() {
                 <PartCard
                   key={part.number}
                   part={part}
-                  onStart={() => openPart(part.number)}
+                  selected={selectedParts.includes(part.number)}
+                  onStart={() => togglePart(part.number)}
                 />
               ))}
           </YStack>
@@ -146,12 +161,44 @@ export default function TestOverviewScreen() {
                 <PartCard
                   key={part.number}
                   part={part}
-                  onStart={() => openPart(part.number)}
+                  selected={selectedParts.includes(part.number)}
+                  onStart={() => togglePart(part.number)}
                 />
               ))}
           </YStack>
         </ScrollView>
+        <View style={[styles.footer, { paddingBottom: Math.max(12, insets.bottom) }]}>
+          <NativeText style={styles.selectionSummary}>
+            {selectedParts.length ? `Part ${selectedParts.join(", ")} · ${selectedQuestionCount} câu` : "Chưa chọn Part nào"}
+          </NativeText>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Bắt đầu luyện tập, đã chọn ${selectedParts.length} Part`}
+            accessibilityState={{ disabled: !selectedParts.length }}
+            disabled={!selectedParts.length}
+            onPress={startPractice}
+            style={[styles.startButton, !selectedParts.length && styles.disabled]}
+          >
+            <NativeText style={styles.startLabel}>
+              {selectedParts.length ? `Bắt đầu luyện tập (${selectedParts.length} Part)` : "Chọn ít nhất một Part"}
+            </NativeText>
+          </Pressable>
+        </View>
+        </>
       )}
     </StudyScaffold>
   );
 }
+
+const styles = StyleSheet.create({
+  scroll: { flex: 1 },
+  footer: {
+    paddingHorizontal: 16, paddingTop: 10, gap: 8,
+    backgroundColor: homeDesign.colors.background,
+    borderTopWidth: 1, borderTopColor: homeDesign.colors.border,
+  },
+  selectionSummary: { color: homeDesign.colors.secondary, fontSize: 13, textAlign: "center" },
+  startButton: { minHeight: 52, padding: 14, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: homeDesign.colors.link },
+  startLabel: { color: homeDesign.colors.text, fontSize: 16, fontWeight: "700", textAlign: "center" },
+  disabled: { opacity: 0.45 },
+});

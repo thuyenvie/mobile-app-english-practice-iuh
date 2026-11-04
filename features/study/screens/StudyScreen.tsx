@@ -24,7 +24,6 @@ export default function StudyScreen() {
   const session = useSession();
   const isGuest = session.status === "guest";
   const [selectedYear, setSelectedYear] = useState<number>(toeicYears[0]);
-  const [notice, setNotice] = useState("");
   const { state, retry } = useTestsByYear(selectedYear);
   const [recent, setRecent] = useState<ExamHistoryItem[]>([]);
   const [recentLoading, setRecentLoading] = useState(true);
@@ -296,39 +295,6 @@ export default function StudyScreen() {
               message={`Chưa có đề ETS ${selectedYear} trong hệ thống.`}
             />
           )}
-        </YStack>
-
-        <YStack gap={12} marginBottom={24}>
-          <SectionTitle title="Luyện theo kỹ năng" />
-          <XStack gap={12}>
-            <AppButton
-              flex={1}
-              minHeight={82}
-              backgroundColor={homeDesign.colors.tab}
-              color={homeDesign.colors.cardText}
-              onPress={() =>
-                setNotice("Hãy chọn một đề để luyện Listening Part 1–4.")
-              }
-            >
-              Listening · Part 1–4
-            </AppButton>
-            <AppButton
-              flex={1}
-              minHeight={82}
-              backgroundColor={homeDesign.colors.tabActive}
-              color={homeDesign.colors.cardText}
-              onPress={() =>
-                setNotice("Hãy chọn một đề để luyện Reading Part 5–7.")
-              }
-            >
-              Reading · Part 5–7
-            </AppButton>
-          </XStack>
-          {notice ? (
-            <Text color={homeDesign.colors.secondary} fontSize={12}>
-              {notice}
-            </Text>
-          ) : null}
         </YStack>
 
         {isGuest ? (

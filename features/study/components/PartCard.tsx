@@ -1,24 +1,32 @@
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { Pressable } from "react-native";
 import { Text, XStack, YStack } from "tamagui";
 
-import { AppButton } from "@/components/ui/AppButton";
 import { homeDesign } from "@/theme/tokens";
 import type { ToeicPartDefinition } from "../types";
 
 export function PartCard({
   part,
   onStart,
+  selected,
 }: {
   part: ToeicPartDefinition;
   onStart: () => void;
+  selected?: boolean;
 }) {
   const listening = part.section === "LISTENING";
 
   return (
+    <Pressable
+      onPress={onStart}
+      accessibilityRole={selected === undefined ? "button" : "checkbox"}
+      accessibilityState={selected === undefined ? undefined : { checked: selected }}
+      accessibilityLabel={`Part ${part.number} · ${part.title}`}
+    >
     <XStack
       backgroundColor={homeDesign.colors.surface}
       borderWidth={1}
-      borderColor={homeDesign.colors.border}
+      borderColor={selected ? homeDesign.colors.tabActive : homeDesign.colors.border}
       borderRadius={16}
       padding={14}
       alignItems="center"
@@ -40,7 +48,7 @@ export function PartCard({
           color={homeDesign.colors.cardText}
         />
       </YStack>
-      <YStack flex={1} gap={3}>
+      <YStack flex={1} minWidth={0} gap={3}>
         <Text color={homeDesign.colors.text} fontSize={15} fontWeight="700">
           Part {part.number} · {part.title}
         </Text>
@@ -49,14 +57,12 @@ export function PartCard({
           câu
         </Text>
       </YStack>
-      <AppButton
-        appearance="text"
-        color={homeDesign.colors.link}
-        fontSize={12}
-        onPress={onStart}
-      >
-        Bắt đầu
-      </AppButton>
+      <MaterialCommunityIcons
+        name={selected === undefined ? "chevron-right" : selected ? "checkbox-marked" : "checkbox-blank-outline"}
+        size={24}
+        color={selected ? homeDesign.colors.tabActive : homeDesign.colors.link}
+      />
     </XStack>
+    </Pressable>
   );
 }

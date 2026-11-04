@@ -66,7 +66,7 @@ export default function ListeningReviewScreen() {
         setLoading(false);
         // Snapshot Reading la nguon chinh; tai de hien tai chi de bo sung anh va du lieu cu.
         const partNumbers =
-          data.section === "READING" && data.partNumber
+          data.partNumber != null
             ? [data.partNumber]
             : [1, 2, 3, 4];
         const parts = await Promise.allSettled(
@@ -207,7 +207,7 @@ export default function ListeningReviewScreen() {
                 ETS {result.year} · Test {result.testNumber} ·{" "}
                 {result.section === "READING"
                   ? `Reading · Part ${result.partNumber}`
-                  : "Listening"}
+                  : result.partNumber != null ? `Listening · Part ${result.partNumber}` : "Listening"}
               </Text>
               <Text style={styles.body}>
                 Đúng {result.score}/{result.totalQuestions} câu · Đã trả lời{" "}
