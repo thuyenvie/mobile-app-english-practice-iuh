@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1065538633542",
+    "project_id": "english-practice-expo",
+    "storage_bucket": "english-practice-expo.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1065538633542:android:504ce85e1636f46277af47",
+        "android_client_info": {
+          "package_name": "com.dohoainho.englishpractice"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC4WMJHyT7hRyCbDjnbEIUOBJ1czQ2eDV0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
