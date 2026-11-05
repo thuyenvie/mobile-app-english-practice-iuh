@@ -1,41 +1,48 @@
-import type { PropsWithChildren } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
-import { Theme, YStack } from 'tamagui';
+import type { PropsWithChildren } from "react";
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
+import { Text, Theme } from "tamagui";
 
-import { authDesign, spacing } from '@/theme/tokens';
-import { AuthHeader } from './AuthHeader';
+import { AuthHeader } from "./AuthHeader";
 
-export function AuthScaffold({ children, onBack, variant }: PropsWithChildren<{ onBack?: () => void; variant?: "login" }>) {
+type AuthScaffoldProps = PropsWithChildren<{ title: string; subtitle: string }>;
+
+export function AuthScaffold({ children, title, subtitle }: AuthScaffoldProps) {
   const insets = useSafeAreaInsets();
 
   return (
     <Theme name="light_auth">
-      <StatusBar style="light" />
-      <KeyboardAvoidingView style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : variant === 'login' ? undefined : 'height'}>
-        <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled"
-          keyboardDismissMode={variant === "login" ? "on-drag" : undefined}
-          contentContainerStyle={styles.content}>
-          <YStack paddingBottom={insets.bottom + spacing.large}
-            paddingLeft={insets.left} paddingRight={insets.right}>
-            <YStack width="100%" maxWidth={480} alignSelf="center">
-              <AuthHeader onBack={onBack} variant={variant} />
-              <YStack paddingHorizontal={variant === "login" ? 24 : authDesign.contentPadding}
-                paddingTop={variant === "login" ? 28 : authDesign.contentPadding}
-                paddingBottom={authDesign.contentPadding}>{children}</YStack>
-            </YStack>
-          </YStack>
+      <StatusBar style="dark" />
+      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        <View pointerEvents="none" style={styles.halo} />
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          contentContainerStyle={[
+            styles.content,
+            { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 20,
+              paddingLeft: insets.left + 18, paddingRight: insets.right + 18 },
+          ]}
+        >
+          <View style={styles.column}>
+            <AuthHeader />
+            <View style={styles.card}>
+              <Text role="heading" color="#0C316A" fontSize={24} fontWeight="700">{title}</Text>
+              <Text color="#425A7C" fontSize={14} marginTop={5} marginBottom={16}>{subtitle}</Text>
+              {children}
+            </View>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </Theme>
   );
 }
 
-// Only the native keyboard/scroll containers use RN styles; UI stays in Tamagui.
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: authDesign.colors.background },
-  scroll: { flex: 1 },
-  content: { flexGrow: 1 },
+  container: { flex: 1, backgroundColor: "#EAF3FF" },
+  halo: { position: "absolute", left: -105, top: -130, width: 300, height: 300, borderRadius: 150, backgroundColor: "#D2E7FF" },
+  content: { flexGrow: 1, justifyContent: "center" },
+  column: { width: "100%", maxWidth: 420, alignSelf: "center" },
+  card: { backgroundColor: "#FFFFFF", borderColor: "#D1E4FF", borderWidth: 1, borderRadius: 20, padding: 16 },
 });

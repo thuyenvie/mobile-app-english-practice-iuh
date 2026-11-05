@@ -1,34 +1,27 @@
-import { AppButton } from '@/components/ui/AppButton';
-import { YStack } from 'tamagui';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { Image, StyleSheet, Text, View } from "react-native";
 
-import { authDesign, loginDesign } from '@/theme/tokens';
+const logo = require("../../../assets/english-practice-logo.jpg");
 
-export function AuthHeader({ onBack, variant }: { onBack?: () => void; variant?: "login" }) {
-  const insets = useSafeAreaInsets();
-
+export function AuthHeader() {
   return (
-    <YStack backgroundColor={variant === "login" ? loginDesign.colors.header : authDesign.colors.header}
-      height={insets.top + (variant === "login" ? 116 : authDesign.headerHeight)} paddingTop={insets.top}
-      alignItems="center" justifyContent="center"
-      borderBottomLeftRadius={authDesign.headerRadius} borderBottomRightRadius={authDesign.headerRadius}>
-      {onBack && (
-        <AppButton appearance="text" position="absolute" top={insets.top + 8} left={0}
-          minWidth="$touchTarget" aria-label="Quay lại đăng nhập" onPress={onBack}
-          icon={<MaterialIcons name="arrow-back-ios" size={24} color="#000000" />} />
-      )}
-      {/* Neutral wireframe placeholder; replace with the team's local logo asset later. */}
-      <YStack width={variant === "login" ? 88 : authDesign.logoWidth}
-        height={variant === "login" ? 64 : authDesign.logoHeight}
-        borderRadius={variant === "login" ? 12 : 0}
-        backgroundColor={authDesign.colors.logo} overflow="hidden"
-        alignItems="center" justifyContent="center">
-        <YStack position="absolute" width={132} height={1}
-          backgroundColor={authDesign.colors.logoLine} rotate="38deg" />
-        <YStack position="absolute" width={132} height={1}
-          backgroundColor={authDesign.colors.logoLine} rotate="-38deg" />
-      </YStack>
-    </YStack>
+    <View style={styles.header}>
+      <View style={styles.brandRow}>
+        <MaterialIcons name="menu-book" size={34} color="#609BED" accessible={false} />
+        <View style={styles.logoRing}>
+          <Image source={logo} style={styles.logo} accessibilityLabel="Practice Easy English" />
+        </View>
+        <MaterialIcons name="headphones" size={34} color="#609BED" accessible={false} />
+      </View>
+      <Text style={styles.slogan}>Learn English. Practice More.{"\n"}Speak Better!</Text>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  header: { alignItems: "center", gap: 10, marginBottom: 16 },
+  brandRow: { width: "100%", maxWidth: 264, flexDirection: "row", alignItems: "center", justifyContent: "space-around" },
+  logoRing: { borderRadius: 48, padding: 5, backgroundColor: "#CCE3FF" },
+  logo: { width: 82, height: 82, borderRadius: 41, borderWidth: 3, borderColor: "#FFFFFF" },
+  slogan: { color: "#124A9C", fontSize: 15, lineHeight: 21, fontWeight: "700", fontStyle: "italic", textAlign: "center" },
+});
