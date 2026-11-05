@@ -1,7 +1,7 @@
+import { BrandedPageState } from "@/components/ui/BrandedPageState";
 import { useCallback, useRef, useState } from "react";
 import { router, useFocusEffect } from "expo-router";
 import {
-  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -87,7 +87,7 @@ export default function ListeningHistoryScreen() {
       </View>
       <ScrollView contentContainerStyle={styles.content}>
         {loading ? (
-          <ActivityIndicator />
+          <BrandedPageState compact loading message="Đang tải lịch sử bài làm..." />
         ) : items.length ? (
           items.map((item) => (
             <ExamResultCard key={item.resultId} item={item} />
@@ -96,16 +96,7 @@ export default function ListeningHistoryScreen() {
           <Text style={styles.muted}>Bạn chưa nộp bài thi nào.</Text>
         ) : null}
         {error ? (
-          <>
-            <Text style={styles.warning}>{error}</Text>
-            <Pressable
-              onPress={() =>
-                items.length ? void loadMore() : setRetry((value) => value + 1)
-              }
-            >
-              <Text style={styles.link}>Thử lại</Text>
-            </Pressable>
-          </>
+          <BrandedPageState compact message={error} onRetry={() => items.length ? void loadMore() : setRetry(value => value + 1)} />
         ) : null}
         {!loading && !error && page + 1 < totalPages ? (
           <Pressable disabled={loadingMore} onPress={() => void loadMore()}>

@@ -1,7 +1,7 @@
+import { BrandedPageState } from "@/components/ui/BrandedPageState";
 import { useEffect, useRef, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import {
-  ActivityIndicator,
   Image,
   Pressable,
   ScrollView,
@@ -192,14 +192,9 @@ export default function ListeningReviewScreen() {
       </View>
       <ScrollView contentContainerStyle={styles.content}>
         {loading ? (
-          <ActivityIndicator />
+          <BrandedPageState compact loading message="Đang tải bài làm..." />
         ) : error ? (
-          <>
-            <Text style={styles.warning}>{error}</Text>
-            <Pressable onPress={() => setRetry((value) => value + 1)}>
-              <Text style={styles.link}>Thử lại</Text>
-            </Pressable>
-          </>
+          <BrandedPageState compact message={error} onRetry={() => setRetry(value => value + 1)} />
         ) : result ? (
           <>
             <View style={styles.card}>

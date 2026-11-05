@@ -1,8 +1,8 @@
+import { BrandedPageState } from "@/components/ui/BrandedPageState";
 import { useStudySession } from "../session/StudySessionProvider";
 import { useMemo, useRef, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import {
-  ActivityIndicator,
   Image,
   Modal,
   Pressable,
@@ -146,13 +146,10 @@ export default function ListeningPartScreen() {
         ) : null}
         {!valid ? (
           <Text style={styles.message}>Thông tin đề không hợp lệ.</Text>
-        ) : state.status === "loading" || !draft.ready ? (
-          <ActivityIndicator style={styles.message} />
         ) : state.status === "error" ? (
-          <>
-            <Text style={styles.message}>{state.message}</Text>
-            <Action text="Tải lại" onPress={retry} />
-          </>
+          <BrandedPageState message={state.message} onRetry={retry} onBack={back} />
+        ) : state.status === "loading" || !draft.ready ? (
+          <BrandedPageState loading message="Đang tải bài nghe..." onBack={back} />
         ) : !current ? (
           <Text style={styles.message}>Part này chưa có câu hỏi.</Text>
         ) : (

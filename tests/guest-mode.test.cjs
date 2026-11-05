@@ -368,7 +368,7 @@ test("session boundary creates a new screen tree for each identity", () => {
   const app = environment({ "@/lib/auth/restoreSession": {restoreSession: async () => {}} });
   const Provider = app.load("src/providers/SessionProvider.tsx").SessionProvider;
   app.hooks.render(Provider,{children:{type:"Screens"}});
-  assert.ok(text(app.hooks.output).includes("Đang kiểm tra phiên"));
+  assert.match(app.hooks.output.props.message, /Đang kiểm tra phiên/);
   app.session.enterGuestSession(); app.hooks.render();
   const guestKey = app.hooks.output.key;
   app.session.authenticateSession("alice"); app.hooks.render();
