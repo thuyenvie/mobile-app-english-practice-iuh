@@ -1,54 +1,56 @@
-import { useState } from 'react';
-import { router } from 'expo-router';
-import { Text, YStack } from 'tamagui';
+import { useState } from "react";
+import { router } from "expo-router";
+import { Text, XStack, YStack } from "tamagui";
 
-import { authDesign } from '@/theme/tokens';
-import { AppButton } from '@/components/ui/AppButton';
-import { AppInput } from '@/components/ui/AppInput';
-import { AuthScaffold } from '../components/AuthScaffold';
-import { GoogleButton } from '../components/GoogleButton';
+import { AppButton } from "@/components/ui/AppButton";
+import { AppInput } from "@/components/ui/AppInput";
+import { AuthScaffold } from "../components/AuthScaffold";
+import { authFormDesign as design } from "../components/authFormDesign";
 
 export default function RegisterScreen() {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [notice, setNotice] = useState('');
-  const goToLogin = () => router.dismissTo('/auth/login');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [notice, setNotice] = useState("");
+  const goToLogin = () => router.dismissTo("/auth/login");
 
   const handleRegister = () => {
     if (!username.trim() || !password || !confirmPassword) {
-      setNotice('Vui lòng nhập đầy đủ thông tin.');
+      setNotice("Vui lòng nhập đầy đủ thông tin.");
       return;
     }
 
     if (password !== confirmPassword) {
-      setNotice('Mật khẩu xác nhận không khớp.');
+      setNotice("Mật khẩu xác nhận không khớp.");
       return;
     }
 
-    setNotice('Chức năng đăng ký sẽ được kết nối với máy chủ sau.');
+    setNotice("Tạo tài khoản chưa khả dụng trên ứng dụng.");
   };
 
   return (
-    <AuthScaffold onBack={goToLogin}>
-      <Text role="heading" textAlign="center" {...authDesign.title} color={authDesign.colors.text}>Đăng ký</Text>
-      <YStack marginTop={authDesign.registerFormGap} gap={authDesign.fieldGap}>
-        <AppInput {...authDesign.input} labelProps={authDesign.label} labelGap={authDesign.labelGap} autoCapitalize="none" autoCorrect={false} label="Tên đăng nhập" placeholder="Nhập tên của bạn"
-          value={username} onChangeText={setUsername} autoComplete="username" />
-        <AppInput {...authDesign.input} labelProps={authDesign.label} labelGap={authDesign.labelGap} autoCapitalize="none" autoCorrect={false} label="Mật khẩu" placeholder="Nhập mật khẩu của bạn"
-          value={password} onChangeText={setPassword} secureTextEntry autoComplete="new-password" />
-        <AppInput {...authDesign.input} labelProps={authDesign.label} labelGap={authDesign.labelGap} autoCapitalize="none" autoCorrect={false} label="Xác nhận lại mật khẩu" placeholder="Nhập lại mật khẩu"
-          value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry autoComplete="new-password" />
-        <AppButton {...authDesign.button} marginTop={8} onPress={handleRegister}>
-          Xác nhận
+    <AuthScaffold title="Tạo tài khoản" subtitle="Bắt đầu hành trình luyện TOEIC của bạn.">
+      <YStack gap={10}>
+        <AppInput {...design.input} labelProps={design.label} labelGap={4}
+          autoCapitalize="none" autoCorrect={false} label="Tên đăng nhập"
+          placeholder="Chọn tên đăng nhập" value={username}
+          onChangeText={setUsername} autoComplete="username" />
+        <AppInput {...design.input} labelProps={design.label} labelGap={4}
+          label="Mật khẩu" placeholder="Tạo mật khẩu" value={password}
+          onChangeText={setPassword} secureTextEntry autoComplete="new-password" />
+        <AppInput {...design.input} labelProps={design.label} labelGap={4}
+          label="Xác nhận mật khẩu" placeholder="Nhập lại mật khẩu"
+          value={confirmPassword} onChangeText={setConfirmPassword}
+          secureTextEntry autoComplete="new-password" />
+        {notice ? <Text aria-live="polite" color={design.error}>{notice}</Text> : null}
+        <AppButton {...design.button} onPress={handleRegister}>Tạo tài khoản</AppButton>
+      </YStack>
+      <XStack alignItems="center" justifyContent="center" flexWrap="wrap" gap={6} marginTop={4}>
+        <Text color={design.muted} fontSize={14}>Đã có tài khoản?</Text>
+        <AppButton appearance="text" color={design.link} fontSize={14} onPress={goToLogin}>
+          Đăng nhập
         </AppButton>
-      </YStack>
-      <YStack marginTop={authDesign.googleGap}>
-        <GoogleButton onPress={() => setNotice('Đăng nhập với Google chưa khả dụng.')} />
-      </YStack>
-      {notice ? <Text marginTop="$medium" aria-live="polite" role="status" color={authDesign.colors.secondary}>{notice}</Text> : null}
-      <AppButton appearance="text" fontSize={11} marginTop="$medium" alignSelf="center" justifyContent="center" color={authDesign.colors.text}
-        role="button" onPress={goToLogin}>Đăng nhập</AppButton>
+      </XStack>
     </AuthScaffold>
   );
 }
