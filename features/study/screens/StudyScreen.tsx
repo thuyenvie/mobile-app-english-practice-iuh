@@ -1,3 +1,4 @@
+import { ContinueExamCard } from "../components/ContinueExamCard";
 import { useCallback, useState } from "react";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { router, useFocusEffect } from "expo-router";
@@ -242,29 +243,7 @@ export default function StudyScreen() {
           )}
         </YStack>
 
-        <YStack
-          backgroundColor={homeDesign.colors.surface}
-          borderRadius={18}
-          padding={16}
-          gap={8}
-          marginBottom={24}
-        >
-          <XStack alignItems="center" gap={10}>
-            <MaterialCommunityIcons
-              name="progress-clock"
-              size={25}
-              color={homeDesign.colors.inProgress}
-            />
-            <Text color={homeDesign.colors.text} fontSize={15} fontWeight="700">
-              Tiếp tục bài đang làm
-            </Text>
-          </XStack>
-          <Text color={homeDesign.colors.secondary} fontSize={12}>
-            {isGuest
-              ? "Bạn đang học thử. Bài làm chỉ được giữ khi đang mở bài."
-              : "Chưa có bài thi được lưu nháp."}
-          </Text>
-        </YStack>
+        <ContinueExamCard />
 
         <YStack gap={12} marginBottom={25}>
           <SectionTitle title="Thi thử TOEIC" hint="Chọn năm ETS" />

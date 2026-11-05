@@ -1,6 +1,6 @@
 import { useStudySession } from "../session/StudySessionProvider";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { readExamDraft, writeExamDraft } from "../utils/examDrafts";
 import {
   ActivityIndicator,
   Image,
@@ -124,7 +124,7 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
     }
     let active = true;
     setDraftReady(false);
-    AsyncStorage.getItem(draftKey)
+    readExamDraft(draftKey)
       .then((saved) => {
         if (!active || !saved) return;
         const draft = JSON.parse(saved) as {
@@ -306,23 +306,9 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
 
   useEffect(() => {
     if (!draftReady || !draftKey || !startedAt) return;
-    const timeout = setTimeout(() => {
-      if (allSubmitted) {
-        void AsyncStorage.removeItem(draftKey);
-      } else {
-        void AsyncStorage.setItem(
-          draftKey,
-          JSON.stringify({
-            answers,
-            startedAt,
-            expiresAt,
-            questionNumber,
-            savedResults,
-          })
-        );
-      }
-    }, 180);
-    return () => clearTimeout(timeout);
+    void writeExamDraft(draftKey, allSubmitted ? null : {
+      answers, startedAt, expiresAt, questionNumber, savedResults,
+    }).catch(() => setSubmitError("Không lưu được bản nháp trên thiết bị."));
   }, [
     allSubmitted,
     answers,

@@ -103,6 +103,9 @@ function environment(extraMocks = {}) {
     "@react-native-async-storage/async-storage": {
       getItem: async key => { storageCalls.push(["local:get", key]); return local.get(key) ?? null; },
       setItem: async (key, value) => { storageCalls.push(["local:set", key]); local.set(key, value); },
+      removeItem: async key => { local.delete(key); },
+      getAllKeys: async () => [...local.keys()],
+      multiGet: async keys => keys.map(key => [key, local.get(key) ?? null]),
     },
     "expo-file-system/legacy": { documentDirectory: "file:///documents/", makeDirectoryAsync: async () => {}, copyAsync: async () => {} },
     "react-native-safe-area-context": { useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) },

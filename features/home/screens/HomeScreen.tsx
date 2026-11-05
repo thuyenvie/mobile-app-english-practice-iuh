@@ -1,3 +1,4 @@
+import { ContinueExamCard } from "../../study/components/ContinueExamCard";
 import { ScrollView } from 'react-native';
 import { TodayStudySessionCard } from '../components/TodayStudySessionCard';
 import { HomeDataMessage } from '../components/HomeDataMessage';
@@ -13,6 +14,7 @@ export default function HomeScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 16 }}>
         {state.status === 'ready' ? <HomeHeader profile={state.data.profile} welcomeText={state.data.welcomeText} /> : null}
         <TodayStudySessionCard />
+        <ContinueExamCard home />
         {state.status === 'loading' ? <HomeDataMessage loading message="Đang tải bài học..." />
           : state.status === 'error' ? <HomeDataMessage message={state.message} onRetry={retry} />
           : <>

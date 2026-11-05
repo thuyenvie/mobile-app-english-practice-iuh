@@ -101,6 +101,7 @@ export default function ListeningPartScreen() {
           draft.startedAt
         )
       );
+      draft.clear();
       setConfirm(false);
       setSheet(false);
     } catch (e) {
