@@ -1,5 +1,5 @@
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { useFocusEffect } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -43,6 +43,8 @@ export default function VocabularyScreen() {
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "flashcard">("list");
+  const [selecting, setSelecting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [reviewIndex, setReviewIndex] = useState(0);
   const [answerRevealed, setAnswerRevealed] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -156,6 +158,7 @@ export default function VocabularyScreen() {
   };
 
   const chooseFilter = (nextFilter: DateFilter) => {
+    setSelectedIds([]);
     setFilter(nextFilter);
     setViewMode("list");
     setReviewIndex(0);
@@ -165,6 +168,7 @@ export default function VocabularyScreen() {
   const deleteItem = async (item: SavedVocabulary) => {
     try {
       await deleteSavedVocabulary(item.id);
+      setSelectedIds(current => current.filter(id => id !== item.id));
       setItems((current) => current.filter((saved) => saved.id !== item.id));
       setTotalItems((current) => Math.max(0, current - 1));
     } catch (deleteError: unknown) {
@@ -239,7 +243,16 @@ export default function VocabularyScreen() {
             >
               <Text style={[styles.filterText, viewMode === "flashcard" && styles.activeFilterText]}>Ôn Flashcard</Text>
             </Pressable>
+            <Pressable accessibilityRole="button" onPress={() => { setViewMode("list"); setSelecting(value => !value); setSelectedIds([]); }} style={[styles.modeChip, selecting && styles.activeFilterChip]}>
+              <Text style={[styles.filterText, selecting && styles.activeFilterText]}>{selecting ? "Hủy chọn" : "Lên lịch ôn"}</Text>
+            </Pressable>
           </XStack>
+          {selecting && viewMode === "list" ? <XStack alignItems="center" justifyContent="space-between">
+            <Text color={homeDesign.colors.secondary} fontSize={12}>Đã chọn {selectedIds.length}/100 từ</Text>
+            <Pressable accessibilityRole="button" onPress={() => setSelectedIds(selectedIds.length ? [] : items.slice(0, 100).map(item => item.id))}>
+              <Text color={homeDesign.colors.link} fontSize={12}>{selectedIds.length ? "Bỏ chọn" : `Chọn ${Math.min(100, items.length)} từ đã tải`}</Text>
+            </Pressable>
+          </XStack> : null}
           {viewMode === "list" ? (
             <ScrollView
               horizontal
@@ -320,6 +333,14 @@ export default function VocabularyScreen() {
           data={items}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
+            <View style={{ gap: 6 }}>
+            {selecting ? <Pressable
+              accessibilityRole="checkbox" accessibilityState={{ checked: selectedIds.includes(item.id) }}
+              accessibilityLabel={`Chọn ${item.word}`} style={styles.selectRow}
+              onPress={() => setSelectedIds(current => current.includes(item.id) ? current.filter(id => id !== item.id) : current.length < 100 ? [...current, item.id] : current)}>
+              <MaterialCommunityIcons name={selectedIds.includes(item.id) ? "checkbox-marked" : "checkbox-blank-outline"} color={homeDesign.colors.tabActive} size={24} />
+              <Text color={homeDesign.colors.text}>Chọn {item.word}</Text>
+            </Pressable> : null}
             <VocabularyWordCard
               item={item}
               onDelete={confirmDelete}
@@ -328,6 +349,7 @@ export default function VocabularyScreen() {
               phoneticRepairFailed={phoneticRepairFailedIds.has(item.id)}
               pronunciation={pronunciationProps}
             />
+            </View>
           )}
           contentContainerStyle={
             items.length ? styles.listContent : styles.emptyListContent
@@ -406,6 +428,12 @@ export default function VocabularyScreen() {
             ) : null
           }
         />}
+        {selecting && viewMode === "list" ? <View style={styles.scheduleFooter}>
+          <Pressable disabled={!selectedIds.length} accessibilityRole="button" style={[styles.scheduleButton, !selectedIds.length && styles.disabledChip]}
+            onPress={() => router.push({ pathname: "/vocabulary/schedule", params: { ids: selectedIds.join(","), words: items.filter(item => selectedIds.includes(item.id)).slice(0, 6).map(item => item.word).join(" · ") } })}>
+            <Text style={styles.activeFilterText}>{`Lên lịch ôn (${selectedIds.length} từ)`}</Text>
+          </Pressable>
+        </View> : null}
       </YStack>
     </HomeScaffold>
   );
@@ -453,6 +481,9 @@ function getDateRange(filter: DateFilter): { from?: string; to?: string } {
 }
 
 const styles = StyleSheet.create({
+  selectRow: { flexDirection: "row", alignItems: "center", gap: 9, minHeight: 44 },
+  scheduleFooter: { padding: 14, backgroundColor: homeDesign.colors.background, borderTopWidth: 1, borderTopColor: homeDesign.colors.border },
+  scheduleButton: { minHeight: 48, backgroundColor: homeDesign.colors.tabActive, borderRadius: 14, alignItems: "center", justifyContent: "center", padding: 12 },
   filters: { gap: 8, paddingVertical: 12, paddingRight: 8 },
   filterChip: {
     minHeight: 38,

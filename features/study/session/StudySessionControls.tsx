@@ -12,8 +12,10 @@ export function StartStudyButton({ task }: { task: StudyTask }) {
   const { busy, start } = useStudySession();
   if (task.status !== "PENDING") return null;
   return <Pressable accessibilityRole="button" disabled={busy} style={[styles.button, busy && styles.disabled]}
-    onPress={() => void start(task.id).then(() => router.push("/study-session")).catch((cause: unknown) => Alert.alert("Chưa thể bắt đầu phiên học", getExamErrorMessage(cause)))}>
-    {busy ? <ActivityIndicator color={c.cardText} /> : <Text style={styles.buttonText}>Bắt đầu học</Text>}
+    onPress={() => void start(task.id).then(() => task.section === "VOCABULARY"
+      ? router.push({ pathname: "/vocabulary/review/[taskId]", params: { taskId: String(task.id) } })
+      : router.push("/study-session")).catch((cause: unknown) => Alert.alert("Chưa thể bắt đầu phiên học", getExamErrorMessage(cause)))}>
+    {busy ? <ActivityIndicator color={c.cardText} /> : <Text style={styles.buttonText}>{task.section === "VOCABULARY" ? "Bắt đầu ôn" : "Bắt đầu học"}</Text>}
   </Pressable>;
 }
 

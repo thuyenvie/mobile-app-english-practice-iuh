@@ -204,6 +204,7 @@ function TaskCard({ task }: { task: StudyTask }) {
           <Text style={styles.taskTitle}>{task.title}</Text>
           <Text style={styles.muted}>
             {formatDate(task.dueDate)} · {task.estimatedMinutes} phút
+            {task.scheduledAt ? ` · ${new Date(task.scheduledAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}` : ""}
           </Text>
         </View>
         <Text style={[styles.status, done && styles.statusDone]}>

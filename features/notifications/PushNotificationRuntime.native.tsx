@@ -19,6 +19,9 @@ export function PushNotificationRuntime({ children }: PropsWithChildren) {
       if (openedResponseId === id) return;
       openedResponseId = id;
       const data = response.notification.request.content.data;
+      if (data?.type === "VOCABULARY_REVIEW" && Number.isSafeInteger(Number(data.taskId)) && Number(data.taskId) > 0) {
+        router.push({ pathname: "/vocabulary/review/[taskId]", params: { taskId: String(data.taskId) } });
+      }
       if (data?.type === "STUDY_REMINDER") {
         router.push("/study-plan/week");
       }

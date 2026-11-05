@@ -427,8 +427,10 @@ for (const mode of ["guest", "authenticated"]) {
     app.hooks.render(Screen);await app.hooks.flush();
     nodes(app.hooks.output).find(n=>n.props?.accessibilityRole==="radio" && n.props.accessibilityLabel==="Câu 1, đáp án A").props.onPress();
     app.hooks.render();
-    nodes(app.hooks.output).find(n=>n.props?.text==="Nộp Listening").props.onPress();app.hooks.render();
-    nodes(app.hooks.output).find(n=>n.props?.text==="Xác nhận nộp").props.onPress();await app.hooks.flush();
+    nodes(app.hooks.output).find(n=>n.props?.text==="Nộp").props.onPress();app.hooks.render();
+    assert.ok(text(app.hooks.output).includes("Nộp Listening Part 1?"));
+    const submitButtons = nodes(app.hooks.output).filter(n=>n.props?.text==="Nộp");
+    submitButtons[submitButtons.length - 1].props.onPress();await app.hooks.flush();
     assert.ok(text(app.hooks.output).includes("Đúng 1/100"));
     assert.equal(app.requests.filter(r=>r.url.includes("/submit")).length,1);
     assert.equal(app.requests[0].url.includes("/guest/"),mode==="guest");
