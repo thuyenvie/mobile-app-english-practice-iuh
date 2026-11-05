@@ -12,7 +12,7 @@ export function ContinueExamCard({ home = false }: { home?: boolean }) {
   const [drafts, setDrafts] = useState<Awaited<ReturnType<typeof listExamDrafts>>>([]);
   const [message, setMessage] = useState("");
   const [expanded, setExpanded] = useState(false);
-  const limit = home ? 3 : 4;
+  const limit = home ? 1 : 4;
   useFocusEffect(useCallback(() => {
     setDrafts([]);
     setExpanded(false);
@@ -27,6 +27,8 @@ export function ContinueExamCard({ home = false }: { home?: boolean }) {
       if (active) setMessage("Không đọc được bản nháp trên thiết bị.");
     });
     return () => { active = false; };
+  // Reload drafts on session changes, including signing back in as the same user.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subject, status, generation]));
 
   if (home && (status !== "authenticated" || !drafts.length)) return null;
@@ -58,7 +60,7 @@ export function ContinueExamCard({ home = false }: { home?: boolean }) {
 
 const styles = StyleSheet.create({
   card: { backgroundColor: colors.surface, borderRadius: 18, padding: 16, gap: 10, marginBottom: 24 },
-  home: { marginHorizontal: 16 },
+  home: { marginHorizontal: homeDesign.pagePadding, marginBottom: 12, borderWidth: 1, borderColor: colors.border },
   title: { color: colors.text, fontWeight: "700", fontSize: 15 },
   detail: { color: colors.secondary, fontSize: 13 },
   row: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 48, paddingVertical: 6 },
