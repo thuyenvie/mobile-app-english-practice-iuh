@@ -7,6 +7,7 @@ import { TamaguiProvider } from "tamagui";
 import { config } from "../../tamagui.config";
 import { GoogleAuthProvider } from "@/providers/GoogleAuthProvider";
 import { authDesign } from "@/theme/tokens";
+import { StudySessionProvider } from "../../features/study/session/StudySessionProvider";
 import { PushNotificationRuntime } from "../../features/notifications/PushNotificationRuntime";
 
 export default function RootLayout() {
@@ -52,12 +53,14 @@ export default function RootLayout() {
       <GoogleAuthProvider>
         <PushNotificationRuntime>
           <SessionProvider>
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                contentStyle: { backgroundColor: authDesign.colors.background },
-              }}
-            />
+            <StudySessionProvider>
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                  contentStyle: { backgroundColor: authDesign.colors.background },
+                }}
+              />
+            </StudySessionProvider>
           </SessionProvider>
         </PushNotificationRuntime>
       </GoogleAuthProvider>

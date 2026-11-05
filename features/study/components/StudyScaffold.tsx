@@ -1,3 +1,5 @@
+import { usePathname } from "expo-router";
+import { StudySessionBanner, RefreshStudySessionOnFocus } from "../session/StudySessionControls";
 import type { PropsWithChildren } from "react";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -6,6 +8,7 @@ import { YStack } from "tamagui";
 import { homeDesign } from "@/theme/tokens";
 
 export function StudyScaffold({ children }: PropsWithChildren) {
+  const pathname = usePathname();
   const insets = useSafeAreaInsets(); //để không bị che bởi tai thỏ, Dynamic Island hoặc cạnh thiết bị.
 
   return (
@@ -23,6 +26,8 @@ export function StudyScaffold({ children }: PropsWithChildren) {
         maxWidth={homeDesign.maxWidth}
         alignSelf="center"
       >
+        <RefreshStudySessionOnFocus />
+        {pathname !== "/study-session" ? <StudySessionBanner /> : null}
         {children}
       </YStack>
     </YStack>

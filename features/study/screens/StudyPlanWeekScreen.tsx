@@ -18,6 +18,7 @@ import {
   type StudySchedule,
   type StudyTask,
 } from "../api/studyPlanApi";
+import { StartStudyButton } from "../session/StudySessionControls";
 import { StudyScaffold } from "../components/StudyScaffold";
 
 const c = homeDesign.colors;
@@ -124,10 +125,11 @@ export default function StudyPlanWeekScreen() {
                   </Text>
                 </View>
                 <Text style={styles.muted}>
-                  {schedule.plan.dailyMinutes} phút mỗi ngày ·{" "}
+                  Mục tiêu gốc: {schedule.plan.dailyMinutes} phút/ngày ·{" "}
                   {schedule.completedTasks}/{schedule.totalTasks} nhiệm vụ hoàn
                   thành
                 </Text>
+                <Text style={styles.muted}>Thời gian phiên học: {Math.floor((schedule.sessionSeconds ?? 0) / 60)} phút · Hoàn thành dự kiến: {schedule.completedMinutes} phút</Text>
                 <View style={styles.track}>
                   <View
                     style={[
@@ -212,10 +214,7 @@ function TaskCard({ task }: { task: StudyTask }) {
         <Text style={styles.taskDescription}>{task.description}</Text>
       ) : null}
       {!done ? (
-        <Action
-          label="Mở phần Học tập"
-          onPress={() => router.push("/(tabs)/study")}
-        />
+        <StartStudyButton task={task} />
       ) : task.completedResultId != null ? (
         <Text style={styles.completedNote}>
           Đã gắn với kết quả bài làm #{task.completedResultId}

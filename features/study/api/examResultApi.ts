@@ -31,7 +31,7 @@ export interface ExamResult {
   answers: ExamAnswerResult[];
 }
 
-export type ExamHistoryItem = Omit<ExamResult, "userId" | "startedAt" | "answers">;
+export type ExamHistoryItem = Omit<ExamResult, "userId" | "answers">;
 
 interface ExamHistoryPage {
   items: ExamHistoryItem[];

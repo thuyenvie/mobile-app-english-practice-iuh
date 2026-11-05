@@ -1,3 +1,4 @@
+import { useStudySession } from "../session/StudySessionProvider";
 import { useMemo, useRef, useState } from "react";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { router, useLocalSearchParams } from "expo-router";
@@ -103,6 +104,7 @@ export default function ReadingPartScreen() {
 
 function ReadingPartContent({ part }: { part: ExamPart }) {
   const session = useSession();
+  const { refresh: refreshStudySession } = useStudySession();
   const questions = useMemo(
     () =>
       [...part.questions].sort(
@@ -243,6 +245,7 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
     } catch (error: unknown) {
       setSubmitError(getExamErrorMessage(error));
     } finally {
+      if (session.status === "authenticated") void refreshStudySession().catch(() => undefined);
       submittingRef.current = false;
       setSubmitting(false);
     }
