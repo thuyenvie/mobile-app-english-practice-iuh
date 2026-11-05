@@ -1,5 +1,5 @@
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Text, XStack, YStack } from "tamagui";
 
 import { AppButton } from "@/components/ui/AppButton";
@@ -66,7 +66,7 @@ export function VocabularyFlashcard({
         onPress={onToggleAnswer}
         style={styles.cardPressable}
       >
-        <YStack flex={1} alignItems="center" justifyContent="center" padding={24} gap={18}>
+        <ScrollView contentContainerStyle={styles.cardContent}>
           <MaterialCommunityIcons
             name={revealed ? "check-circle-outline" : "cards-outline"}
             size={32}
@@ -108,7 +108,7 @@ export function VocabularyFlashcard({
               Chạm vào thẻ để xem nghĩa và ví dụ
             </Text>
           )}
-        </YStack>
+        </ScrollView>
       </Pressable>
 
       <XStack gap={12}>
@@ -122,7 +122,7 @@ export function VocabularyFlashcard({
 
       {!hasMore && !canGoNext ? (
         <Text color={homeDesign.colors.secondary} fontSize={12} textAlign="center">
-          Đã hết từ trong bộ lọc này. Bạn có thể xem lại thẻ trước hoặc quay về danh sách.
+          Đã đến từ cuối của bộ ôn. Bạn có thể xem lại thẻ trước.
         </Text>
       ) : null}
     </YStack>
@@ -132,7 +132,8 @@ export function VocabularyFlashcard({
 const styles = StyleSheet.create({
   progressTrack: { height: 6, overflow: "hidden", borderRadius: 4, backgroundColor: homeDesign.colors.surfaceRaised },
   progressFill: { height: "100%", borderRadius: 4, backgroundColor: homeDesign.colors.tabActive },
-  cardPressable: { flex: 1, minHeight: 300, overflow: "hidden", borderRadius: 22, borderWidth: 1, borderColor: homeDesign.colors.border, backgroundColor: homeDesign.colors.surface },
+  cardPressable: { flex: 1, minHeight: 180, overflow: "hidden", borderRadius: 22, borderWidth: 1, borderColor: homeDesign.colors.border, backgroundColor: homeDesign.colors.surface },
+  cardContent: { flexGrow: 1, alignItems: "center", justifyContent: "center", padding: 20, gap: 16 },
   phonetic: { color: homeDesign.colors.secondary, fontSize: 16 },
   partOfSpeech: { color: homeDesign.colors.cardText, backgroundColor: homeDesign.colors.tabActive, paddingHorizontal: 10, paddingVertical: 5, overflow: "hidden", borderRadius: 9, fontSize: 12, fontWeight: "700" },
 });

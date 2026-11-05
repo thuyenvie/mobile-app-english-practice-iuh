@@ -25,8 +25,9 @@ export default function StudySessionScreen() {
       <View style={styles.clock}><Text style={styles.digits}>{formatStudyTime(seconds)}</Text><Text style={styles.muted}>Thời gian phiên học</Text><Text style={styles.hint}>{ended ? current.completedTask ? "Nhiệm vụ đã hoàn thành." : "Đã lưu thời gian. Bạn có thể học tiếp trong phiên mới." : current.status === "PAUSED" ? "Thời gian nghỉ không được tính." : "Chuyển màn trong app vẫn tiếp tục tính giờ."}</Text></View>
       {current.autoPaused ? <Text style={styles.warning}>Phiên chạy liên tục quá 4 giờ đã được tạm dừng. Thời gian có thể gồm lúc app bị tắt đột ngột.</Text> : null}
       {ended ? <Action label="Về Hôm nay" onPress={() => router.replace("/(tabs)/study")} /> : <>
-        <Action label="Mở bài luyện tập" onPress={() => router.push("/(tabs)/study")} />
-        <Text style={styles.muted}>Chọn Test và {current.section === "READING" ? `Part ${current.partNumber}` : "Listening Part 1–4"} để luyện đúng nhiệm vụ.</Text>
+        <Action label={current.section === "VOCABULARY" ? "Mở bộ từ của buổi ôn" : "Mở bài luyện tập"} onPress={() => current.section === "VOCABULARY"
+          ? router.push({ pathname: "/vocabulary/review/[taskId]", params: { taskId: String(current.taskId) } }) : router.push("/(tabs)/study")} />
+        <Text style={styles.muted}>{current.section === "VOCABULARY" ? "Ôn đúng những từ đã chọn khi đặt lịch." : `Chọn Test và ${current.section === "READING" ? `Part ${current.partNumber}` : "Listening Part 1–4"} để luyện đúng nhiệm vụ.`}</Text>
         <View style={styles.row}><View style={styles.flex}><Action secondary busy={busy} label={current.status === "PAUSED" ? "Tiếp tục" : "Tạm dừng"} onPress={() => void (current.status === "PAUSED" ? resume() : pause()).catch(() => undefined)} /></View><View style={styles.flex}><Action secondary busy={busy} label="Kết thúc" onPress={() => setConfirm(true)} /></View></View>
       </>}
     </>}

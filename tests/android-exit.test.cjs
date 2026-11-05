@@ -41,6 +41,8 @@ function mount(os = "android") {
     "../../tamagui.config": { config: {} },
     "@/providers/GoogleAuthProvider": { GoogleAuthProvider: () => null },
     "@/providers/SessionProvider": { SessionProvider: () => null },
+    "../../features/study/session/StudySessionProvider": { StudySessionProvider: () => null },
+    "../../features/notifications/PushNotificationRuntime": { PushNotificationRuntime: () => null },
     "@/theme/tokens": { authDesign: { colors: { background: "#000000" } } },
   };
   const context = {

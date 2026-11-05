@@ -5,3 +5,5 @@ export type PushRegistrationResult =
 
 export function registerStudyPushToken(): Promise<PushRegistrationResult>;
 export function deactivateCurrentPushToken(): Promise<boolean>;
+export type StudyPushStatus = "ready" | "permission-denied" | "unregistered" | "unsupported";
+export function getStudyPushStatus(): Promise<StudyPushStatus>;

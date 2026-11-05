@@ -14,6 +14,13 @@ interface ApiEnvelope<T> {
 }
 
 export type PushRegistrationResult = "registered" | "permission-denied";
+export type StudyPushStatus = "ready" | "permission-denied" | "unregistered" | "unsupported";
+
+// Chi doc trang thai, khong tu mo hop thoai xin quyen khi vao Home.
+export async function getStudyPushStatus(): Promise<StudyPushStatus> {
+  if ((await Notifications.getPermissionsAsync()).status !== "granted") return "permission-denied";
+  return await AsyncStorage.getItem(LOCAL_PUSH_TOKEN_KEY) ? "ready" : "unregistered";
+}
 
 export async function registerStudyPushToken(): Promise<PushRegistrationResult> {
   if (Platform.OS === "android") {

@@ -1,7 +1,7 @@
 import api from "@/lib/axios/axios";
 
 export type StudyTaskStatus = "PENDING" | "COMPLETED" | "SKIPPED";
-export type StudySection = "LISTENING" | "READING";
+export type StudySection = "LISTENING" | "READING" | "VOCABULARY";
 
 export interface StudyPlan {
   id: number;
@@ -30,6 +30,11 @@ export interface StudyTask {
   status: StudyTaskStatus;
   completedAt: string | null;
   completedResultId: number | null;
+  source?: "SYSTEM" | "USER";
+  scheduledAt?: string | null;
+  reminderAt?: string | null;
+  reminderMinutesBefore?: number | null;
+  vocabularyCount?: number;
 }
 
 export interface StudySchedule {

@@ -4,7 +4,7 @@ export interface StudySession {
   id: number;
   taskId: number;
   taskTitle: string;
-  section: "READING" | "LISTENING";
+  section: "READING" | "LISTENING" | "VOCABULARY";
   partNumber: number | null;
   estimatedMinutes: number;
   status: "RUNNING" | "PAUSED" | "ENDED";

@@ -64,10 +64,10 @@ function hookRuntime() {
 
 function environment(extraMocks = {}) {
   const cache = new Map(), secure = new Map(), local = new Map();
-  const requests = [], storageCalls = [], routerCalls = [], audioSources = [];
+  const requests = [], storageCalls = [], routerCalls = [], audioSources = [], alerts = [];
   const events = new EventEmitter(), hooks = hookRuntime();
   const env = {
-    secure, local, requests, storageCalls, routerCalls, audioSources, hooks,
+    secure, local, requests, storageCalls, routerCalls, audioSources, alerts, hooks,
     params: {}, focused: true,
     handler: async () => ({ code: 1000, result: [] }),
   };
@@ -79,10 +79,16 @@ function environment(extraMocks = {}) {
     } },
     StyleSheet: { create: value => value },
     AppState: { addEventListener: () => ({ remove() {} }) },
+    Alert: { alert: (...args) => alerts.push(args) },
+    TextInput: "TextInput", Switch: "Switch", FlatList: "FlatList", RefreshControl: "RefreshControl",
     Text: "Text", View: "View", Modal: "Modal", Pressable: "Pressable",
     ScrollView: "ScrollView", ActivityIndicator: "ActivityIndicator", Image: "Image",
   };
   const player = { replace: source => audioSources.push(source), pause() {}, seekTo: async () => {}, play() {}, setPlaybackRate() {} };
+  const studySession = {
+    useStudySession: () => ({ current: null, busy: false, error: "", refresh: async () => {}, start: async () => {}, pause: async () => {}, resume: async () => {}, end: async () => {} }),
+    useStudyElapsed: () => 0, formatStudyTime: () => "00:00",
+  };
   const colors = new Proxy({}, { get: () => "#ffffff" });
   const modules = {
     react: hooks.react,
@@ -111,6 +117,9 @@ function environment(extraMocks = {}) {
     },
     "@/theme/tokens": { homeDesign: { colors, maxWidth: 500, pagePadding: 16 } },
     "@/components/ui/AppButton": { AppButton: "AppButton" },
+    "../session/StudySessionProvider": studySession,
+    "./StudySessionProvider": studySession,
+    "../../study/session/StudySessionProvider": studySession,
     "../hooks/useDeviceDate": { useDeviceDate: () => "24/10/2026" },
     tamagui: { Text: "Text", YStack: "YStack", XStack: "XStack", Image: "Image" },
     axios: { ...axios, create: config => axios.create({ ...config, adapter: async request => {
