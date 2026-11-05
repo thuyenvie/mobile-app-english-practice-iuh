@@ -1,8 +1,8 @@
+import { BrandedPageState } from "@/components/ui/BrandedPageState";
 import { useCallback, useState } from "react";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { router, useFocusEffect } from "expo-router";
 import {
-  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -89,17 +89,9 @@ export default function StudyPlanWeekScreen() {
               />
             </View>
           ) : loading ? (
-            <ActivityIndicator color={c.tabActive} style={styles.loader} />
+            <BrandedPageState compact loading message="Đang tải lịch học..." />
           ) : error ? (
-            <View style={styles.card}>
-              <Text style={styles.error}>{error}</Text>
-              <Action
-                label="Thử lại"
-                onPress={() => {
-                  void load();
-                }}
-              />
-            </View>
+            <BrandedPageState compact message={error} onRetry={() => void load()} />
           ) : !schedule?.plan ? (
             <View style={styles.card}>
               <Text style={styles.cardTitle}>Bạn chưa đặt mục tiêu học</Text>

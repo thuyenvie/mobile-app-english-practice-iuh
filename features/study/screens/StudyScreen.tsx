@@ -1,3 +1,4 @@
+import { BrandedPageState } from "@/components/ui/BrandedPageState";
 import { ContinueExamCard } from "../components/ContinueExamCard";
 import { useCallback, useState } from "react";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
@@ -91,6 +92,19 @@ export default function StudyScreen() {
       };
     }, [session.status, studyPlanRetry])
   );
+  const [dismissedError, setDismissedError] = useState("");
+  const planLoading = !isGuest && (session.status !== "authenticated" || studyPlanLoading);
+  const historyLoading = !isGuest && recentLoading;
+  const loading = state.status === "loading" || planLoading || historyLoading;
+  const examError = state.status === "error" ? state.message : "";
+  const error = examError || (!isGuest ? studyPlanError || recentError : "");
+  const retryFailed = () => {
+    setDismissedError("");
+    if (examError) retry();
+    if (!isGuest && studyPlanError) setStudyPlanRetry(value => value + 1);
+    if (!isGuest && recentError) setRecentRetry(value => value + 1);
+  };
+
   // back end ch co cai nay
   const openTest = (testNumber: number) => {
     router.push({
@@ -160,16 +174,7 @@ export default function StudyScreen() {
                 Đăng nhập
               </AppButton>
             </>
-          ) : session.status !== "authenticated" ? (
-            <HomeDataMessage loading message="Đang kiểm tra tài khoản..." />
-          ) : studyPlanLoading ? (
-            <HomeDataMessage loading message="Đang tải kế hoạch học..." />
-          ) : studyPlanError ? (
-            <HomeDataMessage
-              message={studyPlanError}
-              onRetry={() => setStudyPlanRetry((value) => value + 1)}
-            />
-          ) : !todaySchedule?.plan ? (
+          ) : planLoading || studyPlanError ? null : !todaySchedule?.plan ? (
             <>
               <Text color={homeDesign.colors.secondary} fontSize={12}>
                 Đặt mục tiêu TOEIC và thời gian học mỗi ngày để tạo lộ trình 7
@@ -256,11 +261,7 @@ export default function StudyScreen() {
 
         <YStack gap={12} marginBottom={26}>
           <SectionTitle title={`Danh sách đề ETS ${selectedYear}`} />
-          {state.status === "loading" ? (
-            <HomeDataMessage loading message="Đang tải danh sách đề..." />
-          ) : state.status === "error" ? (
-            <HomeDataMessage message={state.message} onRetry={retry} />
-          ) : state.testNumbers.length ? (
+          {state.status !== "ready" ? null : state.testNumbers.length ? (
             state.testNumbers.map((testNumber) => (
               <TestCard
                 key={testNumber}
@@ -291,14 +292,7 @@ export default function StudyScreen() {
         ) : (
           <YStack gap={8}>
             <SectionTitle title="Kết quả gần đây" hint="Listening và Reading" />
-            {recentLoading ? (
-              <HomeDataMessage loading message="Đang tải kết quả..." />
-            ) : recentError ? (
-              <HomeDataMessage
-                message={recentError}
-                onRetry={() => setRecentRetry((value) => value + 1)}
-              />
-            ) : recent.length ? (
+            {recentLoading || recentError ? null : recent.length ? (
               recent.map((item) => (
                 <ExamResultCard key={item.resultId} item={item} />
               ))
@@ -315,7 +309,19 @@ export default function StudyScreen() {
             </AppButton>
           </YStack>
         )}
+        {!loading && error && error === dismissedError ? (
+          <AppButton appearance="text" onPress={retryFailed}>Thử tải lại dữ liệu</AppButton>
+        ) : null}
       </ScrollView>
+      {loading || (error && error !== dismissedError) ? (
+        <BrandedPageState
+          overlay
+          loading={loading}
+          message={loading ? "Đang tải dữ liệu học tập..." : error}
+          onRetry={retryFailed}
+          onBack={loading ? undefined : () => setDismissedError(error)}
+        />
+      ) : null}
     </StudyScaffold>
   );
 }

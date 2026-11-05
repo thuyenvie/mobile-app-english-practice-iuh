@@ -1,3 +1,4 @@
+import { BrandedPageState } from "@/components/ui/BrandedPageState";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -366,35 +367,9 @@ export default function VocabularyScreen() {
           }
           ListEmptyComponent={
             loading ? (
-              <YStack alignItems="center" gap={10} padding={24}>
-                <ActivityIndicator color={homeDesign.colors.link} />
-                <Text color={homeDesign.colors.secondary}>
-                  Đang tải từ vựng...
-                </Text>
-              </YStack>
+              <BrandedPageState compact loading message="Đang tải từ vựng..." />
             ) : error ? (
-              <YStack alignItems="center" gap={10} padding={24}>
-                <MaterialCommunityIcons
-                  name="cloud-alert-outline"
-                  size={40}
-                  color={homeDesign.colors.secondary}
-                />
-                <Text
-                  color={homeDesign.colors.text}
-                  fontSize={16}
-                  fontWeight="700"
-                >
-                  Chưa tải được danh sách
-                </Text>
-                <Pressable
-                  onPress={() => void loadFirstPage()}
-                  accessibilityRole="button"
-                >
-                  <Text color={homeDesign.colors.link} fontWeight="800">
-                    Tải lại
-                  </Text>
-                </Pressable>
-              </YStack>
+              <BrandedPageState compact message={error} onRetry={() => void loadFirstPage()} />
             ) : (
               <YStack alignItems="center" gap={10} padding={24}>
                 <MaterialCommunityIcons

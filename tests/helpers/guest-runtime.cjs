@@ -149,10 +149,10 @@ function environment(extraMocks = {}) {
     }).outputText;
     const sourceRequire = name => {
       if (name in modules) return modules[name];
-      // Native font loading is mocked; verify that the referenced Metro asset still exists.
-      if (name.endsWith(".ttf")) {
+      // Mock Metro assets and verify the files exist.
+      if (/\.(ttf|jpg)$/.test(name)) {
         const assetPath = path.resolve(path.dirname(filename), name);
-        if (!fs.existsSync(assetPath)) throw new Error("Missing font asset " + assetPath);
+        if (!fs.existsSync(assetPath)) throw new Error("Missing asset " + assetPath);
         return assetPath;
       }
       if (name.startsWith("@expo/vector-icons/")) return { __esModule: true, default: "Icon" };

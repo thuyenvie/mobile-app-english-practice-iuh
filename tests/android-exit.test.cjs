@@ -40,6 +40,7 @@ function mount(os = "android") {
     tamagui: { TamaguiProvider: () => null },
     "../../tamagui.config": { config: {} },
     "@/providers/GoogleAuthProvider": { GoogleAuthProvider: () => null },
+    "@/components/ui/BrandedPageState": { BrandedPageState: () => null },
     "@/providers/SessionProvider": { SessionProvider: () => null },
     "../../features/study/session/StudySessionProvider": { StudySessionProvider: () => null },
     "../../features/notifications/PushNotificationRuntime": { PushNotificationRuntime: () => null },

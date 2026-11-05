@@ -1,4 +1,5 @@
-import { Stack, useNavigationContainerRef } from "expo-router";
+import { BrandedPageState } from "@/components/ui/BrandedPageState";
+import { Stack, useNavigationContainerRef, type ErrorBoundaryProps } from "expo-router";
 import { useEffect } from "react";
 import { Alert, BackHandler, Platform } from "react-native";
 import { SessionProvider } from "@/providers/SessionProvider";
@@ -9,6 +10,13 @@ import { GoogleAuthProvider } from "@/providers/GoogleAuthProvider";
 import { authDesign } from "@/theme/tokens";
 import { StudySessionProvider } from "../../features/study/session/StudySessionProvider";
 import { PushNotificationRuntime } from "../../features/notifications/PushNotificationRuntime";
+
+export function ErrorBoundary({ retry }: ErrorBoundaryProps) {
+  return <BrandedPageState
+    message="Ứng dụng gặp lỗi khi mở màn hình. Vui lòng thử lại."
+    onRetry={() => void retry()}
+  />;
+}
 
 export default function RootLayout() {
   const navigationRef = useNavigationContainerRef();

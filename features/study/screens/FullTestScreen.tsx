@@ -1,3 +1,4 @@
+import { BrandedPageState } from "@/components/ui/BrandedPageState";
 import { useStudySession } from "../session/StudySessionProvider";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { readExamDraft, writeExamDraft } from "../utils/examDrafts";
@@ -58,6 +59,7 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
   const session = useSession();
   const { refresh: refreshStudySession } = useStudySession();
   const insets = useSafeAreaInsets();
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [loadState, setLoadState] = useState<LoadState>({ status: "loading" });
   const [questionNumber, setQuestionNumber] = useState(1);
   const [answers, setAnswers] = useState<Record<number, string>>({});
@@ -195,7 +197,7 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
     return () => {
       active = false;
     };
-  }, [testNumber, valid, year, partNumbers]);
+  }, [testNumber, valid, year, partNumbers, loadAttempt]);
 
   // Nap san file nghe lien tuc cua de truoc khi bat dau lam bai.
   useEffect(() => {
@@ -456,19 +458,13 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
   if (loadState.status === "loading")
     return (
       <StudyScaffold>
-        <View style={styles.center}>
-          <ActivityIndicator color={c.tabActive} />
-          <Text style={styles.muted}>{practice ? "Đang tải các Part đã chọn..." : "Đang tải đủ 7 Part của đề thi..."}</Text>
-        </View>
+        <BrandedPageState loading message={practice ? "Đang tải các Part đã chọn..." : "Đang tải đề thi..."} />
       </StudyScaffold>
     );
   if (loadState.status === "error")
     return (
       <StudyScaffold>
-        <View style={styles.center}>
-          <Text style={styles.notice}>{loadState.message}</Text>
-          <Action title="Quay lại" onPress={back} />
-        </View>
+        <BrandedPageState message={loadState.message} onRetry={() => setLoadAttempt(value => value + 1)} onBack={back} />
       </StudyScaffold>
     );
   if ((!practice && allQuestions.length !== 200) || (practice && loadState.parts.some((part) => !part.questions.length)))
