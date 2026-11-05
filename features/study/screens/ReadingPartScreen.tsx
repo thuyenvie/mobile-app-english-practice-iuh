@@ -1,5 +1,6 @@
+import { readExamDraft, writeExamDraft } from "../utils/examDrafts";
 import { useStudySession } from "../session/StudySessionProvider";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { router, useLocalSearchParams } from "expo-router";
 import { Modal, ScrollView, StyleSheet, View } from "react-native";
@@ -119,7 +120,7 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
   const [submitError, setSubmitError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<PracticeResult | null>(null);
-  const [startedAt] = useState(() => new Date().toISOString());
+  const [startedAt, setStartedAt] = useState(() => new Date().toISOString());
   const submittingRef = useRef(false);
   const { label: timerLabel, expired: timerExpired } = useReadingTimer(
     part.partNumber
@@ -134,6 +135,42 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
   const [vocabularySaved, setVocabularySaved] = useState(false);
   const [vocabularySaveError, setVocabularySaveError] = useState("");
   const lookupRequestId = useRef(0);
+
+  const draftKey = session.status === "authenticated" && session.subject
+    ? `reading:v1:${encodeURIComponent(session.subject)}:${part.year}:${part.testNumber}:${part.partNumber}`
+    : null;
+  const [draftReady, setDraftReady] = useState(!draftKey);
+  useEffect(() => {
+    if (!draftKey) return;
+    let active = true;
+    void readExamDraft(draftKey).then(raw => {
+      if (!active || !raw) return;
+      const draft = JSON.parse(raw);
+      setAnswers(Object.fromEntries(questions.flatMap(question => {
+        const label = draft?.answers?.[question.questionNumber];
+        return question.options.some(option => option.label === label)
+          ? [[question.questionNumber, label]]
+          : [];
+      })));
+      const index = questions.findIndex(question => question.questionNumber === draft?.questionNumber);
+      if (index >= 0) setCurrentIndex(index);
+      if (typeof draft?.startedAt === "string" && Number.isFinite(Date.parse(draft.startedAt))) {
+        setStartedAt(draft.startedAt);
+      }
+    }).catch(() => {
+      if (active) setSubmitError("Không đọc được bản nháp trên thiết bị.");
+    }).finally(() => {
+      if (active) setDraftReady(true);
+    });
+    return () => { active = false; };
+  }, [draftKey, questions]);
+
+  useEffect(() => {
+    if (!draftReady || !draftKey || (!result && !Object.keys(answers).length)) return;
+    void writeExamDraft(draftKey, result ? null : {
+      answers, startedAt, questionNumber: questions[currentIndex]?.questionNumber,
+    }).catch(() => setSubmitError("Không cập nhật được bản nháp trên thiết bị."));
+  }, [draftReady, draftKey, result, answers, startedAt, questions, currentIndex]);
 
   const currentQuestion = questions[currentIndex];
   const currentPassage = part.passages.find(
@@ -250,6 +287,8 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
       setSubmitting(false);
     }
   };
+
+  if (!draftReady) return <StudyScaffold><Text color={homeDesign.colors.text}>Đang tải bản nháp…</Text></StudyScaffold>;
 
   return (
     <StudyScaffold>

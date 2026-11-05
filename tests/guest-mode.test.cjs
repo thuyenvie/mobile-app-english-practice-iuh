@@ -392,6 +392,7 @@ for (const mode of ["guest", "authenticated"]) {
     app.handler = async () => ({result: mode==="guest" ? result() : {...result(),resultId:42,userId:"alice"}});
     const screen = app.load("features/study/screens/ReadingPartScreen.tsx").default();
     app.hooks.render(screen.type,screen.props);
+    await app.hooks.flush();
     nodes(app.hooks.output).find(n=>n.props?.question?.questionNumber===101 && n.props.onSelect).props.onSelect("A");
     app.hooks.render();
     nodes(app.hooks.output).find(n=>typeof n.props?.onSubmit==="function").props.onSubmit();
@@ -471,4 +472,22 @@ test("Guest submits only selected Listening Part and does not attach JWT", async
   const value = await app.load("features/study/api/practiceApi.ts").submitListeningPartPractice(
     app.session.getSessionSnapshot().generation,2026,1,2,{7:"B"},new Date().toISOString());
   assert.equal(value.partNumber,2); assert.equal(value.totalQuestions,25);
+});
+
+test("resume list waits for draft writes, scopes by account and opens exact selected Parts", async () => {
+  const app = environment();
+  const { listExamDrafts, writeExamDraft } = app.load("features/study/utils/examDrafts.ts");
+  await writeExamDraft("listening:v1:alice:2026:1", { answers: { 1: "A", 7: "B" } });
+  await writeExamDraft("listening:v1:alice:2026:1:part:1", { answers: {} });
+  await writeExamDraft("reading:v1:bob:2026:1:5", { answers: { 101: "B" } });
+  const reading = "reading:v1:alice:2026:2:5";
+  await writeExamDraft(reading, { answers: { 101: "A" } });
+  void writeExamDraft("practice-parts:v1:alice:2026:3:1-7", { startedAt: new Date().toISOString(), answers: {} });
+  const drafts = await listExamDrafts("alice");
+  assert.equal(drafts.length, 3);
+  assert.deepEqual(plain(drafts.find(item => item.label === "Part 1, 7").href.params), { year: "2026", testNumber: "3", parts: "1,7" });
+  assert.ok(drafts.some(item => item.label === "Part 2"));
+  assert.ok(drafts.some(item => item.key === reading));
+  await writeExamDraft(reading, null);
+  assert.equal((await listExamDrafts("alice")).length, 2);
 });

@@ -15,7 +15,10 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.dohoainho.englishpractice"
+      "bundleIdentifier": "com.dohoainho.englishpractice",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.dohoainho.englishpractice",
