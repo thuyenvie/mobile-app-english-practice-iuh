@@ -25,7 +25,7 @@ function screenApp(extraMocks = {}) {
 test("Guest shell has four groups, login CTA/card, and never mounts private entries",()=>{
  const {app,mounts,render}=screenApp(); const tree=render();
  for(const title of ["Giao diện và học tập","Tài khoản","Dữ liệu và hỗ trợ","Giới thiệu"]) assert.ok(text(tree).includes(title));
- assert.ok(text(tree).includes("Chưa khả dụng")); assert.deepEqual(mounts,[]); assert.equal(app.requests.length,0);
+ assert.ok(text(tree).includes("Đăng nhập để cài nhắc học")); assert.deepEqual(mounts,[]); assert.equal(app.requests.length,0);
  assert.equal(nodes(tree).find(n=>n.type==="RecentStudyTimeCard").props.authenticated,false);
  button(tree,"Đăng nhập để lưu kết quả").props.onPress(); assert.deepEqual(app.routerCalls,[["push","/auth/login"]]);
  assert.equal(nodes(tree).filter(n=>n.props?.accessibilityState?.disabled).every(n=>!n.props.onPress),true);
