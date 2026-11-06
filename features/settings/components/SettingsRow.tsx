@@ -6,9 +6,10 @@ interface SettingsRowProps {
   description: string;
   theme: SettingsTheme;
   unavailable?: boolean;
+  expanded?: boolean;
   onPress?: () => void;
 }
-export function SettingsRow({ title, description, theme, unavailable = true, onPress }: SettingsRowProps) {
+export function SettingsRow({ title, description, theme, unavailable = true, expanded, onPress }: SettingsRowProps) {
   const disabled = unavailable || !onPress;
   const content = <>
     <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
@@ -18,7 +19,7 @@ export function SettingsRow({ title, description, theme, unavailable = true, onP
   const style = [styles.row, { backgroundColor: theme.surface, borderColor: theme.border }];
   // Unavailable contributions have no active press handler or misleading navigation.
   return disabled ? <View style={style} accessibilityState={{ disabled: true }}>{content}</View> :
-    <Pressable accessibilityRole="button" onPress={onPress} style={style}>{content}</Pressable>;
+    <Pressable accessibilityRole="button" accessibilityState={expanded === undefined ? undefined : { expanded }} onPress={onPress} style={style}>{content}</Pressable>;
 }
 const styles = StyleSheet.create({
   row: { borderWidth: 1, borderRadius: 12, padding: 16, gap: 6 },
