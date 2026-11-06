@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo, useCallback, useEffect, useState } from "react";
+
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { homeDesign } from "@/theme/tokens";
+
 import { useSession } from "@/lib/auth/useSession";
 import { StudyScaffold } from "../../study/components/StudyScaffold";
 import { getExamErrorMessage } from "../../study/api/examApi";
@@ -10,8 +12,9 @@ import { getVocabularyTask, type VocabularyTaskDetail } from "../api/vocabularyT
 import { VocabularyFlashcard } from "../components/VocabularyFlashcard";
 import { useVocabularyPronunciation } from "../hooks/useVocabularyPronunciation";
 
-const c = homeDesign.colors;
+
 export default function VocabularyTaskReviewScreen() {
+  const { c, styles } = useThemedStyles();
   const { taskId } = useLocalSearchParams<{ taskId?: string }>();
   const id = Number(taskId);
   const account = useSession();
@@ -70,11 +73,22 @@ export default function VocabularyTaskReviewScreen() {
   </View></StudyScaffold>;
 }
 function Action({ label, onPress, disabled }: { label: string; onPress: () => void; disabled?: boolean }) {
+  const { styles } = useThemedStyles();
   return <Pressable disabled={disabled} onPress={onPress} accessibilityRole="button" style={[styles.button, disabled && { opacity: .5 }]}><Text style={styles.buttonText}>{label}</Text></Pressable>;
 }
-const styles = StyleSheet.create({
-  screen: { flex: 1 }, header: { padding: 16, gap: 9 }, title: { color: c.text, fontSize: 20, fontWeight: "700" }, link: { color: c.link, paddingVertical: 8 },
-  muted: { color: c.secondary, fontSize: 13, lineHeight: 20 }, warning: { color: c.inProgress, paddingHorizontal: 12 },
-  controls: { flexDirection: "row", justifyContent: "space-around", padding: 12, gap: 10 }, button: { backgroundColor: c.surfaceRaised, padding: 13, borderRadius: 12, minHeight: 46, justifyContent: "center", alignItems: "center" },
-  buttonText: { color: c.link, fontWeight: "700" }, overlay: { flex: 1, backgroundColor: "#000b", justifyContent: "center", padding: 20 }, dialog: { backgroundColor: c.surface, borderRadius: 18, padding: 20, gap: 13 },
-});
+
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { homeDesign, themeColor } = appTheme;
+    const c = homeDesign.colors;
+    const styles = StyleSheet.create({
+      screen: { flex: 1 }, header: { padding: 16, gap: 9 }, title: { color: c.text, fontSize: 20, fontWeight: "700" }, link: { color: c.link, paddingVertical: 8 },
+      muted: { color: c.secondary, fontSize: 13, lineHeight: 20 }, warning: { color: c.inProgress, paddingHorizontal: 12 },
+      controls: { flexDirection: "row", justifyContent: "space-around", padding: 12, gap: 10 }, button: { backgroundColor: c.surfaceRaised, padding: 13, borderRadius: 12, minHeight: 46, justifyContent: "center", alignItems: "center" },
+      buttonText: { color: c.link, fontWeight: "700" }, overlay: { flex: 1, backgroundColor: themeColor("#000b", "background"), justifyContent: "center", padding: 20 }, dialog: { backgroundColor: c.surface, borderRadius: 18, padding: 20, gap: 13 },
+    });
+    return { homeDesign, themeColor, c, styles };
+  }, [appTheme]);
+}

@@ -1,6 +1,8 @@
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo, useMemo, useRef, useState } from "react";
 import { BrandedPageState } from "@/components/ui/BrandedPageState";
 import { useStudySession } from "../session/StudySessionProvider";
-import { useMemo, useRef, useState } from "react";
+
 import { router, useLocalSearchParams } from "expo-router";
 import {
   Image,
@@ -12,7 +14,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { homeDesign } from "@/theme/tokens";
+
 import { StudyScaffold } from "../components/StudyScaffold";
 import { PracticeAudioPlayer } from "../components/PracticeAudioPlayer";
 import { useExamPart } from "../hooks/useExamPart";
@@ -28,6 +30,7 @@ import { GuestResultDetails } from "../components/GuestResultDetails";
 import type { ExamQuestion } from "../types";
 
 export default function ListeningPartScreen() {
+  const { styles } = useThemedStyles();
   const session = useSession();
   const { refresh: refreshStudySession } = useStudySession();
   const params = useLocalSearchParams<{
@@ -49,6 +52,7 @@ export default function ListeningPartScreen() {
   const { state, retry } = useExamPart(year, test, partNumber, valid);
   const draft = useListeningDraft(year, test, partNumber);
   const [selectedNumber, setSelectedNumber] = useState<number | null>(null);
+  const autoplayHistory = useMemo(() => new Set<string>(), []);
   const [sheet, setSheet] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -136,9 +140,7 @@ export default function ListeningPartScreen() {
         />
         {current ? (
           <PracticeAudioPlayer
-            key={`${activePassage?.id ?? current.id}-${
-              activePassage?.audioSegment?.segmentId ?? "no-segment"
-            }`}
+            autoplayHistory={autoplayHistory}
             audio={activePassage?.audioSegment ?? null}
             activeQuestionNumber={current.questionNumber}
             paused={confirm || !!result || sheet}
@@ -364,6 +366,7 @@ export default function ListeningPartScreen() {
   );
 }
 function QuestionImage({ question }: { question: ExamQuestion }) {
+  const { styles } = useThemedStyles();
   const [ratio, setRatio] = useState(1.5);
   const [failed, setFailed] = useState(false);
   const uri =
@@ -398,6 +401,7 @@ function Action({
   onPress: () => void;
   disabled?: boolean;
 }) {
+  const { styles } = useThemedStyles();
   return (
     <Pressable
       accessibilityRole="button"
@@ -410,68 +414,78 @@ function Action({
     </Pressable>
   );
 }
-const c = homeDesign.colors;
-const styles = StyleSheet.create({
-  screen: { flex: 1 },
-  flex: { flex: 1 },
-  header: { flexDirection: "row", alignItems: "center", padding: 8, gap: 8 },
-  row: { flexDirection: "row", justifyContent: "space-around" },
-  title: { color: c.text, fontSize: 18, fontWeight: "700" },
-  body: { color: c.text, fontSize: 16, lineHeight: 24, flexShrink: 1 },
-  muted: { color: c.secondary, fontSize: 13, lineHeight: 20 },
-  action: { padding: 10, minHeight: 44, justifyContent: "center" },
-  actionText: { color: c.link, fontSize: 14, fontWeight: "600" },
-  message: { color: c.text, padding: 24 },
-  warning: { color: c.inProgress, padding: 8 },
-  progress: { color: c.tabActive, padding: 10 },
-  content: { padding: 12, gap: 12, paddingBottom: 24 },
-  card: {
-    padding: 14,
-    gap: 12,
-    borderRadius: 14,
-    backgroundColor: c.surface,
-    borderWidth: 1,
-    borderColor: c.border,
-  },
-  active: { borderColor: c.link },
-  option: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    padding: 14,
-    gap: 14,
-    borderWidth: 1,
-    borderColor: c.border,
-    borderRadius: 12,
-  },
-  selected: { borderColor: c.tabActive, backgroundColor: "#334018" },
-  optionLabel: { color: c.text, fontSize: 16, fontWeight: "700" },
-  footer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    backgroundColor: c.surface,
-  },
-  overlay: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: "#000b",
-    justifyContent: "center",
-  },
-  dialog: {
-    width: "100%",
-    maxWidth: 480,
-    alignSelf: "center",
-    maxHeight: "85%",
-    padding: 18,
-    gap: 12,
-    borderRadius: 16,
-    backgroundColor: c.surface,
-  },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  cell: {
-    padding: 12,
-    minWidth: 64,
-    borderWidth: 1,
-    borderColor: c.border,
-    borderRadius: 8,
-  },
-});
+
+
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { homeDesign, themeColor } = appTheme;
+    const c = homeDesign.colors;
+    const styles = StyleSheet.create({
+      screen: { flex: 1 },
+      flex: { flex: 1 },
+      header: { flexDirection: "row", alignItems: "center", padding: 8, gap: 8 },
+      row: { flexDirection: "row", justifyContent: "space-around" },
+      title: { color: c.text, fontSize: 18, fontWeight: "700" },
+      body: { color: c.text, fontSize: 16, lineHeight: 24, flexShrink: 1 },
+      muted: { color: c.secondary, fontSize: 13, lineHeight: 20 },
+      action: { padding: 10, minHeight: 44, justifyContent: "center" },
+      actionText: { color: c.link, fontSize: 14, fontWeight: "600" },
+      message: { color: c.text, padding: 24 },
+      warning: { color: c.inProgress, padding: 8 },
+      progress: { color: c.tabActive, padding: 10 },
+      content: { padding: 12, gap: 12, paddingBottom: 24 },
+      card: {
+        padding: 14,
+        gap: 12,
+        borderRadius: 14,
+        backgroundColor: c.surface,
+        borderWidth: 1,
+        borderColor: c.border,
+      },
+      active: { borderColor: c.link },
+      option: {
+        flexDirection: "row",
+        alignItems: "flex-start",
+        padding: 14,
+        gap: 14,
+        borderWidth: 1,
+        borderColor: c.border,
+        borderRadius: 12,
+      },
+      selected: { borderColor: c.tabActive, backgroundColor: themeColor("#334018", "background") },
+      optionLabel: { color: c.text, fontSize: 16, fontWeight: "700" },
+      footer: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        backgroundColor: c.surface,
+      },
+      overlay: {
+        flex: 1,
+        padding: 20,
+        backgroundColor: themeColor("#000b", "background"),
+        justifyContent: "center",
+      },
+      dialog: {
+        width: "100%",
+        maxWidth: 480,
+        alignSelf: "center",
+        maxHeight: "85%",
+        padding: 18,
+        gap: 12,
+        borderRadius: 16,
+        backgroundColor: c.surface,
+      },
+      grid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+      cell: {
+        padding: 12,
+        minWidth: 64,
+        borderWidth: 1,
+        borderColor: c.border,
+        borderRadius: 8,
+      },
+    });
+    return { homeDesign, themeColor, c, styles };
+  }, [appTheme]);
+}

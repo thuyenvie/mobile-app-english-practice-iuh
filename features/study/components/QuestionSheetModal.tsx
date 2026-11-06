@@ -1,8 +1,10 @@
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo } from "react";
 import { Modal, ScrollView } from "react-native";
 import { Text, XStack, YStack } from "tamagui";
 
 import { AppButton } from "@/components/ui/AppButton";
-import { homeDesign } from "@/theme/tokens";
+
 import type { ExamAnswers, ExamQuestion } from "../types";
 
 const OPTION_LABELS = ["A", "B", "C", "D"];
@@ -26,6 +28,7 @@ export function QuestionSheetModal({
   onSelect: (questionNumber: number, label: string) => void;
   onSubmit: () => void;
 }) {
+  const { homeDesign, themeColor } = useThemedStyles();
   return (
     <Modal
       visible={visible}
@@ -37,7 +40,7 @@ export function QuestionSheetModal({
         flex={1}
         padding={18}
         justifyContent="center"
-        backgroundColor="rgba(0,0,0,0.72)"
+        backgroundColor={themeColor("rgba(0,0,0,0.72)", "background")}
       >
         <YStack
           width="100%"
@@ -127,7 +130,7 @@ export function QuestionSheetModal({
                               ? homeDesign.colors.tabActive
                               : homeDesign.colors.tab
                           }
-                          color={homeDesign.colors.cardText}
+                          color={homeDesign.colors.onSelection}
                           aria-label={`Câu ${question.questionNumber}, đáp án ${label}`}
                           onPress={() => onSelect(question.questionNumber, label)}
                         >
@@ -164,7 +167,7 @@ export function QuestionSheetModal({
               flex={1}
               minHeight={48}
               backgroundColor={homeDesign.colors.tabActive}
-              color={homeDesign.colors.cardText}
+              color={homeDesign.colors.onSelection}
               onPress={onSubmit}
             >
               Nộp bài
@@ -174,4 +177,13 @@ export function QuestionSheetModal({
       </YStack>
     </Modal>
   );
+}
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { homeDesign, themeColor } = appTheme;
+
+    return { homeDesign, themeColor };
+  }, [appTheme]);
 }

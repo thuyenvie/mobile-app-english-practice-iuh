@@ -1,6 +1,8 @@
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo } from "react";
 import { Text, XStack } from "tamagui";
 
-import { homeDesign } from "@/theme/tokens";
+
 
 export function SectionTitle({
   title,
@@ -9,6 +11,7 @@ export function SectionTitle({
   title: string;
   hint?: string;
 }) {
+  const { homeDesign } = useThemedStyles();
   return (
     <XStack alignItems="center" justifyContent="space-between" gap={12}>
       <Text color={homeDesign.colors.text} fontSize={16} fontWeight="700">
@@ -21,4 +24,13 @@ export function SectionTitle({
       ) : null}
     </XStack>
   );
+}
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { homeDesign } = appTheme;
+
+    return { homeDesign };
+  }, [appTheme]);
 }

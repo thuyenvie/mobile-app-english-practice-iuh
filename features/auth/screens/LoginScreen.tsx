@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo, useState } from "react";
+
 import { router } from "expo-router";
 import { Text, XStack, YStack } from "tamagui";
 
-import { authFormDesign as design } from "../components/authFormDesign";
+
 import { AppButton } from "@/components/ui/AppButton";
 import { AppInput } from "@/components/ui/AppInput";
 import { AuthScaffold } from "../components/AuthScaffold";
@@ -11,6 +13,7 @@ import { getLoginErrorMessage, login } from "../api/authApi";
 import { useGoogleLogin } from "../hooks/useGoogleLogin";
 
 export default function LoginScreen() {
+  const { design, themeColor } = useThemedStyles();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [notice, setNotice] = useState("");
@@ -99,9 +102,9 @@ export default function LoginScreen() {
         </AppButton>
       </YStack>
       <XStack alignItems="center" gap={8} marginVertical={9}>
-        <YStack flex={1} height={1} backgroundColor="#CFDEF2" />
+        <YStack flex={1} height={1} backgroundColor={themeColor("#CFDEF2", "background")} />
         <Text color={design.muted} fontSize={13}>hoặc</Text>
-        <YStack flex={1} height={1} backgroundColor="#CFDEF2" />
+        <YStack flex={1} height={1} backgroundColor={themeColor("#CFDEF2", "background")} />
       </XStack>
       <GoogleButton
         variant="login"
@@ -125,4 +128,13 @@ export default function LoginScreen() {
       </Text>
     </AuthScaffold>
   );
+}
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { authFormDesign: design, themeColor } = appTheme;
+
+    return { design, themeColor };
+  }, [appTheme]);
 }

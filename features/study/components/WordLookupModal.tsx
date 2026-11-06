@@ -1,3 +1,5 @@
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo } from "react";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import {
   ActivityIndicator,
@@ -9,7 +11,7 @@ import {
   View,
 } from "react-native";
 
-import { homeDesign } from "@/theme/tokens";
+
 import type { DictionaryLookup } from "../api/dictionaryApi";
 import { PhoneticText } from "./PhoneticText";
 
@@ -38,6 +40,7 @@ export function WordLookupModal({
   saveError?: string;
   onSave?: () => void;
 }) {
+  const { homeDesign, themeColor, styles } = useThemedStyles();
   return (
     <Modal
       visible={visible}
@@ -103,7 +106,7 @@ export function WordLookupModal({
                 style={[styles.saveButton, saved && styles.savedButton]}
                 accessibilityRole="button"
               >
-                {saving ? <ActivityIndicator color="#111111" /> : (
+                {saving ? <ActivityIndicator color={themeColor("#111111", "text")} /> : (
                   <Text style={styles.saveButtonText}>{saved ? "Đã lưu vào Từ vựng" : "Lưu từ này"}</Text>
                 )}
               </Pressable>
@@ -119,50 +122,59 @@ export function WordLookupModal({
   );
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: "flex-end",
-    backgroundColor: "rgba(0,0,0,0.68)",
-  },
-  card: {
-    width: "100%",
-    maxWidth: 520,
-    maxHeight: "90%",
-    alignSelf: "center",
-    paddingHorizontal: 22,
-    paddingTop: 22,
-    paddingBottom: 30,
-    gap: 18,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    backgroundColor: homeDesign.colors.surface,
-    borderColor: homeDesign.colors.border,
-    borderWidth: 1,
-  },
-  header: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" },
-  titleGroup: { flex: 1, gap: 4 },
-  word: { color: homeDesign.colors.text, fontSize: 25, fontWeight: "800" },
-  phonetic: { color: homeDesign.colors.secondary, fontSize: 15 },
-  phoneticUnavailable: { color: homeDesign.colors.secondary, fontSize: 13 },
-  body: { gap: 8 },
-  bodyScroll: { flexShrink: 1, maxHeight: 320 },
-  partOfSpeech: { alignSelf: "flex-start", color: "#111111", backgroundColor: homeDesign.colors.tabActive, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 8, fontSize: 12, fontWeight: "700" },
-  sectionLabel: { marginTop: 5, color: homeDesign.colors.secondary, fontSize: 13, fontWeight: "700" },
-  translation: { color: homeDesign.colors.tabActive, fontSize: 18, lineHeight: 25, fontWeight: "800" },
-  definition: { color: homeDesign.colors.text, fontSize: 15, lineHeight: 22 },
-  example: { color: homeDesign.colors.text, fontSize: 14, lineHeight: 21, fontStyle: "italic" },
-  source: { marginTop: 4, color: homeDesign.colors.secondary, fontSize: 11 },
-  loading: { minHeight: 85, alignItems: "center", justifyContent: "center", gap: 10 },
-  secondary: { color: homeDesign.colors.secondary, fontSize: 14 },
-  errorBlock: { alignItems: "center", gap: 12, paddingVertical: 12 },
-  error: { color: "#ff9d9d", fontSize: 14, textAlign: "center" },
-  retryButton: { paddingHorizontal: 16, paddingVertical: 9, borderRadius: 10, backgroundColor: homeDesign.colors.surfaceRaised },
-  retryText: { color: homeDesign.colors.link, fontWeight: "700" },
-  saveBlock: { gap: 8 },
-  saveButton: { minHeight: 48, justifyContent: "center", alignItems: "center", borderRadius: 12, backgroundColor: homeDesign.colors.tabActive },
-  savedButton: { backgroundColor: homeDesign.colors.completed },
-  saveButtonText: { color: "#111111", fontSize: 15, fontWeight: "800" },
-  closeButton: { minHeight: 48, justifyContent: "center", alignItems: "center", borderRadius: 12, backgroundColor: homeDesign.colors.link },
-  closeButtonText: { color: "#111111", fontSize: 16, fontWeight: "800" },
-});
+
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { homeDesign, themeColor } = appTheme;
+    const styles = StyleSheet.create({
+      overlay: {
+        flex: 1,
+        justifyContent: "flex-end",
+        backgroundColor: themeColor("rgba(0,0,0,0.68)", "background"),
+      },
+      card: {
+        width: "100%",
+        maxWidth: 520,
+        maxHeight: "90%",
+        alignSelf: "center",
+        paddingHorizontal: 22,
+        paddingTop: 22,
+        paddingBottom: 30,
+        gap: 18,
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        backgroundColor: homeDesign.colors.surface,
+        borderColor: homeDesign.colors.border,
+        borderWidth: 1,
+      },
+      header: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" },
+      titleGroup: { flex: 1, gap: 4 },
+      word: { color: homeDesign.colors.text, fontSize: 25, fontWeight: "800" },
+      phonetic: { color: homeDesign.colors.secondary, fontSize: 15 },
+      phoneticUnavailable: { color: homeDesign.colors.secondary, fontSize: 13 },
+      body: { gap: 8 },
+      bodyScroll: { flexShrink: 1, maxHeight: 320 },
+      partOfSpeech: { alignSelf: "flex-start", color: themeColor("#111111", "onSelection"), backgroundColor: homeDesign.colors.tabActive, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 8, fontSize: 12, fontWeight: "700" },
+      sectionLabel: { marginTop: 5, color: homeDesign.colors.secondary, fontSize: 13, fontWeight: "700" },
+      translation: { color: homeDesign.colors.tabActive, fontSize: 18, lineHeight: 25, fontWeight: "800" },
+      definition: { color: homeDesign.colors.text, fontSize: 15, lineHeight: 22 },
+      example: { color: homeDesign.colors.text, fontSize: 14, lineHeight: 21, fontStyle: "italic" },
+      source: { marginTop: 4, color: homeDesign.colors.secondary, fontSize: 11 },
+      loading: { minHeight: 85, alignItems: "center", justifyContent: "center", gap: 10 },
+      secondary: { color: homeDesign.colors.secondary, fontSize: 14 },
+      errorBlock: { alignItems: "center", gap: 12, paddingVertical: 12 },
+      error: { color: themeColor("#ff9d9d", "text"), fontSize: 14, textAlign: "center" },
+      retryButton: { paddingHorizontal: 16, paddingVertical: 9, borderRadius: 10, backgroundColor: homeDesign.colors.surfaceRaised },
+      retryText: { color: homeDesign.colors.link, fontWeight: "700" },
+      saveBlock: { gap: 8 },
+      saveButton: { minHeight: 48, justifyContent: "center", alignItems: "center", borderRadius: 12, backgroundColor: homeDesign.colors.tabActive },
+      savedButton: { backgroundColor: homeDesign.colors.completed },
+      saveButtonText: { color: themeColor("#111111", "onSelection"), fontSize: 15, fontWeight: "800" },
+      closeButton: { minHeight: 48, justifyContent: "center", alignItems: "center", borderRadius: 12, backgroundColor: homeDesign.colors.link },
+      closeButtonText: { color: themeColor("#111111", "onSelection"), fontSize: 16, fontWeight: "800" },
+    });
+    return { homeDesign, themeColor, styles };
+  }, [appTheme]);
+}

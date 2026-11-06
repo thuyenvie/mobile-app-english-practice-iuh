@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo, useState } from "react";
+
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { router, useLocalSearchParams } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text as NativeText, View } from "react-native";
@@ -6,13 +8,14 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Text, XStack, YStack } from "tamagui";
 
 import { AppButton } from "@/components/ui/AppButton";
-import { homeDesign } from "@/theme/tokens";
+
 import { PartCard } from "../components/PartCard";
 import { SectionTitle } from "../components/SectionTitle";
 import { StudyScaffold } from "../components/StudyScaffold";
 import { toeicParts } from "../data/toeicCatalog";
 
 export default function TestOverviewScreen() {
+  const { homeDesign, styles } = useThemedStyles();
   const params = useLocalSearchParams<{ year?: string; testNumber?: string }>();
   const year = Number(params.year);
   const testNumber = Number(params.testNumber);
@@ -190,15 +193,24 @@ export default function TestOverviewScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  scroll: { flex: 1 },
-  footer: {
-    paddingHorizontal: 16, paddingTop: 10, gap: 8,
-    backgroundColor: homeDesign.colors.background,
-    borderTopWidth: 1, borderTopColor: homeDesign.colors.border,
-  },
-  selectionSummary: { color: homeDesign.colors.secondary, fontSize: 13, textAlign: "center" },
-  startButton: { minHeight: 52, padding: 14, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: homeDesign.colors.link },
-  startLabel: { color: homeDesign.colors.text, fontSize: 16, fontWeight: "700", textAlign: "center" },
-  disabled: { opacity: 0.45 },
-});
+
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { homeDesign } = appTheme;
+    const styles = StyleSheet.create({
+      scroll: { flex: 1 },
+      footer: {
+        paddingHorizontal: 16, paddingTop: 10, gap: 8,
+        backgroundColor: homeDesign.colors.background,
+        borderTopWidth: 1, borderTopColor: homeDesign.colors.border,
+      },
+      selectionSummary: { color: homeDesign.colors.secondary, fontSize: 13, textAlign: "center" },
+      startButton: { minHeight: 52, padding: 14, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: homeDesign.colors.link },
+      startLabel: { color: homeDesign.colors.text, fontSize: 16, fontWeight: "700", textAlign: "center" },
+      disabled: { opacity: 0.45 },
+    });
+    return { homeDesign, styles };
+  }, [appTheme]);
+}

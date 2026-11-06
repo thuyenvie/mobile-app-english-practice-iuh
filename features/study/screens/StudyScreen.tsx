@@ -1,13 +1,15 @@
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo, useCallback, useState } from "react";
 import { BrandedPageState } from "@/components/ui/BrandedPageState";
 import { ContinueExamCard } from "../components/ContinueExamCard";
-import { useCallback, useState } from "react";
+
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { router, useFocusEffect } from "expo-router";
 import { ScrollView } from "react-native";
 import { Text, XStack, YStack } from "tamagui";
 
 import { AppButton } from "@/components/ui/AppButton";
-import { homeDesign } from "@/theme/tokens";
+
 import { HomeDataMessage } from "../../home/components/HomeDataMessage";
 import { toeicYears } from "../data/toeicCatalog";
 import { useTestsByYear } from "../hooks/useTestsByYear";
@@ -23,6 +25,7 @@ import { StartStudyButton } from "../session/StudySessionControls";
 import { getTodaySchedule, type StudySchedule } from "../api/studyPlanApi";
 
 export default function StudyScreen() {
+  const { homeDesign } = useThemedStyles();
   const session = useSession();
   const isGuest = session.status === "guest";
   const [selectedYear, setSelectedYear] = useState<number>(toeicYears[0]);
@@ -324,4 +327,13 @@ export default function StudyScreen() {
       ) : null}
     </StudyScaffold>
   );
+}
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { homeDesign } = appTheme;
+
+    return { homeDesign };
+  }, [appTheme]);
 }

@@ -1,13 +1,16 @@
-import { useCallback, useState } from "react";
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo, useCallback, useState } from "react";
+
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { useSession } from "@/lib/auth/useSession";
-import { homeDesign } from "@/theme/tokens";
+
 import { listExamDrafts } from "../utils/examDrafts";
 
-const colors = homeDesign.colors;
+
 
 export function ContinueExamCard({ home = false }: { home?: boolean }) {
+  const { styles } = useThemedStyles();
   const { subject, status, generation } = useSession();
   const [drafts, setDrafts] = useState<Awaited<ReturnType<typeof listExamDrafts>>>([]);
   const [message, setMessage] = useState("");
@@ -58,12 +61,22 @@ export function ContinueExamCard({ home = false }: { home?: boolean }) {
   </View>;
 }
 
-const styles = StyleSheet.create({
-  card: { backgroundColor: colors.surface, borderRadius: 18, padding: 16, gap: 10, marginBottom: 24 },
-  home: { marginHorizontal: homeDesign.pagePadding, marginBottom: 12, borderWidth: 1, borderColor: colors.border },
-  title: { color: colors.text, fontWeight: "700", fontSize: 15 },
-  detail: { color: colors.secondary, fontSize: 13 },
-  row: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 48, paddingVertical: 6 },
-  body: { flex: 1, gap: 4 },
-  link: { color: colors.link, fontWeight: "700" },
-});
+
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { homeDesign } = appTheme;
+    const colors = homeDesign.colors;
+    const styles = StyleSheet.create({
+      card: { backgroundColor: colors.surface, borderRadius: 18, padding: 16, gap: 10, marginBottom: 24 },
+      home: { marginHorizontal: homeDesign.pagePadding, marginBottom: 12, borderWidth: 1, borderColor: colors.border },
+      title: { color: colors.text, fontWeight: "700", fontSize: 15 },
+      detail: { color: colors.secondary, fontSize: 13 },
+      row: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 48, paddingVertical: 6 },
+      body: { flex: 1, gap: 4 },
+      link: { color: colors.link, fontWeight: "700" },
+    });
+    return { homeDesign, colors, styles };
+  }, [appTheme]);
+}

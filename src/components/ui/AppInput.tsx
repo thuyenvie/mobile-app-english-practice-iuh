@@ -1,3 +1,5 @@
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo } from "react";
 import {
   Input,
   Text,
@@ -7,7 +9,7 @@ import {
   type YStackProps,
 } from "tamagui";
 
-import { authDesign, typography } from "@/theme/tokens";
+import { typography } from "@/theme/tokens";
 
 type AppInputProps = InputProps & {
   label: string;
@@ -21,12 +23,14 @@ export function AppInput({
   labelGap = "$small",
   ...props
 }: AppInputProps) {
+  const { resolvedMode } = useAppTheme();
+  const { authDesign } = useThemedStyles();
   return (
     <YStack gap={labelGap}>
       <Text color={authDesign.colors.text} {...typography.label} {...labelProps}>
         {label}
       </Text>
-      <Input
+      <Input keyboardAppearance={resolvedMode}
         minHeight="$control"
         borderRadius="$control"
         backgroundColor={authDesign.colors.surface}
@@ -41,4 +45,13 @@ export function AppInput({
       />
     </YStack>
   );
+}
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { authDesign } = appTheme;
+
+    return { authDesign };
+  }, [appTheme]);
 }

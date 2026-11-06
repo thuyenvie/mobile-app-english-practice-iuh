@@ -1,6 +1,8 @@
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BrandedPageState } from "@/components/ui/BrandedPageState";
 import { useStudySession } from "../session/StudySessionProvider";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
 import { readExamDraft, writeExamDraft } from "../utils/examDrafts";
 import {
   ActivityIndicator,
@@ -21,7 +23,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { API_BASE_URL } from "@/lib/axios/axios";
-import { homeDesign } from "@/theme/tokens";
+
 import { getExamErrorMessage, getExamPart } from "../api/examApi";
 import { getListeningAudio } from "../api/listeningApi";
 import {
@@ -35,6 +37,7 @@ import { PracticeAudioPlayer } from "../components/PracticeAudioPlayer";
 import { GuestResultDetails } from "../components/GuestResultDetails";
 import { answersForPart, parseSelectedParts } from "../utils/selectedParts";
 import { useSession } from "@/lib/auth/useSession";
+import { useListeningAutoplay } from "../hooks/useListeningAutoplay";
 import { toeicParts } from "../data/toeicCatalog";
 import type { ExamPart, ExamQuestion } from "../types";
 
@@ -47,6 +50,7 @@ type LoadState =
 type ResultKey = "listening" | `reading-${number}` | `listening-${number}`;
 
 export default function FullTestScreen({ practice = false }: { practice?: boolean } = {}) {
+  const { homeDesign, styles } = useThemedStyles();
   const params = useLocalSearchParams<{ year?: string; testNumber?: string; parts?: string }>();
   const partNumbers = useMemo(() => practice ? parseSelectedParts(params.parts) : PART_NUMBERS, [practice, params.parts]);
   const year = Number(params.year);
@@ -81,7 +85,8 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
   const fullAudioPlayer = useAudioPlayer(null, { updateInterval: 1000 });
   const audioStatus = useAudioPlayerStatus(fullAudioPlayer);
   const [fullAudioError, setFullAudioError] = useState("");
-  const fullAudioStarted = useRef(false);
+  const [fullAudioArmed, setFullAudioArmed] = useState(false);
+  const autoplayHistory = useMemo(() => new Set<string>(), []);
   const c = homeDesign.colors;
   const draftKey =
     session.status === "authenticated" && session.subject
@@ -271,21 +276,23 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
     (question) => question.questionNumber === questionNumber
   );
 
-  useEffect(() => {
-    if (
-      practice || !startedAt ||
-      !audioStatus.isLoaded ||
-      fullAudioStarted.current ||
-      questionNumber > 100
-    )
-      return;
+  const pauseFullAudio = useCallback(() => {
+    try { fullAudioPlayer.pause(); } catch { /* Native player already released. */ }
+  }, [fullAudioPlayer]);
+  const playFullAudio = useCallback(() => {
     try {
       fullAudioPlayer.play();
-      fullAudioStarted.current = true;
     } catch {
       setFullAudioError("Không phát được audio Listening.");
     }
-  }, [audioStatus.isLoaded, fullAudioPlayer, questionNumber, startedAt, practice]);
+  }, [fullAudioPlayer]);
+  const autoplay = useListeningAutoplay({
+    unit: !practice && startedAt ? `full:${year}:${testNumber}` : "",
+    ready: audioStatus.isLoaded && fullAudioArmed,
+    active: !practice && !!startedAt && questionNumber <= 100 && !confirmSubmit && !questionSheet && !submitting && results.length === 0,
+    start: playFullAudio,
+    stop: pauseFullAudio,
+  });
 
   useEffect(() => {
     if (questionNumber > 100 && audioStatus.playing) {
@@ -323,6 +330,7 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
   ]);
 
   const begin = () => {
+    setFullAudioArmed(true);
     const now = Date.now();
     setStartedAt(new Date(now).toISOString());
     setExpiresAt(practice ? null : now + TEST_SECONDS * 1000);
@@ -548,7 +556,7 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
               <>
                 {practice && currentPartNumber <= 4 ? (
                   <PracticeAudioPlayer
-                    key={`${currentPartNumber}-${currentPassage?.id ?? currentQuestion.id}`}
+                    autoplayHistory={autoplayHistory}
                     audio={currentPassage?.audioSegment ?? null}
                     activeQuestionNumber={questionNumber}
                     paused={confirmSubmit || questionSheet || results.length > 0}
@@ -570,18 +578,10 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
                     {audioStatus.isLoaded && !audioStatus.playing ? (
                       <Action
                         title="Phát / tiếp tục"
-                        onPress={() => {
-                          try {
-                            fullAudioPlayer.play();
-                            fullAudioStarted.current = true;
-                          } catch {
-                            setFullAudioError(
-                              "Không phát được audio Listening."
-                            );
-                          }
-                        }}
+                        onPress={() => { if (autoplay.manual()) playFullAudio(); }}
                       />
                     ) : null}
+                    {audioStatus.playing ? <Action title="Tạm dừng audio" onPress={() => { autoplay.cancel(); }} /> : null}
                     {fullAudioError ? (
                       <Action
                         title="Thử tải lại"
@@ -889,6 +889,7 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
 }
 
 function QuestionImage({ question }: { question: ExamQuestion }) {
+  const { styles } = useThemedStyles();
   const uri =
     question.imageUrl ||
     (question.imageBase64?.startsWith("data:")
@@ -917,6 +918,7 @@ function Action({
   primary?: boolean;
   accessibilityLabel?: string;
 }) {
+  const { styles } = useThemedStyles();
   return (
     <Pressable
       accessibilityRole="button"
@@ -954,141 +956,151 @@ function formatTime(value: number) {
   )}`;
 }
 
-const c = homeDesign.colors;
-const styles = StyleSheet.create({
-  screen: { flex: 1 },
-  center: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 24,
-    gap: 12,
-  },
-  header: {
-    minHeight: 58,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: c.border,
-  },
-  heading: { flex: 1 },
-  title: { color: c.text, fontSize: 17, fontWeight: "800" },
-  body: { color: c.text, fontSize: 15, lineHeight: 23 },
-  muted: { color: c.secondary, fontSize: 12, lineHeight: 18 },
-  notice: { color: c.text, padding: 22 },
-  warning: { color: c.inProgress, fontSize: 13, lineHeight: 19 },
-  intro: { padding: 22, gap: 18 },
-  audioBanner: {
-    minHeight: 40,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingHorizontal: 10,
-    backgroundColor: c.surface,
-  },
-  progressRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-  },
-  progress: { color: c.tabActive, fontSize: 13, fontWeight: "700" },
-  partLabel: { color: c.link, fontSize: 13, fontWeight: "700" },
-  questionScroll: { flex: 1 },
-  questionContent: { padding: 12, gap: 12, paddingBottom: 20 },
-  passage: {
-    padding: 14,
-    gap: 10,
-    borderWidth: 1,
-    borderRadius: 12,
-    borderColor: c.border,
-    backgroundColor: c.surface,
-  },
-  card: {
-    padding: 14,
-    gap: 11,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: c.border,
-    backgroundColor: c.surface,
-  },
-  activeCard: { borderColor: c.tabActive },
-  image: { width: "100%", height: 210 },
-  option: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    minHeight: 48,
-    padding: 12,
-    borderWidth: 1,
-    borderRadius: 11,
-    borderColor: c.border,
-  },
-  optionLabel: { color: c.text, fontSize: 16, fontWeight: "800" },
-  optionText: { flex: 1, flexShrink: 1 },
-  selected: { borderColor: c.tabActive, backgroundColor: "#334018" },
-  footer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "center",
-    backgroundColor: c.surface,
-    borderTopWidth: 1,
-    borderTopColor: c.border,
-  },
-  action: {
-    minHeight: 42,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    borderRadius: 10,
-  },
-  actionText: { color: c.link, fontSize: 14, fontWeight: "700" },
-  primaryAction: {
-    minHeight: 50,
-    borderRadius: 14,
-    backgroundColor: c.tabActive,
-  },
-  primaryActionText: { color: c.cardText, fontSize: 15 },
-  disabled: { opacity: 0.4 },
-  overlay: {
-    flex: 1,
-    justifyContent: "center",
-    padding: 18,
-    backgroundColor: "#000b",
-  },
-  dialog: {
-    width: "100%",
-    maxWidth: 520,
-    maxHeight: "88%",
-    alignSelf: "center",
-    gap: 12,
-    padding: 17,
-    borderRadius: 17,
-    backgroundColor: c.surfaceRaised,
-  },
-  sheetScroll: { maxHeight: "72%" },
-  sheetPart: {
-    gap: 9,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: c.border,
-  },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: 7 },
-  cell: {
-    width: 43,
-    height: 40,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderRadius: 9,
-    borderColor: c.border,
-  },
-  cellAnswered: { backgroundColor: "#334018", borderColor: c.tabActive },
-  cellCurrent: { borderWidth: 2, borderColor: c.link },
-  cellText: { color: c.text, fontSize: 12, fontWeight: "700" },
-  resultRow: { padding: 10, borderRadius: 10, backgroundColor: c.background },
-});
+
+
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { homeDesign, themeColor } = appTheme;
+    const c = homeDesign.colors;
+    const styles = StyleSheet.create({
+      screen: { flex: 1 },
+      center: {
+        flex: 1,
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 24,
+        gap: 12,
+      },
+      header: {
+        minHeight: 58,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+        paddingHorizontal: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: c.border,
+      },
+      heading: { flex: 1 },
+      title: { color: c.text, fontSize: 17, fontWeight: "800" },
+      body: { color: c.text, fontSize: 15, lineHeight: 23 },
+      muted: { color: c.secondary, fontSize: 12, lineHeight: 18 },
+      notice: { color: c.text, padding: 22 },
+      warning: { color: c.inProgress, fontSize: 13, lineHeight: 19 },
+      intro: { padding: 22, gap: 18 },
+      audioBanner: {
+        minHeight: 40,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        paddingHorizontal: 10,
+        backgroundColor: c.surface,
+      },
+      progressRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        paddingHorizontal: 12,
+        paddingVertical: 9,
+      },
+      progress: { color: c.tabActive, fontSize: 13, fontWeight: "700" },
+      partLabel: { color: c.link, fontSize: 13, fontWeight: "700" },
+      questionScroll: { flex: 1 },
+      questionContent: { padding: 12, gap: 12, paddingBottom: 20 },
+      passage: {
+        padding: 14,
+        gap: 10,
+        borderWidth: 1,
+        borderRadius: 12,
+        borderColor: c.border,
+        backgroundColor: c.surface,
+      },
+      card: {
+        padding: 14,
+        gap: 11,
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: c.border,
+        backgroundColor: c.surface,
+      },
+      activeCard: { borderColor: c.tabActive },
+      image: { width: "100%", height: 210 },
+      option: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
+        minHeight: 48,
+        padding: 12,
+        borderWidth: 1,
+        borderRadius: 11,
+        borderColor: c.border,
+      },
+      optionLabel: { color: c.text, fontSize: 16, fontWeight: "800" },
+      optionText: { flex: 1, flexShrink: 1 },
+      selected: { borderColor: c.tabActive, backgroundColor: themeColor("#334018", "background") },
+      footer: {
+        flexDirection: "row",
+        justifyContent: "space-around",
+        alignItems: "center",
+        backgroundColor: c.surface,
+        borderTopWidth: 1,
+        borderTopColor: c.border,
+      },
+      action: {
+        minHeight: 42,
+        justifyContent: "center",
+        alignItems: "center",
+        paddingHorizontal: 12,
+        borderRadius: 10,
+      },
+      actionText: { color: c.link, fontSize: 14, fontWeight: "700" },
+      primaryAction: {
+        minHeight: 50,
+        borderRadius: 14,
+        backgroundColor: c.tabActive,
+      },
+      primaryActionText: { color: c.onSelection, fontSize: 15 },
+      disabled: { opacity: 0.4 },
+      overlay: {
+        flex: 1,
+        justifyContent: "center",
+        padding: 18,
+        backgroundColor: themeColor("#000b", "background"),
+      },
+      dialog: {
+        width: "100%",
+        maxWidth: 520,
+        maxHeight: "88%",
+        alignSelf: "center",
+        gap: 12,
+        padding: 17,
+        borderRadius: 17,
+        backgroundColor: c.surfaceRaised,
+      },
+      sheetScroll: { maxHeight: "72%" },
+      sheetPart: {
+        gap: 9,
+        paddingVertical: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: c.border,
+      },
+      grid: { flexDirection: "row", flexWrap: "wrap", gap: 7 },
+      cell: {
+        width: 43,
+        height: 40,
+        alignItems: "center",
+        justifyContent: "center",
+        borderWidth: 1,
+        borderRadius: 9,
+        borderColor: c.border,
+      },
+      cellAnswered: { backgroundColor: themeColor("#334018", "background"), borderColor: c.tabActive },
+      cellCurrent: { borderWidth: 2, borderColor: c.link },
+      cellText: { color: c.text, fontSize: 12, fontWeight: "700" },
+      resultRow: { padding: 10, borderRadius: 10, backgroundColor: c.background },
+    });
+    return { homeDesign, themeColor, c, styles };
+  }, [appTheme]);
+}

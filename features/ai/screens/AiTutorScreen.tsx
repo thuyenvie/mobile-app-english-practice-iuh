@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo, useEffect, useRef, useState } from "react";
+
 import { Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import * as ImagePicker from 'expo-image-picker';
@@ -6,7 +8,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Text, XStack, YStack } from 'tamagui';
 
 import { AppButton } from '@/components/ui/AppButton';
-import { aiDesign, homeDesign } from '@/theme/tokens';
+
 import { HomeScaffold } from '../../home/components/HomeScaffold';
 import { AiComposer } from '../components/AiComposer';
 import { AiMessageList } from '../components/AiMessageList';
@@ -16,6 +18,7 @@ import { useTutorChat } from '../hooks/useTutorChat';
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 
 export default function AiTutorScreen() {
+  const { aiDesign, homeDesign, themeColor } = useThemedStyles();
   const params = useLocalSearchParams<{ conversationId?: string; historyKey?: string }>();
   const loadedHistoryKey = useRef('');
   const [question, setQuestion] = useState('');
@@ -215,7 +218,7 @@ export default function AiTutorScreen() {
             <Text
               role="alert"
               aria-live="polite"
-              color="#ffb36b"
+              color={themeColor("#ffb36b", "text")}
               fontSize={12}
               lineHeight={17}
               paddingTop={8}
@@ -237,4 +240,13 @@ export default function AiTutorScreen() {
       </KeyboardAvoidingView>
     </HomeScaffold>
   );
+}
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { aiDesign, homeDesign, themeColor } = appTheme;
+
+    return { aiDesign, homeDesign, themeColor };
+  }, [appTheme]);
 }

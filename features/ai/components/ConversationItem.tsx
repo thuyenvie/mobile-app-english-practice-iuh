@@ -1,8 +1,10 @@
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo } from "react";
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Text, XStack, YStack } from 'tamagui';
 
 import { AppButton } from '@/components/ui/AppButton';
-import { aiDesign, homeDesign } from '@/theme/tokens';
+
 import type { AiConversationSummary } from '../types';
 
 export function ConversationItem({
@@ -14,6 +16,7 @@ export function ConversationItem({
   onOpen: () => void;
   onDelete: () => void;
 }) {
+  const { aiDesign, homeDesign, themeColor } = useThemedStyles();
   return (
     <XStack
       minHeight={92}
@@ -51,7 +54,7 @@ export function ConversationItem({
         alignItems="center"
         aria-label={`Xóa ${conversation.title}`}
         onPress={onDelete}
-        icon={<MaterialCommunityIcons name="delete-outline" size={23} color="#ff7777" />}
+        icon={<MaterialCommunityIcons name="delete-outline" size={23} color={themeColor("#ff7777", "text")} />}
       />
     </XStack>
   );
@@ -62,4 +65,13 @@ function formatDate(value: string) {
   return Number.isNaN(date.getTime())
     ? ''
     : date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { aiDesign, homeDesign, themeColor } = appTheme;
+
+    return { aiDesign, homeDesign, themeColor };
+  }, [appTheme]);
 }

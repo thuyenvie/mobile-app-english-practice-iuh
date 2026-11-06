@@ -1,13 +1,16 @@
-import { useState } from "react";
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo, useState } from "react";
+
 import { router } from "expo-router";
 import { Text, XStack, YStack } from "tamagui";
 
 import { AppButton } from "@/components/ui/AppButton";
 import { AppInput } from "@/components/ui/AppInput";
 import { AuthScaffold } from "../components/AuthScaffold";
-import { authFormDesign as design } from "../components/authFormDesign";
+
 
 export default function RegisterScreen() {
+  const { design } = useThemedStyles();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -53,4 +56,13 @@ export default function RegisterScreen() {
       </XStack>
     </AuthScaffold>
   );
+}
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { authFormDesign: design } = appTheme;
+
+    return { design };
+  }, [appTheme]);
 }

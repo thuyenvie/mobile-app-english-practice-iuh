@@ -1,8 +1,10 @@
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo } from "react";
 import { Text } from "tamagui";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 
 import { AppButton } from "@/components/ui/AppButton";
-import { authDesign, loginDesign } from "@/theme/tokens";
+
 
 interface GoogleButtonProps {
   variant?: "login";
@@ -19,6 +21,7 @@ export function GoogleButton({
   loading,
   onPress,
 }: GoogleButtonProps) {
+  const { authDesign, loginDesign } = useThemedStyles();
   const design = variant === "login" ? loginDesign : authDesign;
   return (
     <AppButton
@@ -44,4 +47,13 @@ export function GoogleButton({
       {loading ? "Đang kết nối Google..." : "Tiếp tục với Google"}
     </AppButton>
   );
+}
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { authDesign, loginDesign } = appTheme;
+
+    return { authDesign, loginDesign };
+  }, [appTheme]);
 }
