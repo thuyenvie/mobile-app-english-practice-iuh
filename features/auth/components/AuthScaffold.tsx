@@ -1,4 +1,6 @@
-import type { PropsWithChildren } from "react";
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo, type PropsWithChildren } from "react";
+
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
@@ -9,11 +11,12 @@ import { AuthHeader } from "./AuthHeader";
 type AuthScaffoldProps = PropsWithChildren<{ title: string; subtitle: string }>;
 
 export function AuthScaffold({ children, title, subtitle }: AuthScaffoldProps) {
+  const { tamaguiTheme, statusBarStyle, themeColor, styles } = useThemedStyles();
   const insets = useSafeAreaInsets();
 
   return (
-    <Theme name="light_auth">
-      <StatusBar style="dark" />
+    <Theme name={tamaguiTheme}>
+      <StatusBar style={statusBarStyle} />
       <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <View pointerEvents="none" style={styles.halo} />
         <ScrollView
@@ -28,8 +31,8 @@ export function AuthScaffold({ children, title, subtitle }: AuthScaffoldProps) {
           <View style={styles.column}>
             <AuthHeader />
             <View style={styles.card}>
-              <Text role="heading" color="#0C316A" fontSize={24} fontWeight="700">{title}</Text>
-              <Text color="#425A7C" fontSize={14} marginTop={5} marginBottom={16}>{subtitle}</Text>
+              <Text role="heading" color={themeColor("#0C316A", "text")} fontSize={24} fontWeight="700">{title}</Text>
+              <Text color={themeColor("#425A7C", "text")} fontSize={14} marginTop={5} marginBottom={16}>{subtitle}</Text>
               {children}
             </View>
           </View>
@@ -39,10 +42,19 @@ export function AuthScaffold({ children, title, subtitle }: AuthScaffoldProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#EAF3FF" },
-  halo: { position: "absolute", left: -105, top: -130, width: 300, height: 300, borderRadius: 150, backgroundColor: "#D2E7FF" },
-  content: { flexGrow: 1, justifyContent: "center" },
-  column: { width: "100%", maxWidth: 420, alignSelf: "center" },
-  card: { backgroundColor: "#FFFFFF", borderColor: "#D1E4FF", borderWidth: 1, borderRadius: 20, padding: 16 },
-});
+
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { tamaguiTheme, statusBarStyle, themeColor, palette } = appTheme;
+    const styles = StyleSheet.create({
+      container: { flex: 1, backgroundColor: palette.background },
+      halo: { position: "absolute", left: -105, top: -130, width: 300, height: 300, borderRadius: 150, backgroundColor: themeColor("#D2E7FF", "background") },
+      content: { flexGrow: 1, justifyContent: "center" },
+      column: { width: "100%", maxWidth: 420, alignSelf: "center" },
+      card: { backgroundColor: themeColor("#FFFFFF", "background"), borderColor: themeColor("#D1E4FF", "border"), borderWidth: 1, borderRadius: 20, padding: 16 },
+    });
+    return { tamaguiTheme, statusBarStyle, themeColor, palette, styles };
+  }, [appTheme]);
+}

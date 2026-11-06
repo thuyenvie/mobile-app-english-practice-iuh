@@ -1,7 +1,9 @@
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo } from "react";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View, type GestureResponderEvent } from "react-native";
 
-import { homeDesign } from "@/theme/tokens";
+
 
 export function VocabularyPronunciationButton({
   audioUrl,
@@ -24,6 +26,7 @@ export function VocabularyPronunciationButton({
   compact?: boolean;
   activeWord?: string;
 }) {
+  const { homeDesign, styles } = useThemedStyles();
   const isActive = audioUrl ? activeUrl === audioUrl : activeWord === word;
   const isPlaying = isActive && playing;
   const isLoading = isActive && loading && !error;
@@ -55,11 +58,20 @@ export function VocabularyPronunciationButton({
   );
 }
 
-const styles = StyleSheet.create({
-  container: { alignItems: "center", gap: 2 },
-  compactContainer: { flexDirection: "row", alignItems: "center" },
-  button: { width: 38, height: 38, alignItems: "center", justifyContent: "center", borderRadius: 19, backgroundColor: homeDesign.colors.surfaceRaised },
-  compactButton: { width: 34, height: 34 },
-  disabled: { opacity: 0.65 },
-  error: { maxWidth: 180, color: "#ff9d9d", fontSize: 10, textAlign: "center" },
-});
+
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { homeDesign, themeColor } = appTheme;
+    const styles = StyleSheet.create({
+      container: { alignItems: "center", gap: 2 },
+      compactContainer: { flexDirection: "row", alignItems: "center" },
+      button: { width: 38, height: 38, alignItems: "center", justifyContent: "center", borderRadius: 19, backgroundColor: homeDesign.colors.surfaceRaised },
+      compactButton: { width: 34, height: 34 },
+      disabled: { opacity: 0.65 },
+      error: { maxWidth: 180, color: themeColor("#ff9d9d", "text"), fontSize: 10, textAlign: "center" },
+    });
+    return { homeDesign, themeColor, styles };
+  }, [appTheme]);
+}

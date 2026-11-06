@@ -43,6 +43,7 @@ function mount(os = "android") {
     "@/components/ui/BrandedPageState": { BrandedPageState: () => null },
     "@/providers/SessionProvider": { SessionProvider: () => null },
     "@/providers/SettingsProvider": { SettingsProvider: () => null },
+    "@/theme/ThemeProvider": { ThemeProvider: () => null, ThemeStack: () => null },
     "../../features/study/session/StudySessionProvider": { StudySessionProvider: () => null },
     "../../features/notifications/PushNotificationRuntime": { PushNotificationRuntime: () => null },
     "@/theme/tokens": { authDesign: { colors: { background: "#000000" } } },

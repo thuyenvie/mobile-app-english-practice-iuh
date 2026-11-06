@@ -1,6 +1,8 @@
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo, useState } from "react";
 import { RequireAccount } from "@/components/auth/RequireAccount";
 import { useSettings } from "@/providers/SettingsProvider";
-import { settingsTheme } from "@/theme/settingsTheme";
+
 import { SettingsSection } from "../components/SettingsSection";
 import { SET01Entry } from "../entries/SET01Entry";
 import { SET02Entry } from "../entries/SET02Entry";
@@ -10,7 +12,7 @@ import { SET05Entry } from "../entries/SET05Entry";
 import { SET06Entry } from "../entries/SET06Entry";
 import { SET07Entry } from "../entries/SET07Entry";
 import { SET08Entry } from "../entries/SET08Entry";
-import { useState } from "react";
+
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { router } from "expo-router";
 import { Text, YStack } from "tamagui";
@@ -20,13 +22,14 @@ import { HomeScaffold } from "../../home/components/HomeScaffold";
 import { assertSessionGeneration, getSessionSnapshot, enterGuestSession } from "@/lib/auth/sessionStore";
 import { getAccessToken, removeTokens } from "@/lib/auth/tokenStorage";
 import { useSession } from "@/lib/auth/useSession";
-import { homeDesign } from "@/theme/tokens";
+
 import { deactivateCurrentPushToken } from "../../notifications/api/pushNotificationApi";
 import { logout } from "../../auth/api/authApi";
 import { useStudySession } from "../../study/session/StudySessionProvider";
 import { RecentStudyTimeCard } from "../../home/components/RecentStudyTimeCard";
 
 export default function SettingsScreen() {
+  const { settingsTheme, homeDesign, styles } = useThemedStyles();
   const session = useSession();
   const settings = useSettings();
   const entryProps = { settings, authenticated: session.status === "authenticated", theme: settingsTheme };
@@ -169,7 +172,14 @@ export default function SettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  content: { flexGrow: 1, padding: 24, paddingBottom: 32, gap: 18, backgroundColor: homeDesign.colors.background },
-  statusRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-});
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { settingsTheme, homeDesign } = appTheme;
+    const styles = StyleSheet.create({
+      content: { flexGrow: 1, padding: 24, paddingBottom: 32, gap: 18, backgroundColor: homeDesign.colors.background },
+      statusRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+    });
+    return { settingsTheme, homeDesign, styles };
+  }, [appTheme]);
+}

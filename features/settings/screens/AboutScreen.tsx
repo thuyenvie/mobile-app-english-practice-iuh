@@ -1,11 +1,14 @@
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo } from "react";
 import Constants from "expo-constants";
 import { router } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { settingsTheme as theme } from "@/theme/settingsTheme";
+
 import { HomeScaffold } from "../../home/components/HomeScaffold";
 import { getAboutMetadata } from "../metadata/aboutMetadata";
 
 export default function AboutScreen() {
+  const { styles } = useThemedStyles();
   const metadata = getAboutMetadata(Constants.expoConfig);
   const back = () => router.canGoBack() ? router.back() : router.replace("/(tabs)/settings");
   return <HomeScaffold>
@@ -33,13 +36,20 @@ export default function AboutScreen() {
   </HomeScaffold>;
 }
 
-const styles = StyleSheet.create({
-  content: { flexGrow: 1, padding: 24, gap: 20, backgroundColor: theme.background },
-  back: { minHeight: 44, justifyContent: "center", alignSelf: "flex-start" },
-  link: { color: theme.accent, fontSize: 16 },
-  heading: { color: theme.text, fontSize: 26, fontWeight: "800" },
-  card: { padding: 16, gap: 12, borderWidth: 1, borderColor: theme.border, borderRadius: 12, backgroundColor: theme.surface },
-  name: { color: theme.text, fontSize: 18, fontWeight: "600" },
-  text: { color: theme.text, fontSize: 16, lineHeight: 24 },
-  note: { color: theme.muted, fontSize: 14, lineHeight: 22 },
-});
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { settingsTheme: theme } = appTheme;
+    const styles = StyleSheet.create({
+      content: { flexGrow: 1, padding: 24, gap: 20, backgroundColor: theme.background },
+      back: { minHeight: 44, justifyContent: "center", alignSelf: "flex-start" },
+      link: { color: theme.accent, fontSize: 16 },
+      heading: { color: theme.text, fontSize: 26, fontWeight: "800" },
+      card: { padding: 16, gap: 12, borderWidth: 1, borderColor: theme.border, borderRadius: 12, backgroundColor: theme.surface },
+      name: { color: theme.text, fontSize: 18, fontWeight: "600" },
+      text: { color: theme.text, fontSize: 16, lineHeight: 24 },
+      note: { color: theme.muted, fontSize: 14, lineHeight: 22 },
+    });
+    return { theme, styles };
+  }, [appTheme]);
+}

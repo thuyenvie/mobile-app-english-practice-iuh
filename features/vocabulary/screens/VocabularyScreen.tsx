@@ -1,7 +1,9 @@
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo, useCallback, useEffect, useRef, useState } from "react";
 import { BrandedPageState } from "@/components/ui/BrandedPageState";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { router, useFocusEffect } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+
 import {
   ActivityIndicator,
   Alert,
@@ -14,7 +16,7 @@ import {
 } from "react-native";
 import { Text, XStack, YStack } from "tamagui";
 
-import { homeDesign } from "@/theme/tokens";
+
 import { getExamErrorMessage } from "../../study/api/examApi";
 import { HomeScaffold } from "../../home/components/HomeScaffold";
 import {
@@ -38,6 +40,7 @@ const FILTERS: { id: DateFilter; label: string }[] = [
 ];
 
 export default function VocabularyScreen() {
+  const { homeDesign, themeColor, styles } = useThemedStyles();
   const [filter, setFilter] = useState<DateFilter>("all");
   const [items, setItems] = useState<SavedVocabulary[]>([]);
   const [totalItems, setTotalItems] = useState(0);
@@ -294,9 +297,9 @@ export default function VocabularyScreen() {
             <MaterialCommunityIcons
               name="alert-circle-outline"
               size={19}
-              color="#ff8c8c"
+              color={themeColor("#ff8c8c", "text")}
             />
-            <Text flex={1} color="#ffaaaa" fontSize={13}>
+            <Text flex={1} color={themeColor("#ffaaaa", "text")} fontSize={13}>
               {error}
             </Text>
             <Pressable
@@ -455,50 +458,59 @@ function getDateRange(filter: DateFilter): { from?: string; to?: string } {
   return { from: weekStart.toISOString(), to: tomorrow.toISOString() };
 }
 
-const styles = StyleSheet.create({
-  selectRow: { flexDirection: "row", alignItems: "center", gap: 9, minHeight: 44 },
-  scheduleFooter: { padding: 14, backgroundColor: homeDesign.colors.background, borderTopWidth: 1, borderTopColor: homeDesign.colors.border },
-  scheduleButton: { minHeight: 48, backgroundColor: homeDesign.colors.tabActive, borderRadius: 14, alignItems: "center", justifyContent: "center", padding: 12 },
-  filters: { gap: 8, paddingVertical: 12, paddingRight: 8 },
-  filterChip: {
-    minHeight: 38,
-    justifyContent: "center",
-    paddingHorizontal: 15,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: homeDesign.colors.border,
-    backgroundColor: homeDesign.colors.surfaceRaised,
-  },
-  modeChip: {
-    minHeight: 36,
-    justifyContent: "center",
-    paddingHorizontal: 13,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: homeDesign.colors.border,
-    backgroundColor: homeDesign.colors.surfaceRaised,
-  },
-  disabledChip: { opacity: 0.5 },
-  activeFilterChip: {
-    borderColor: homeDesign.colors.tabActive,
-    backgroundColor: homeDesign.colors.tabActive,
-  },
-  filterText: {
-    color: homeDesign.colors.text,
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  activeFilterText: { color: homeDesign.colors.cardText },
-  listContent: {
-    paddingHorizontal: homeDesign.pagePadding,
-    paddingTop: 4,
-    paddingBottom: 24,
-  },
-  emptyListContent: {
-    flexGrow: 1,
-    justifyContent: "center",
-    paddingHorizontal: homeDesign.pagePadding,
-  },
-  separator: { height: 12 },
-  footerLoading: { paddingVertical: 18 },
-});
+
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { homeDesign, themeColor } = appTheme;
+    const styles = StyleSheet.create({
+      selectRow: { flexDirection: "row", alignItems: "center", gap: 9, minHeight: 44 },
+      scheduleFooter: { padding: 14, backgroundColor: homeDesign.colors.background, borderTopWidth: 1, borderTopColor: homeDesign.colors.border },
+      scheduleButton: { minHeight: 48, backgroundColor: homeDesign.colors.tabActive, borderRadius: 14, alignItems: "center", justifyContent: "center", padding: 12 },
+      filters: { gap: 8, paddingVertical: 12, paddingRight: 8 },
+      filterChip: {
+        minHeight: 38,
+        justifyContent: "center",
+        paddingHorizontal: 15,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: homeDesign.colors.border,
+        backgroundColor: homeDesign.colors.surfaceRaised,
+      },
+      modeChip: {
+        minHeight: 36,
+        justifyContent: "center",
+        paddingHorizontal: 13,
+        borderRadius: 18,
+        borderWidth: 1,
+        borderColor: homeDesign.colors.border,
+        backgroundColor: homeDesign.colors.surfaceRaised,
+      },
+      disabledChip: { opacity: 0.5 },
+      activeFilterChip: {
+        borderColor: homeDesign.colors.tabActive,
+        backgroundColor: homeDesign.colors.tabActive,
+      },
+      filterText: {
+        color: homeDesign.colors.text,
+        fontSize: 13,
+        fontWeight: "700",
+      },
+      activeFilterText: { color: homeDesign.colors.onSelection },
+      listContent: {
+        paddingHorizontal: homeDesign.pagePadding,
+        paddingTop: 4,
+        paddingBottom: 24,
+      },
+      emptyListContent: {
+        flexGrow: 1,
+        justifyContent: "center",
+        paddingHorizontal: homeDesign.pagePadding,
+      },
+      separator: { height: 12 },
+      footerLoading: { paddingVertical: 18 },
+    });
+    return { homeDesign, themeColor, styles };
+  }, [appTheme]);
+}

@@ -1,7 +1,9 @@
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo } from "react";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Text, XStack, YStack } from 'tamagui';
 
-import { homeDesign } from '@/theme/tokens';
+
 import { useDeviceDate } from '../hooks/useDeviceDate';
 import type { HomeProfile } from '../types';
 import { UserAvatar } from './UserAvatar';
@@ -10,6 +12,7 @@ import { useSession } from '@/lib/auth/useSession';
 import { router } from 'expo-router';
 
 export function HomeHeader({ profile }: { profile: HomeProfile }) {
+  const { homeDesign } = useThemedStyles();
   const date = useDeviceDate();
   const isGuest = useSession().status === "guest";
   return (
@@ -36,4 +39,13 @@ export function HomeHeader({ profile }: { profile: HomeProfile }) {
       </> : null}
     </YStack>
   );
+}
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { homeDesign } = appTheme;
+
+    return { homeDesign };
+  }, [appTheme]);
 }

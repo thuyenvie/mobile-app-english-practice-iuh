@@ -1,8 +1,10 @@
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo } from "react";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
 import { Text, XStack, YStack } from "tamagui";
 
-import { homeDesign } from "@/theme/tokens";
+
 import type { SavedVocabulary } from "../api/vocabularyApi";
 import { PhoneticText } from "../../study/components/PhoneticText";
 import { VocabularyPronunciationButton } from "./VocabularyPronunciationButton";
@@ -29,6 +31,7 @@ export function VocabularyWordCard({
     onPress: (audioUrl: string | null | undefined, word: string) => void;
   };
 }) {
+  const { homeDesign, themeColor, styles } = useThemedStyles();
   const savedDate = new Date(item.savedAt);
   const dateLabel = Number.isNaN(savedDate.getTime())
     ? ""
@@ -90,7 +93,7 @@ export function VocabularyWordCard({
           accessibilityLabel={`Xóa từ ${item.word}`}
           style={styles.deleteButton}
         >
-          <MaterialCommunityIcons name="trash-can-outline" size={21} color="#ff7777" />
+          <MaterialCommunityIcons name="trash-can-outline" size={21} color={themeColor("#ff7777", "text")} />
         </Pressable>
       </XStack>
 
@@ -111,22 +114,31 @@ export function VocabularyWordCard({
   );
 }
 
-const styles = StyleSheet.create({
-  titleGroup: { flex: 1, gap: 3 },
-  phoneticRepairRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  phoneticRepairText: { color: homeDesign.colors.inProgress, fontSize: 13 },
-  phoneticRepairAction: { color: homeDesign.colors.link, fontSize: 13, fontWeight: "700" },
-  phonetic: { color: homeDesign.colors.secondary, fontSize: 14 },
-  deleteButton: { padding: 4 },
-  partOfSpeech: {
-    alignSelf: "flex-start",
-    overflow: "hidden",
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    borderRadius: 8,
-    color: homeDesign.colors.cardText,
-    backgroundColor: homeDesign.colors.tabActive,
-    fontSize: 12,
-    fontWeight: "700",
-  },
-});
+
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { homeDesign, themeColor } = appTheme;
+    const styles = StyleSheet.create({
+      titleGroup: { flex: 1, gap: 3 },
+      phoneticRepairRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+      phoneticRepairText: { color: homeDesign.colors.inProgress, fontSize: 13 },
+      phoneticRepairAction: { color: homeDesign.colors.link, fontSize: 13, fontWeight: "700" },
+      phonetic: { color: homeDesign.colors.secondary, fontSize: 14 },
+      deleteButton: { padding: 4 },
+      partOfSpeech: {
+        alignSelf: "flex-start",
+        overflow: "hidden",
+        paddingHorizontal: 9,
+        paddingVertical: 4,
+        borderRadius: 8,
+        color: homeDesign.colors.onSelection,
+        backgroundColor: homeDesign.colors.tabActive,
+        fontSize: 12,
+        fontWeight: "700",
+      },
+    });
+    return { homeDesign, themeColor, styles };
+  }, [appTheme]);
+}

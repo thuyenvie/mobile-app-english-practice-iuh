@@ -1,10 +1,12 @@
-import { useEffect, useRef } from 'react';
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo, useEffect, useRef } from "react";
+
 import { FlatList, Image } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Text, XStack, YStack } from 'tamagui';
 
 import { AppButton } from '@/components/ui/AppButton';
-import { aiDesign, homeDesign } from '@/theme/tokens';
+
 import type {
   LanguageAnalysis,
   QuestionImageExplanationResponse,
@@ -26,6 +28,7 @@ export function AiMessageList({
   onSuggestion: (prompt: string) => void;
   onLoadOlder: () => void;
 }) {
+  const { aiDesign } = useThemedStyles();
   const listRef = useRef<FlatList<TutorMessage>>(null);
   const lastMessageId = messages.at(-1)?.id;
 
@@ -72,6 +75,7 @@ function AiMessageBubble({
   message: TutorMessage;
   onSuggestion: (prompt: string) => void;
 }) {
+  const { aiDesign } = useThemedStyles();
   const user = message.role === 'user';
 
   return (
@@ -141,6 +145,7 @@ function AiMessageBubble({
 }
 
 function TutorAvatar() {
+  const { aiDesign } = useThemedStyles();
   return (
     <YStack
       width={36}
@@ -159,6 +164,7 @@ function TutorAvatar() {
 }
 
 function TypingBubble() {
+  const { aiDesign } = useThemedStyles();
   return (
     <XStack alignItems="center" gap={8} marginTop={14}>
       <TutorAvatar />
@@ -176,6 +182,7 @@ function TypingBubble() {
 }
 
 function LanguageFeedbackCard({ analysis }: { analysis: LanguageAnalysis }) {
+  const { aiDesign, homeDesign } = useThemedStyles();
   const grammarIssues = analysis.grammarIssues || [];
   const vocabulary = analysis.vocabulary || [];
   const corrected =
@@ -233,6 +240,7 @@ function QuestionExplanationCard({
 }: {
   explanation: QuestionImageExplanationResponse;
 }) {
+  const { aiDesign, themeColor } = useThemedStyles();
   return (
     <YStack gap={10}>
       <Section title="1. Đáp án đúng">
@@ -292,7 +300,7 @@ function QuestionExplanationCard({
         Độ tin cậy: {Math.round(explanation.confidence * 100)}%
       </Text>
       {explanation.warnings.map((warning, index) => (
-        <Text key={`${warning}-${index}`} color="#ffb36b" fontSize={11} lineHeight={16}>
+        <Text key={`${warning}-${index}`} color={themeColor("#ffb36b", "text")} fontSize={11} lineHeight={16}>
           Lưu ý: {warning}
         </Text>
       ))}
@@ -301,6 +309,7 @@ function QuestionExplanationCard({
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  const { aiDesign } = useThemedStyles();
   return (
     <YStack gap={4}>
       <Text color={aiDesign.colors.accent} fontSize={13} fontWeight="800">
@@ -309,4 +318,13 @@ function Section({ title, children }: { title: string; children: React.ReactNode
       {children}
     </YStack>
   );
+}
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { aiDesign, homeDesign, themeColor } = appTheme;
+
+    return { aiDesign, homeDesign, themeColor };
+  }, [appTheme]);
 }

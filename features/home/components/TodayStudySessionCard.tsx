@@ -1,9 +1,11 @@
-import { useCallback, useState, type PropsWithChildren } from "react";
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo, useCallback, useState, type PropsWithChildren } from "react";
+
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useSession } from "@/lib/auth/useSession";
-import { homeDesign } from "@/theme/tokens";
+
 import { getTodaySchedule, type StudySchedule, type StudyTask } from "../../study/api/studyPlanApi";
 import { cancelVocabularyTask, getVocabularyTasks } from "../../vocabulary/api/vocabularyTaskApi";
 import { getStudyPushStatus, type StudyPushStatus } from "../../notifications/api/pushNotificationApi";
@@ -11,11 +13,12 @@ import { getExamErrorMessage } from "../../study/api/examApi";
 import { StartStudyButton, StudySessionBanner } from "../../study/session/StudySessionControls";
 import { useStudySession } from "../../study/session/StudySessionProvider";
 
-const c = homeDesign.colors;
+
 const timeLabel = (value: string, timezone?: string) =>
   new Date(value).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", timeZone: timezone });
 
 export function TodayStudySessionCard({ children }: PropsWithChildren) {
+  const { c, styles } = useThemedStyles();
   const account = useSession();
   const { refresh, current } = useStudySession();
   const activeSession = current && current.status !== "ENDED" ? current : null;
@@ -169,16 +172,26 @@ export function TodayStudySessionCard({ children }: PropsWithChildren) {
     </View> : null}
   </>;
 }
-const styles = StyleSheet.create({
-  card: { marginHorizontal: homeDesign.pagePadding, marginBottom: 12, backgroundColor: c.surface, borderColor: c.border, borderWidth: 1, padding: 16, borderRadius: 18, gap: 8 },
-  hero: { backgroundColor: c.surfaceRaised },
-  row: { flexDirection: "row", alignItems: "center", gap: 10, flexWrap: "wrap" },
-  heading: { color: c.text, fontSize: 17, fontWeight: "700", flex: 1 },
-  task: { borderTopWidth: 1, borderTopColor: c.border, paddingTop: 12, gap: 7 },
-  title: { color: c.text, fontSize: 16, fontWeight: "700" },
-  muted: { color: c.secondary, fontSize: 13, lineHeight: 20, flexShrink: 1 },
-  link: { color: c.link, fontSize: 13, fontWeight: "600", minHeight: 44, textAlignVertical: "center", paddingVertical: 12 },
-  eyebrow: { color: c.tabActive, fontSize: 12, fontWeight: "700" },
-  track: { height: 6, borderRadius: 6, overflow: "hidden", backgroundColor: c.border },
-  fill: { height: "100%", backgroundColor: c.tabActive },
-});
+
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { homeDesign } = appTheme;
+    const c = homeDesign.colors;
+    const styles = StyleSheet.create({
+      card: { marginHorizontal: homeDesign.pagePadding, marginBottom: 12, backgroundColor: c.surface, borderColor: c.border, borderWidth: 1, padding: 16, borderRadius: 18, gap: 8 },
+      hero: { backgroundColor: c.surfaceRaised },
+      row: { flexDirection: "row", alignItems: "center", gap: 10, flexWrap: "wrap" },
+      heading: { color: c.text, fontSize: 17, fontWeight: "700", flex: 1 },
+      task: { borderTopWidth: 1, borderTopColor: c.border, paddingTop: 12, gap: 7 },
+      title: { color: c.text, fontSize: 16, fontWeight: "700" },
+      muted: { color: c.secondary, fontSize: 13, lineHeight: 20, flexShrink: 1 },
+      link: { color: c.link, fontSize: 13, fontWeight: "600", minHeight: 44, textAlignVertical: "center", paddingVertical: 12 },
+      eyebrow: { color: c.tabActive, fontSize: 12, fontWeight: "700" },
+      track: { height: 6, borderRadius: 6, overflow: "hidden", backgroundColor: c.border },
+      fill: { height: "100%", backgroundColor: c.tabActive },
+    });
+    return { homeDesign, c, styles };
+  }, [appTheme]);
+}

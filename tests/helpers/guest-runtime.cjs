@@ -89,7 +89,6 @@ function environment(extraMocks = {}) {
     useStudySession: () => ({ current: null, busy: false, error: "", refresh: async () => {}, start: async () => {}, pause: async () => {}, resume: async () => {}, end: async () => {} }),
     useStudyElapsed: () => 0, formatStudyTime: () => "00:00",
   };
-  const colors = new Proxy({}, { get: () => "#ffffff" });
   const modules = {
     react: hooks.react,
     "react/jsx-runtime": { jsx, jsxs: jsx, Fragment: "Fragment" },
@@ -118,7 +117,7 @@ function environment(extraMocks = {}) {
       useFocusEffect: fn => hooks.react.useEffect(() => env.focused ? fn() : undefined, [fn, env.focused]),
       Redirect: "Redirect",
     },
-    "@/theme/tokens": { homeDesign: { colors, maxWidth: 500, pagePadding: 16 } },
+    "@/theme/useAppTheme": { useAppTheme: () => env.theme ?? load("src/theme/palettes.ts").getAppTheme("dark") },
     "@/components/ui/AppButton": { AppButton: "AppButton" },
     "@/providers/SettingsProvider": { useSettings: () => ({ preferences: { listeningAutoplay: true }, hydration: "ready" }) },
     "../session/StudySessionProvider": studySession,

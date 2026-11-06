@@ -1,8 +1,10 @@
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo } from "react";
 import { Image } from "react-native";
 import { Text, XStack, YStack } from "tamagui";
 
 import { AppButton } from "@/components/ui/AppButton";
-import { homeDesign } from "@/theme/tokens";
+
 import type { ExamQuestion } from "../types";
 import { InteractiveText } from "./InteractiveText";
 
@@ -33,6 +35,7 @@ export function ReadingQuestionCard({
   onWordPress?: (word: string, context: string) => void;
   highlightedWord?: string | null;
 }) {
+  const { homeDesign } = useThemedStyles();
   const imageUri = getQuestionImage(question);
 
   return (
@@ -115,7 +118,7 @@ export function ReadingQuestionCard({
                   }
                 >
                   <Text
-                    color={selected ? homeDesign.colors.cardText : homeDesign.colors.text}
+                    color={selected ? homeDesign.colors.onSelection : homeDesign.colors.text}
                     fontWeight="800"
                   >
                     {option.label}
@@ -139,4 +142,13 @@ export function ReadingQuestionCard({
       </YStack>
     </YStack>
   );
+}
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { homeDesign } = appTheme;
+
+    return { homeDesign };
+  }, [appTheme]);
 }

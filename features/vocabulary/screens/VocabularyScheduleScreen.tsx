@@ -1,10 +1,12 @@
-import { useEffect, useRef, useState } from "react";
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo, useEffect, useRef, useState } from "react";
+
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSession } from "@/lib/auth/useSession";
 import { getSessionSnapshot } from "@/lib/auth/sessionStore";
-import { homeDesign } from "@/theme/tokens";
+
 import { StudyScaffold } from "../../study/components/StudyScaffold";
 import { getExamErrorMessage } from "../../study/api/examApi";
 import { getStudyPlan, type StudyPlan } from "../../study/api/studyPlanApi";
@@ -12,8 +14,9 @@ import { registerStudyPushToken } from "../../notifications/api/pushNotification
 import { createVocabularyTask, getVocabularyTask, updateVocabularyTask, type VocabularyTaskInput } from "../api/vocabularyTaskApi";
 import { localDateValue, localTimeValue, scheduleInstant } from "../utils/scheduleTime";
 
-const c = homeDesign.colors;
+
 export default function VocabularyScheduleScreen() {
+  const { c, styles } = useThemedStyles();
   const params = useLocalSearchParams<{ ids?: string; words?: string; taskId?: string }>();
   const account = useSession();
   const insets = useSafeAreaInsets();
@@ -105,22 +108,34 @@ export default function VocabularyScheduleScreen() {
         <View style={styles.row}><Text style={styles.title}>Nhắc buổi ôn này</Text><Switch value={remind} onValueChange={setRemind} disabled={saving} trackColor={{ true: c.tabActive }} /></View>
         {remind ? <View style={styles.row}>{[0, 5, 10].map(value => <Pressable key={value} disabled={saving} accessibilityRole="button" accessibilityState={{ selected: before === value }} onPress={() => setBefore(value)} style={[styles.chip, before === value && styles.selected]}><Text style={before === value ? styles.darkText : styles.text}>{value === 0 ? "Đúng giờ" : `Trước ${value} phút`}</Text></Pressable>)}</View> : null}
         <Text style={styles.muted}>{plan.quietStart && plan.quietEnd ? `Giờ yên lặng: ${plan.quietStart.slice(0, 5)}–${plan.quietEnd.slice(0, 5)}. ` : "Chưa đặt giờ yên lặng. "}Ngày ôn riêng có thể khác ngày học mặc định.</Text>
-        <Pressable style={[styles.button, (saving || !ids.length || !ready) && styles.disabled]} disabled={saving || !ids.length || !ready} onPress={() => void save()} accessibilityRole="button">{saving ? <ActivityIndicator color={c.cardText} /> : <Text style={styles.darkText}>Lưu lịch ôn</Text>}</Pressable>
+        <Pressable style={[styles.button, (saving || !ids.length || !ready) && styles.disabled]} disabled={saving || !ids.length || !ready} onPress={() => void save()} accessibilityRole="button">{saving ? <ActivityIndicator color={c.onSelection} /> : <Text style={styles.darkText}>Lưu lịch ôn</Text>}</Pressable>
       </>}
     </>}
     {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
   </ScrollView></StudyScaffold>;
 }
 function Field({ label, value, onChange, numeric, disabled }: { label: string; value: string; onChange: (value: string) => void; numeric?: boolean; disabled: boolean }) {
-  return <View style={{ gap: 7 }}><Text style={styles.text}>{label}</Text><TextInput accessibilityLabel={label} value={value} onChangeText={onChange} editable={!disabled} autoCapitalize="none" keyboardType={numeric ? "number-pad" : "default"} style={styles.input} /></View>;
+  const { resolvedMode } = useAppTheme();
+  const { styles } = useThemedStyles();
+  return <View style={{ gap: 7 }}><Text style={styles.text}>{label}</Text><TextInput keyboardAppearance={resolvedMode} accessibilityLabel={label} value={value} onChangeText={onChange} editable={!disabled} autoCapitalize="none" keyboardType={numeric ? "number-pad" : "default"} style={styles.input} /></View>;
 }
-const styles = StyleSheet.create({
-  content: { padding: 18, gap: 17 }, heading: { color: c.text, fontSize: 26, fontWeight: "800" }, title: { color: c.text, fontSize: 17, fontWeight: "700", flexShrink: 1 },
-  text: { color: c.text, fontSize: 14 }, muted: { color: c.secondary, fontSize: 13, lineHeight: 20 }, link: { color: c.link, paddingVertical: 10 },
-  card: { backgroundColor: c.surface, padding: 17, borderRadius: 17, borderWidth: 1, borderColor: c.border, gap: 8 },
-  input: { color: c.text, backgroundColor: c.surface, borderColor: c.border, borderWidth: 1, borderRadius: 12, minHeight: 48, padding: 12, fontSize: 16 },
-  row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" },
-  chip: { padding: 12, borderRadius: 18, backgroundColor: c.surfaceRaised }, selected: { backgroundColor: c.tabActive },
-  button: { minHeight: 50, backgroundColor: c.tabActive, borderRadius: 14, alignItems: "center", justifyContent: "center", padding: 12 },
-  darkText: { color: c.cardText, fontSize: 14, fontWeight: "700" }, disabled: { opacity: .5 }, error: { color: c.inProgress, lineHeight: 21 },
-});
+
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { homeDesign } = appTheme;
+    const c = homeDesign.colors;
+    const styles = StyleSheet.create({
+      content: { padding: 18, gap: 17 }, heading: { color: c.text, fontSize: 26, fontWeight: "800" }, title: { color: c.text, fontSize: 17, fontWeight: "700", flexShrink: 1 },
+      text: { color: c.text, fontSize: 14 }, muted: { color: c.secondary, fontSize: 13, lineHeight: 20 }, link: { color: c.link, paddingVertical: 10 },
+      card: { backgroundColor: c.surface, padding: 17, borderRadius: 17, borderWidth: 1, borderColor: c.border, gap: 8 },
+      input: { color: c.text, backgroundColor: c.surface, borderColor: c.border, borderWidth: 1, borderRadius: 12, minHeight: 48, padding: 12, fontSize: 16 },
+      row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" },
+      chip: { padding: 12, borderRadius: 18, backgroundColor: c.surfaceRaised }, selected: { backgroundColor: c.tabActive },
+      button: { minHeight: 50, backgroundColor: c.tabActive, borderRadius: 14, alignItems: "center", justifyContent: "center", padding: 12 },
+      darkText: { color: c.onSelection, fontSize: 14, fontWeight: "700" }, disabled: { opacity: .5 }, error: { color: c.inProgress, lineHeight: 21 },
+    });
+    return { homeDesign, c, styles };
+  }, [appTheme]);
+}

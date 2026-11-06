@@ -1,9 +1,11 @@
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo } from "react";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Text, XStack, YStack } from "tamagui";
 
 import { AppButton } from "@/components/ui/AppButton";
-import { homeDesign } from "@/theme/tokens";
+
 import { PhoneticText } from "../../study/components/PhoneticText";
 import type { SavedVocabulary } from "../api/vocabularyApi";
 import { VocabularyPronunciationButton } from "./VocabularyPronunciationButton";
@@ -42,6 +44,7 @@ export function VocabularyFlashcard({
     onPress: (audioUrl: string | null | undefined, word: string) => void;
   };
 }) {
+  const { homeDesign, styles } = useThemedStyles();
   const progress = total ? ((index + 1) / total) * 100 : 0;
 
   return (
@@ -129,11 +132,20 @@ export function VocabularyFlashcard({
   );
 }
 
-const styles = StyleSheet.create({
-  progressTrack: { height: 6, overflow: "hidden", borderRadius: 4, backgroundColor: homeDesign.colors.surfaceRaised },
-  progressFill: { height: "100%", borderRadius: 4, backgroundColor: homeDesign.colors.tabActive },
-  cardPressable: { flex: 1, minHeight: 180, overflow: "hidden", borderRadius: 22, borderWidth: 1, borderColor: homeDesign.colors.border, backgroundColor: homeDesign.colors.surface },
-  cardContent: { flexGrow: 1, alignItems: "center", justifyContent: "center", padding: 20, gap: 16 },
-  phonetic: { color: homeDesign.colors.secondary, fontSize: 16 },
-  partOfSpeech: { color: homeDesign.colors.cardText, backgroundColor: homeDesign.colors.tabActive, paddingHorizontal: 10, paddingVertical: 5, overflow: "hidden", borderRadius: 9, fontSize: 12, fontWeight: "700" },
-});
+
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { homeDesign } = appTheme;
+    const styles = StyleSheet.create({
+      progressTrack: { height: 6, overflow: "hidden", borderRadius: 4, backgroundColor: homeDesign.colors.surfaceRaised },
+      progressFill: { height: "100%", borderRadius: 4, backgroundColor: homeDesign.colors.tabActive },
+      cardPressable: { flex: 1, minHeight: 180, overflow: "hidden", borderRadius: 22, borderWidth: 1, borderColor: homeDesign.colors.border, backgroundColor: homeDesign.colors.surface },
+      cardContent: { flexGrow: 1, alignItems: "center", justifyContent: "center", padding: 20, gap: 16 },
+      phonetic: { color: homeDesign.colors.secondary, fontSize: 16 },
+      partOfSpeech: { color: homeDesign.colors.onSelection, backgroundColor: homeDesign.colors.tabActive, paddingHorizontal: 10, paddingVertical: 5, overflow: "hidden", borderRadius: 9, fontSize: 12, fontWeight: "700" },
+    });
+    return { homeDesign, styles };
+  }, [appTheme]);
+}

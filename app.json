@@ -12,7 +12,7 @@
     "scheme": "com.dohoainho.englishpractice",
     "orientation": "portrait",
     "icon": "./assets/english-practice-icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.dohoainho.englishpractice",

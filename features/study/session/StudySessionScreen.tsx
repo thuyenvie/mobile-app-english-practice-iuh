@@ -1,14 +1,17 @@
-import { useState } from "react";
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo, useState } from "react";
+
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { homeDesign } from "@/theme/tokens";
+
 import { StudyScaffold } from "../components/StudyScaffold";
 import { useStudySession, useStudyElapsed, formatStudyTime } from "./StudySessionProvider";
 
-const c = homeDesign.colors;
+
 export default function StudySessionScreen() {
+  const { c, styles } = useThemedStyles();
   const { current, busy, error, refresh, pause, resume, end } = useStudySession();
   const seconds = useStudyElapsed();
   const [confirm, setConfirm] = useState(false);
@@ -37,18 +40,29 @@ export default function StudySessionScreen() {
   </Modal></StudyScaffold>;
 }
 function Action({ label, onPress, secondary = false, busy = false }: { label: string; onPress: () => void; secondary?: boolean; busy?: boolean }) {
-  return <Pressable accessibilityRole="button" disabled={busy} onPress={onPress} style={[styles.action, secondary && styles.secondaryAction, busy && { opacity: 0.6 }]}>{busy ? <ActivityIndicator color={secondary ? c.tabActive : c.cardText} /> : <Text style={[styles.actionText, secondary && { color: c.text }]}>{label}</Text>}</Pressable>;
+  const { c, styles } = useThemedStyles();
+  return <Pressable accessibilityRole="button" disabled={busy} onPress={onPress} style={[styles.action, secondary && styles.secondaryAction, busy && { opacity: 0.6 }]}>{busy ? <ActivityIndicator color={secondary ? c.tabActive : c.onSelection} /> : <Text style={[styles.actionText, secondary && { color: c.text }]}>{label}</Text>}</Pressable>;
 }
-const styles = StyleSheet.create({
-  content: { padding: 20, gap: 18 }, back: { flexDirection: "row", alignItems: "center", gap: 8, minHeight: 44 },
-  text: { color: c.text, fontSize: 14 }, heading: { color: c.text, fontSize: 26, fontWeight: "800" },
-  card: { backgroundColor: c.surface, padding: 18, borderRadius: 18, borderWidth: 1, borderColor: c.border, gap: 9 },
-  title: { color: c.text, fontSize: 19, fontWeight: "700" }, tag: { color: c.tabActive, fontSize: 12, fontWeight: "700" },
-  muted: { color: c.secondary, fontSize: 14, lineHeight: 21 }, hint: { color: c.secondary, fontSize: 12, textAlign: "center", marginTop: 10 },
-  clock: { alignItems: "center", paddingVertical: 26 }, digits: { color: c.text, fontSize: 60, fontWeight: "600", fontVariant: ["tabular-nums"] },
-  action: { minHeight: 48, borderRadius: 13, backgroundColor: c.tabActive, justifyContent: "center", alignItems: "center", padding: 12 },
-  actionText: { color: c.cardText, fontSize: 14, fontWeight: "700", textAlign: "center" }, secondaryAction: { backgroundColor: c.surfaceRaised },
-  row: { flexDirection: "row", gap: 12 }, flex: { flex: 1 }, warning: { color: c.inProgress, fontSize: 13, lineHeight: 20 },
-  overlay: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.65)" },
-  sheet: { backgroundColor: c.surface, padding: 22, borderTopLeftRadius: 24, borderTopRightRadius: 24, gap: 14 },
-});
+
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { homeDesign, themeColor } = appTheme;
+    const c = homeDesign.colors;
+    const styles = StyleSheet.create({
+      content: { padding: 20, gap: 18 }, back: { flexDirection: "row", alignItems: "center", gap: 8, minHeight: 44 },
+      text: { color: c.text, fontSize: 14 }, heading: { color: c.text, fontSize: 26, fontWeight: "800" },
+      card: { backgroundColor: c.surface, padding: 18, borderRadius: 18, borderWidth: 1, borderColor: c.border, gap: 9 },
+      title: { color: c.text, fontSize: 19, fontWeight: "700" }, tag: { color: c.tabActive, fontSize: 12, fontWeight: "700" },
+      muted: { color: c.secondary, fontSize: 14, lineHeight: 21 }, hint: { color: c.secondary, fontSize: 12, textAlign: "center", marginTop: 10 },
+      clock: { alignItems: "center", paddingVertical: 26 }, digits: { color: c.text, fontSize: 60, fontWeight: "600", fontVariant: ["tabular-nums"] },
+      action: { minHeight: 48, borderRadius: 13, backgroundColor: c.tabActive, justifyContent: "center", alignItems: "center", padding: 12 },
+      actionText: { color: c.onSelection, fontSize: 14, fontWeight: "700", textAlign: "center" }, secondaryAction: { backgroundColor: c.surfaceRaised },
+      row: { flexDirection: "row", gap: 12 }, flex: { flex: 1 }, warning: { color: c.inProgress, fontSize: 13, lineHeight: 20 },
+      overlay: { flex: 1, justifyContent: "flex-end", backgroundColor: themeColor("rgba(0,0,0,0.65)", "background") },
+      sheet: { backgroundColor: c.surface, padding: 22, borderTopLeftRadius: 24, borderTopRightRadius: 24, gap: 14 },
+    });
+    return { homeDesign, themeColor, c, styles };
+  }, [appTheme]);
+}

@@ -16,6 +16,7 @@ export function SET02Entry({ theme, settings }: SettingsEntryProps) {
     <Text style={[styles.title, { color: theme.text }]}>Tự phát âm thanh Listening</Text>
     <Text style={{ color: theme.muted }}>Tự phát khi bắt đầu Full Test hoặc vào đoạn nghe mới trong Luyện tập. Bạn luôn có thể phát thủ công.</Text>
     <Switch accessibilityLabel="Tự phát âm thanh Listening" value={settings.preferences.listeningAutoplay}
+      trackColor={{ false: theme.border, true: theme.accent }} thumbColor={theme.surface}
       disabled={saving || settings.persistence === "saving" || settings.hydration !== "ready"}
       onValueChange={value => { void change(value); }} />
     {saving ? <Text style={{ color: theme.muted }}>Đang lưu…</Text> : null}

@@ -1,13 +1,15 @@
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo, useEffect, useMemo, useRef, useState } from "react";
 import { readExamDraft, writeExamDraft } from "../utils/examDrafts";
 import { useStudySession } from "../session/StudySessionProvider";
-import { useEffect, useMemo, useRef, useState } from "react";
+
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { router, useLocalSearchParams } from "expo-router";
 import { Modal, ScrollView, StyleSheet, View } from "react-native";
 import { Text, XStack, YStack } from "tamagui";
 
 import { AppButton } from "@/components/ui/AppButton";
-import { homeDesign } from "@/theme/tokens";
+
 import { HomeDataMessage } from "../../home/components/HomeDataMessage";
 import { QuestionSheetModal } from "../components/QuestionSheetModal";
 import { ReadingExamFooter } from "../components/ReadingExamFooter";
@@ -31,6 +33,7 @@ import { useReadingTimer } from "../hooks/useReadingTimer";
 import type { ExamAnswers, ExamPart, ExamQuestion } from "../types";
 
 export default function ReadingPartScreen() {
+  const { homeDesign } = useThemedStyles();
   const params = useLocalSearchParams<{
     year?: string;
     testNumber?: string;
@@ -104,6 +107,7 @@ export default function ReadingPartScreen() {
 }
 
 function ReadingPartContent({ part }: { part: ExamPart }) {
+  const { homeDesign, themeColor, styles } = useThemedStyles();
   const session = useSession();
   const { refresh: refreshStudySession } = useStudySession();
   const questions = useMemo(
@@ -310,10 +314,10 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
           paddingVertical={8}
           alignItems="center"
           gap={7}
-          backgroundColor="#3a1818"
+          backgroundColor={themeColor("#3a1818", "background")}
         >
-          <MaterialIcons name="warning-amber" size={19} color="#ff7676" />
-          <Text flex={1} color="#ffb3b3" fontSize={12}>
+          <MaterialIcons name="warning-amber" size={19} color={themeColor("#ff7676", "text")} />
+          <Text flex={1} color={themeColor("#ffb3b3", "text")} fontSize={12}>
             Đã hết thời gian gợi ý cho Part {part.partNumber}. Bạn vẫn có thể
             tiếp tục luyện tập.
           </Text>
@@ -356,14 +360,14 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
               backgroundColor={homeDesign.colors.tabActive}
             >
               <Text
-                color={homeDesign.colors.cardText}
+                color={homeDesign.colors.onSelection}
                 fontSize={15}
                 fontWeight="800"
               >
                 Nội dung bài đọc
               </Text>
               <Text
-                color={homeDesign.colors.cardText}
+                color={homeDesign.colors.onSelection}
                 fontSize={12}
                 fontWeight="700"
               >
@@ -415,7 +419,7 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
               backgroundColor={homeDesign.colors.link}
             >
               <Text
-                color={homeDesign.colors.cardText}
+                color={homeDesign.colors.onSelection}
                 fontSize={14}
                 fontWeight="800"
               >
@@ -609,24 +613,33 @@ function getQuestionLabel(
   }`;
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  singleQuestionContent: { padding: 14, paddingBottom: 28 },
-  passageContent: { padding: 15, paddingBottom: 26 },
-  relatedQuestionsContent: { padding: 10, paddingBottom: 24, gap: 10 },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: "center",
-    padding: 20,
-    backgroundColor: "rgba(0,0,0,0.72)",
-  },
-  modalCard: {
-    width: "100%",
-    maxWidth: 440,
-    alignSelf: "center",
-    padding: 18,
-    gap: 12,
-    borderRadius: 16,
-    backgroundColor: homeDesign.colors.surface,
-  },
-});
+
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { homeDesign, themeColor } = appTheme;
+    const styles = StyleSheet.create({
+      flex: { flex: 1 },
+      singleQuestionContent: { padding: 14, paddingBottom: 28 },
+      passageContent: { padding: 15, paddingBottom: 26 },
+      relatedQuestionsContent: { padding: 10, paddingBottom: 24, gap: 10 },
+      modalOverlay: {
+        flex: 1,
+        justifyContent: "center",
+        padding: 20,
+        backgroundColor: themeColor("rgba(0,0,0,0.72)", "background"),
+      },
+      modalCard: {
+        width: "100%",
+        maxWidth: 440,
+        alignSelf: "center",
+        padding: 18,
+        gap: 12,
+        borderRadius: 16,
+        backgroundColor: homeDesign.colors.surface,
+      },
+    });
+    return { homeDesign, themeColor, styles };
+  }, [appTheme]);
+}

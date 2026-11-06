@@ -1,12 +1,15 @@
-import { useState } from "react";
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo, useState } from "react";
+
 import { Modal } from "react-native";
 import { router } from "expo-router";
 import { Text, YStack } from "tamagui";
 import { AppButton } from "@/components/ui/AppButton";
 import { useSession } from "@/lib/auth/useSession";
-import { homeDesign } from "@/theme/tokens";
+
 
 export function GuestPracticeNotice({ hasAnswers, busy = false }: { hasAnswers: boolean; busy?: boolean }) {
+  const { homeDesign, themeColor } = useThemedStyles();
   const session = useSession();
   const [confirm, setConfirm] = useState(false);
   if (session.status !== "guest") return null;
@@ -19,7 +22,7 @@ export function GuestPracticeNotice({ hasAnswers, busy = false }: { hasAnswers: 
       </AppButton>
     </YStack>
     <Modal visible={confirm} transparent animationType="fade" onRequestClose={() => setConfirm(false)}>
-      <YStack flex={1} justifyContent="center" padding={24} backgroundColor="#000b">
+      <YStack flex={1} justifyContent="center" padding={24} backgroundColor={themeColor("#000b", "background")}>
         <YStack padding={20} borderRadius={16} gap={16} backgroundColor={homeDesign.colors.surface}>
           <Text color={homeDesign.colors.text}>Đăng nhập sẽ hủy bài học thử hiện tại. Bài làm và kết quả sẽ không được chuyển vào tài khoản.</Text>
           <AppButton onPress={openLogin}>Hủy bài và đăng nhập</AppButton>
@@ -28,4 +31,13 @@ export function GuestPracticeNotice({ hasAnswers, busy = false }: { hasAnswers: 
       </YStack>
     </Modal>
   </>;
+}
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { homeDesign, themeColor } = appTheme;
+
+    return { homeDesign, themeColor };
+  }, [appTheme]);
 }

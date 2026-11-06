@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+
 import { ActivityIndicator, Pressable, StyleSheet, Text, View, type GestureResponderEvent, type LayoutChangeEvent } from "react-native";
 import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
 
 import { API_BASE_URL } from "@/lib/axios/axios";
-import { homeDesign } from "@/theme/tokens";
+
 import type { QuestionAudioSegment } from "../types";
 import { createPlaybackScheduler } from "../utils/playbackScheduler";
 import { useListeningAutoplay } from "../hooks/useListeningAutoplay";
@@ -19,6 +21,7 @@ const SPEEDS = [0.8, 1, 1.2, 1.5];
 
 /** Plays one approved question/dialogue range from the test's public MP3 stream. */
 export function PracticeAudioPlayer({ audio, activeQuestionNumber, paused, autoplayHistory }: Props) {
+  const { homeDesign, styles } = useThemedStyles();
   const player = useAudioPlayer(null, { updateInterval: 150 });
   const status = useAudioPlayerStatus(player);
   const [preparing, setLoading] = useState(false);
@@ -198,9 +201,10 @@ export function PracticeAudioPlayer({ audio, activeQuestionNumber, paused, autop
 function Control({ label, text, disabled, onPress, primary = false }: {
   label: string; text: string; disabled: boolean; onPress: () => void; primary?: boolean;
 }) {
+  const { styles, colors } = useThemedStyles();
   return <Pressable accessibilityRole="button" accessibilityLabel={label} disabled={disabled} onPress={onPress}
     style={[styles.button, primary && styles.primary, disabled && styles.disabled]}>
-    <Text style={styles.controlText}>{text}</Text>
+    <Text style={[styles.controlText, primary && { color: colors.onAccent }]}>{text}</Text>
   </Pressable>;
 }
 
@@ -219,22 +223,32 @@ function formatTime(value: number) {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 }
 
-const colors = homeDesign.colors;
-const styles = StyleSheet.create({
-  box: { padding: 12, gap: 10, backgroundColor: colors.surface, borderRadius: 12 },
-  heading: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
-  copy: { flex: 1, gap: 2 },
-  title: { color: colors.text, fontSize: 14, fontWeight: "700" },
-  note: { color: colors.secondary, fontSize: 12 },
-  error: { color: colors.inProgress, fontSize: 13 },
-  link: { color: colors.link, paddingVertical: 6, fontWeight: "600" },
-  progressTrack: { height: 8, borderRadius: 4, overflow: "hidden", backgroundColor: colors.border },
-  progressFill: { height: "100%", backgroundColor: colors.link },
-  row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  controls: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  button: { minHeight: 40, justifyContent: "center", paddingHorizontal: 10, borderRadius: 9, backgroundColor: colors.surfaceRaised },
-  primary: { backgroundColor: colors.link },
-  smallButton: { minHeight: 34, minWidth: 54, justifyContent: "center", alignItems: "center", borderRadius: 8, backgroundColor: colors.surfaceRaised },
-  controlText: { color: colors.text, fontSize: 13, fontWeight: "600" },
-  disabled: { opacity: 0.45 },
-});
+
+
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { homeDesign } = appTheme;
+    const colors = homeDesign.colors;
+    const styles = StyleSheet.create({
+      box: { padding: 12, gap: 10, backgroundColor: colors.surface, borderRadius: 12 },
+      heading: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+      copy: { flex: 1, gap: 2 },
+      title: { color: colors.text, fontSize: 14, fontWeight: "700" },
+      note: { color: colors.secondary, fontSize: 12 },
+      error: { color: colors.inProgress, fontSize: 13 },
+      link: { color: colors.link, paddingVertical: 6, fontWeight: "600" },
+      progressTrack: { height: 8, borderRadius: 4, overflow: "hidden", backgroundColor: colors.border },
+      progressFill: { height: "100%", backgroundColor: colors.link },
+      row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+      controls: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+      button: { minHeight: 40, justifyContent: "center", paddingHorizontal: 10, borderRadius: 9, backgroundColor: colors.surfaceRaised },
+      primary: { backgroundColor: colors.link },
+      smallButton: { minHeight: 34, minWidth: 54, justifyContent: "center", alignItems: "center", borderRadius: 8, backgroundColor: colors.surfaceRaised },
+      controlText: { color: colors.text, fontSize: 13, fontWeight: "600" },
+      disabled: { opacity: 0.45 },
+    });
+    return { homeDesign, colors, styles };
+  }, [appTheme]);
+}

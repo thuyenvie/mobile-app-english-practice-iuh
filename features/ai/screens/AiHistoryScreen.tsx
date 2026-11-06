@@ -1,16 +1,19 @@
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo } from "react";
 import { Alert, FlatList, RefreshControl } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { router } from 'expo-router';
 import { Spinner, Text, XStack, YStack } from 'tamagui';
 
 import { AppButton } from '@/components/ui/AppButton';
-import { aiDesign, homeDesign } from '@/theme/tokens';
+
 import { HomeScaffold } from '../../home/components/HomeScaffold';
 import { ConversationItem } from '../components/ConversationItem';
 import { useConversationHistory } from '../hooks/useConversationHistory';
 import type { AiConversationSummary } from '../types';
 
 export default function AiHistoryScreen() {
+  const { aiDesign, homeDesign, themeColor } = useThemedStyles();
   const { items, loading, loadingMore, error, hasNext, refresh, loadMore, archiveConversation } =
     useConversationHistory();
 
@@ -70,7 +73,7 @@ export default function AiHistoryScreen() {
       </XStack>
 
       {error ? (
-        <Text role="alert" color="#ffb36b" fontSize={12} padding={14}>
+        <Text role="alert" color={themeColor("#ffb36b", "text")} fontSize={12} padding={14}>
           {error}
         </Text>
       ) : null}
@@ -105,4 +108,13 @@ export default function AiHistoryScreen() {
       />
     </HomeScaffold>
   );
+}
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { aiDesign, homeDesign, themeColor } = appTheme;
+
+    return { aiDesign, homeDesign, themeColor };
+  }, [appTheme]);
 }

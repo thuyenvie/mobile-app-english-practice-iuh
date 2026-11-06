@@ -1,14 +1,17 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo, useCallback, useEffect, useRef, useState } from "react";
+
 import { AppState, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
 import { useFocusEffect } from "expo-router";
 import { API_BASE_URL } from "@/lib/axios/axios";
 import { getExamErrorMessage } from "../api/examApi";
 import { getListeningAudio, getQuestionAudio, type QuestionAudio } from "../api/listeningApi";
-import { homeDesign } from "@/theme/tokens";
+
 import { listeningStreamUrl } from "../utils/listening";
 
 export function ListeningAudioPlayer({ year, test, question, paused }: { year: number; test: number; question: number; paused: boolean }) {
+  const { styles } = useThemedStyles();
   const player = useAudioPlayer(null, { updateInterval: 100 });
   const status = useAudioPlayerStatus(player);
   const [error, setError] = useState("");
@@ -109,11 +112,20 @@ function formatTime(value: number) {
   const seconds = Math.max(0, Math.floor(value || 0));
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 }
-const styles = StyleSheet.create({
-  box: { padding: 12, gap: 8, backgroundColor: homeDesign.colors.surface },
-  row: { flexDirection: "row", gap: 10, flexWrap: "wrap" },
-  button: { padding: 12, borderRadius: 10, backgroundColor: homeDesign.colors.surfaceRaised },
-  text: { color: homeDesign.colors.text, fontSize: 14 },
-  note: { color: homeDesign.colors.inProgress, fontSize: 12 },
-  link: { color: homeDesign.colors.link, padding: 8 },
-});
+
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { homeDesign } = appTheme;
+    const styles = StyleSheet.create({
+      box: { padding: 12, gap: 8, backgroundColor: homeDesign.colors.surface },
+      row: { flexDirection: "row", gap: 10, flexWrap: "wrap" },
+      button: { padding: 12, borderRadius: 10, backgroundColor: homeDesign.colors.surfaceRaised },
+      text: { color: homeDesign.colors.text, fontSize: 14 },
+      note: { color: homeDesign.colors.inProgress, fontSize: 12 },
+      link: { color: homeDesign.colors.link, padding: 8 },
+    });
+    return { homeDesign, styles };
+  }, [appTheme]);
+}
