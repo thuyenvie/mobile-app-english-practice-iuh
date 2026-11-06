@@ -49,6 +49,7 @@ export default function ListeningPartScreen() {
   const { state, retry } = useExamPart(year, test, partNumber, valid);
   const draft = useListeningDraft(year, test, partNumber);
   const [selectedNumber, setSelectedNumber] = useState<number | null>(null);
+  const autoplayHistory = useMemo(() => new Set<string>(), []);
   const [sheet, setSheet] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -136,9 +137,7 @@ export default function ListeningPartScreen() {
         />
         {current ? (
           <PracticeAudioPlayer
-            key={`${activePassage?.id ?? current.id}-${
-              activePassage?.audioSegment?.segmentId ?? "no-segment"
-            }`}
+            autoplayHistory={autoplayHistory}
             audio={activePassage?.audioSegment ?? null}
             activeQuestionNumber={current.questionNumber}
             paused={confirm || !!result || sheet}

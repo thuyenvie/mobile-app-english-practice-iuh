@@ -120,6 +120,7 @@ function environment(extraMocks = {}) {
     },
     "@/theme/tokens": { homeDesign: { colors, maxWidth: 500, pagePadding: 16 } },
     "@/components/ui/AppButton": { AppButton: "AppButton" },
+    "@/providers/SettingsProvider": { useSettings: () => ({ preferences: { listeningAutoplay: true }, hydration: "ready" }) },
     "../session/StudySessionProvider": studySession,
     "./StudySessionProvider": studySession,
     "../../study/session/StudySessionProvider": studySession,

@@ -35,6 +35,7 @@ import { PracticeAudioPlayer } from "../components/PracticeAudioPlayer";
 import { GuestResultDetails } from "../components/GuestResultDetails";
 import { answersForPart, parseSelectedParts } from "../utils/selectedParts";
 import { useSession } from "@/lib/auth/useSession";
+import { useListeningAutoplay } from "../hooks/useListeningAutoplay";
 import { toeicParts } from "../data/toeicCatalog";
 import type { ExamPart, ExamQuestion } from "../types";
 
@@ -81,7 +82,8 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
   const fullAudioPlayer = useAudioPlayer(null, { updateInterval: 1000 });
   const audioStatus = useAudioPlayerStatus(fullAudioPlayer);
   const [fullAudioError, setFullAudioError] = useState("");
-  const fullAudioStarted = useRef(false);
+  const [fullAudioArmed, setFullAudioArmed] = useState(false);
+  const autoplayHistory = useMemo(() => new Set<string>(), []);
   const c = homeDesign.colors;
   const draftKey =
     session.status === "authenticated" && session.subject
@@ -271,21 +273,23 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
     (question) => question.questionNumber === questionNumber
   );
 
-  useEffect(() => {
-    if (
-      practice || !startedAt ||
-      !audioStatus.isLoaded ||
-      fullAudioStarted.current ||
-      questionNumber > 100
-    )
-      return;
+  const pauseFullAudio = useCallback(() => {
+    try { fullAudioPlayer.pause(); } catch { /* Native player already released. */ }
+  }, [fullAudioPlayer]);
+  const playFullAudio = useCallback(() => {
     try {
       fullAudioPlayer.play();
-      fullAudioStarted.current = true;
     } catch {
       setFullAudioError("Không phát được audio Listening.");
     }
-  }, [audioStatus.isLoaded, fullAudioPlayer, questionNumber, startedAt, practice]);
+  }, [fullAudioPlayer]);
+  const autoplay = useListeningAutoplay({
+    unit: !practice && startedAt ? `full:${year}:${testNumber}` : "",
+    ready: audioStatus.isLoaded && fullAudioArmed,
+    active: !practice && !!startedAt && questionNumber <= 100 && !confirmSubmit && !questionSheet && !submitting && results.length === 0,
+    start: playFullAudio,
+    stop: pauseFullAudio,
+  });
 
   useEffect(() => {
     if (questionNumber > 100 && audioStatus.playing) {
@@ -323,6 +327,7 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
   ]);
 
   const begin = () => {
+    setFullAudioArmed(true);
     const now = Date.now();
     setStartedAt(new Date(now).toISOString());
     setExpiresAt(practice ? null : now + TEST_SECONDS * 1000);
@@ -548,7 +553,7 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
               <>
                 {practice && currentPartNumber <= 4 ? (
                   <PracticeAudioPlayer
-                    key={`${currentPartNumber}-${currentPassage?.id ?? currentQuestion.id}`}
+                    autoplayHistory={autoplayHistory}
                     audio={currentPassage?.audioSegment ?? null}
                     activeQuestionNumber={questionNumber}
                     paused={confirmSubmit || questionSheet || results.length > 0}
@@ -570,18 +575,10 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
                     {audioStatus.isLoaded && !audioStatus.playing ? (
                       <Action
                         title="Phát / tiếp tục"
-                        onPress={() => {
-                          try {
-                            fullAudioPlayer.play();
-                            fullAudioStarted.current = true;
-                          } catch {
-                            setFullAudioError(
-                              "Không phát được audio Listening."
-                            );
-                          }
-                        }}
+                        onPress={() => { if (autoplay.manual()) playFullAudio(); }}
                       />
                     ) : null}
+                    {audioStatus.playing ? <Action title="Tạm dừng audio" onPress={() => { autoplay.cancel(); }} /> : null}
                     {fullAudioError ? (
                       <Action
                         title="Thử tải lại"

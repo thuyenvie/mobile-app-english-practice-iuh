@@ -42,6 +42,7 @@ function mount(os = "android") {
     "@/providers/GoogleAuthProvider": { GoogleAuthProvider: () => null },
     "@/components/ui/BrandedPageState": { BrandedPageState: () => null },
     "@/providers/SessionProvider": { SessionProvider: () => null },
+    "@/providers/SettingsProvider": { SettingsProvider: () => null },
     "../../features/study/session/StudySessionProvider": { StudySessionProvider: () => null },
     "../../features/notifications/PushNotificationRuntime": { PushNotificationRuntime: () => null },
     "@/theme/tokens": { authDesign: { colors: { background: "#000000" } } },

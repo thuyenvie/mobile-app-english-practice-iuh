@@ -2,6 +2,7 @@ import { BrandedPageState } from "@/components/ui/BrandedPageState";
 import { Stack, useNavigationContainerRef, type ErrorBoundaryProps } from "expo-router";
 import { useEffect } from "react";
 import { Alert, BackHandler, Platform } from "react-native";
+import { SettingsProvider } from "@/providers/SettingsProvider";
 import { SessionProvider } from "@/providers/SessionProvider";
 import { TamaguiProvider } from "tamagui";
 
@@ -59,18 +60,20 @@ export default function RootLayout() {
   return (
     <TamaguiProvider config={config} defaultTheme="light_auth">
       <GoogleAuthProvider>
-        <PushNotificationRuntime>
-          <SessionProvider>
-            <StudySessionProvider>
-              <Stack
-                screenOptions={{
-                  headerShown: false,
-                  contentStyle: { backgroundColor: authDesign.colors.background },
-                }}
-              />
-            </StudySessionProvider>
-          </SessionProvider>
-        </PushNotificationRuntime>
+        <SettingsProvider>
+          <PushNotificationRuntime>
+            <SessionProvider>
+              <StudySessionProvider>
+                <Stack
+                  screenOptions={{
+                    headerShown: false,
+                    contentStyle: { backgroundColor: authDesign.colors.background },
+                  }}
+                />
+              </StudySessionProvider>
+            </SessionProvider>
+          </PushNotificationRuntime>
+        </SettingsProvider>
       </GoogleAuthProvider>
     </TamaguiProvider>
   );
