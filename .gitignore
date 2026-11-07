@@ -9,6 +9,9 @@ dist/
 web-build/
 expo-env.d.ts
 
+# Local EAS inspection output
+/eas-archive/
+
 # Native
 .kotlin/
 *.orig.*
