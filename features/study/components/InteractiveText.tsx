@@ -1,10 +1,9 @@
-import { useMemo } from "react";
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo, useMemo } from "react";
+
 import { Text, type TextStyle } from "react-native";
 
-const selectedWordStyle: TextStyle = {
-  backgroundColor: "#fff0b3",
-  color: "#26200c",
-};
+
 
 function cleanWord(token: string) {
   return token.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "");
@@ -21,6 +20,7 @@ export function InteractiveText({
   selectedWord?: string | null;
   textStyle?: TextStyle;
 }) {
+  const { selectedWordStyle } = useThemedStyles();
   const tokens = useMemo(() => text.match(/\s+|[^\s]+/g) ?? [], [text]);
 
   return (
@@ -44,4 +44,16 @@ export function InteractiveText({
       })}
     </Text>
   );
+}
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { themeColor } = appTheme;
+    const selectedWordStyle: TextStyle = {
+      backgroundColor: themeColor("#fff0b3", "background"),
+      color: themeColor("#26200c", "text"),
+    };
+    return { themeColor, selectedWordStyle };
+  }, [appTheme]);
 }

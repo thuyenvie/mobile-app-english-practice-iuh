@@ -1,10 +1,12 @@
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo } from "react";
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Tabs } from 'expo-router';
 import { StyleSheet, Text, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { YStack } from 'tamagui';
 
-import { homeDesign, loginDesign } from '@/theme/tokens';
+
 
 const tabs = [
   { name: 'home', title: 'Trang chủ', icon: 'home-outline' },
@@ -15,6 +17,7 @@ const tabs = [
 ] as const;
 
 export default function TabsLayout() {
+  const { homeDesign, loginDesign, themeColor } = useThemedStyles();
   const insets = useSafeAreaInsets();
   const { width, fontScale } = useWindowDimensions();
   const bottomPadding = Math.max(insets.bottom, 8);
@@ -30,9 +33,9 @@ export default function TabsLayout() {
           animation: 'none',
           sceneStyle: { backgroundColor: homeDesign.colors.background },
           tabBarActiveTintColor: loginDesign.colors.link,
-          tabBarInactiveTintColor: '#98a3b4',
-          tabBarActiveBackgroundColor: '#161c26',
-          tabBarInactiveBackgroundColor: '#161c26',
+          tabBarInactiveTintColor: themeColor("#98a3b4", "text"),
+          tabBarActiveBackgroundColor: homeDesign.colors.surfaceRaised,
+          tabBarInactiveBackgroundColor: homeDesign.colors.surfaceRaised,
           tabBarLabelPosition: 'below-icon',
           tabBarIconStyle: styles.icon,
           tabBarItemStyle: styles.item,
@@ -40,9 +43,9 @@ export default function TabsLayout() {
             height: barHeight + bottomPadding,
             paddingTop: 6,
             paddingBottom: bottomPadding,
-            backgroundColor: '#161c26',
+            backgroundColor: themeColor("#161c26", "background"),
             borderTopWidth: StyleSheet.hairlineWidth,
-            borderTopColor: '#343c49',
+            borderTopColor: themeColor("#343c49", "border"),
             elevation: 0,
           },
         }}>
@@ -59,7 +62,7 @@ export default function TabsLayout() {
               tabBarIcon: ({ color, focused }) => (
                 <YStack width={44} height={30} borderRadius={12}
                   alignItems="center" justifyContent="center"
-                  backgroundColor={focused ? '#203c5c' : 'transparent'}>
+                  backgroundColor={focused ? themeColor("#203c5c", "background") : 'transparent'}>
                   <MaterialCommunityIcons name={tab.icon} size={24} color={color} />
                 </YStack>
               ),
@@ -76,3 +79,12 @@ const styles = StyleSheet.create({
   icon: { width: 44, height: 30 },
   label: { fontSize: 11, lineHeight: 14, fontWeight: '600', textAlign: 'center', textAlignVertical: 'center', marginTop: 2 },
 });
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { homeDesign, loginDesign, themeColor } = appTheme;
+
+    return { homeDesign, loginDesign, themeColor };
+  }, [appTheme]);
+}

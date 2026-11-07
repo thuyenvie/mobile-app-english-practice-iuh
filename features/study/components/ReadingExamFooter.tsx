@@ -1,8 +1,10 @@
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo } from "react";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { XStack } from "tamagui";
 
 import { AppButton } from "@/components/ui/AppButton";
-import { homeDesign } from "@/theme/tokens";
+
 
 export function ReadingExamFooter({
   canGoPrevious,
@@ -15,6 +17,7 @@ export function ReadingExamFooter({
   onPrevious: () => void;
   onNext: () => void;
 }) {
+  const { homeDesign } = useThemedStyles();
   return (
     <XStack
       minHeight={62}
@@ -76,4 +79,13 @@ export function ReadingExamFooter({
       />
     </XStack>
   );
+}
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { homeDesign } = appTheme;
+
+    return { homeDesign };
+  }, [appTheme]);
 }

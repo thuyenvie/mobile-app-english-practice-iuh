@@ -10,7 +10,7 @@ interface UserProfileResponse {
   userName?: string | null;
 }
 
-async function loadProfile(mode: 'guest' | 'authenticated'): Promise<HomeProfile> {
+export async function loadProfile(mode: 'guest' | 'authenticated'): Promise<HomeProfile> {
   if (mode === 'guest') return { fullName: 'bạn' };
   const { data } = await api.get<ApiResponse<UserProfileResponse>>('/identity/user/my-info');
   if (!data.success || !data.result) throw new Error('Không thể tải thông tin người dùng.');

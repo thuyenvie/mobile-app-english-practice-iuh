@@ -1,10 +1,13 @@
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo } from "react";
 import { ScrollView } from "react-native";
 import { Text, YStack } from "tamagui";
 import type { GuestExamResult } from "../api/practiceApi";
-import { homeDesign } from "@/theme/tokens";
+
 
 // Review stays inside the current practice modal, never an account-history route.
 export function GuestResultDetails({ result }: { result: GuestExamResult }) {
+  const { homeDesign } = useThemedStyles();
   return <YStack gap={8}>
     <Text color={homeDesign.colors.secondary} fontSize={12}>Kết quả tạm thời, sẽ mất khi rời bài.</Text>
     <ScrollView style={{ maxHeight: 220 }}>
@@ -16,4 +19,13 @@ export function GuestResultDetails({ result }: { result: GuestExamResult }) {
       </YStack>)}
     </ScrollView>
   </YStack>;
+}
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { homeDesign } = appTheme;
+
+    return { homeDesign };
+  }, [appTheme]);
 }

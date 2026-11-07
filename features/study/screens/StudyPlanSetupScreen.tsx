@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo, useEffect, useState } from "react";
+
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { router } from "expo-router";
 import {
@@ -15,14 +17,14 @@ import {
   View,
 } from "react-native";
 
-import { homeDesign } from "@/theme/tokens";
+
 import { useSession } from "@/lib/auth/useSession";
 import { getExamErrorMessage } from "../api/examApi";
 import { getStudyPlan, saveStudyPlan } from "../api/studyPlanApi";
 import { registerStudyPushToken } from "../../notifications/api/pushNotificationApi";
 import { StudyScaffold } from "../components/StudyScaffold";
 
-const c = homeDesign.colors;
+
 const weekDays = [
   { value: 1, label: "T2" },
   { value: 2, label: "T3" },
@@ -34,6 +36,7 @@ const weekDays = [
 ];
 
 export default function StudyPlanSetupScreen() {
+  const { themeColor, c, styles } = useThemedStyles();
   const session = useSession();
   const [targetScore, setTargetScore] = useState("700");
   const [currentScore, setCurrentScore] = useState("");
@@ -342,7 +345,7 @@ export default function StudyPlanSetupScreen() {
               ]}
             >
               {saving ? (
-                <ActivityIndicator color="#111" />
+                <ActivityIndicator color={themeColor("#111", "text")} />
               ) : (
                 <Text style={styles.saveText}>Lưu mục tiêu và tạo lịch</Text>
               )}
@@ -362,10 +365,12 @@ function Field(props: {
   placeholder?: string;
   hint?: string;
 }) {
+  const { resolvedMode } = useAppTheme();
+  const { c, styles } = useThemedStyles();
   return (
     <View style={styles.field}>
       <Text style={styles.label}>{props.label}</Text>
-      <TextInput
+      <TextInput keyboardAppearance={resolvedMode}
         value={props.value}
         onChangeText={props.onChangeText}
         keyboardType={props.keyboardType ?? "default"}
@@ -378,80 +383,90 @@ function Field(props: {
   );
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  content: { padding: 18, paddingBottom: 36 },
-  back: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 20,
-  },
-  backText: { color: c.text, fontSize: 15, fontWeight: "600" },
-  title: { color: c.text, fontSize: 26, fontWeight: "800" },
-  subtitle: {
-    color: c.secondary,
-    fontSize: 14,
-    lineHeight: 21,
-    marginTop: 7,
-    marginBottom: 24,
-  },
-  loader: { marginVertical: 40 },
-  field: { marginBottom: 17 },
-  label: { color: c.text, fontSize: 14, fontWeight: "700", marginBottom: 8 },
-  input: {
-    minHeight: 48,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: c.border,
-    backgroundColor: c.surface,
-    color: c.text,
-    paddingHorizontal: 14,
-    fontSize: 16,
-  },
-  hint: { color: c.secondary, fontSize: 12, marginTop: 6, lineHeight: 17 },
-  section: {
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: c.border,
-    backgroundColor: c.surface,
-    padding: 14,
-    marginTop: 3,
-    marginBottom: 18,
-  },
-  switchRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    marginBottom: 16,
-  },
-  daysRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 5,
-    marginBottom: 17,
-  },
-  dayChip: {
-    width: 39,
-    height: 39,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: c.surfaceRaised,
-  },
-  dayChipSelected: { backgroundColor: c.tabActive },
-  dayText: { color: c.text, fontWeight: "700", fontSize: 12 },
-  dayTextSelected: { color: c.cardText },
-  timeRow: { flexDirection: "row", gap: 10 },
-  error: { color: "#ff8585", fontSize: 13, lineHeight: 19, marginBottom: 14 },
-  saveButton: {
-    minHeight: 52,
-    borderRadius: 14,
-    backgroundColor: c.tabActive,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 4,
-  },
-  saveText: { color: c.cardText, fontSize: 15, fontWeight: "800" },
-  disabled: { opacity: 0.55 },
-});
+
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { homeDesign, themeColor } = appTheme;
+    const c = homeDesign.colors;
+    const styles = StyleSheet.create({
+      flex: { flex: 1 },
+      content: { padding: 18, paddingBottom: 36 },
+      back: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+        marginBottom: 20,
+      },
+      backText: { color: c.text, fontSize: 15, fontWeight: "600" },
+      title: { color: c.text, fontSize: 26, fontWeight: "800" },
+      subtitle: {
+        color: c.secondary,
+        fontSize: 14,
+        lineHeight: 21,
+        marginTop: 7,
+        marginBottom: 24,
+      },
+      loader: { marginVertical: 40 },
+      field: { marginBottom: 17 },
+      label: { color: c.text, fontSize: 14, fontWeight: "700", marginBottom: 8 },
+      input: {
+        minHeight: 48,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: c.border,
+        backgroundColor: c.surface,
+        color: c.text,
+        paddingHorizontal: 14,
+        fontSize: 16,
+      },
+      hint: { color: c.secondary, fontSize: 12, marginTop: 6, lineHeight: 17 },
+      section: {
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: c.border,
+        backgroundColor: c.surface,
+        padding: 14,
+        marginTop: 3,
+        marginBottom: 18,
+      },
+      switchRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
+        marginBottom: 16,
+      },
+      daysRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        gap: 5,
+        marginBottom: 17,
+      },
+      dayChip: {
+        width: 39,
+        height: 39,
+        borderRadius: 20,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: c.surfaceRaised,
+      },
+      dayChipSelected: { backgroundColor: c.tabActive },
+      dayText: { color: c.text, fontWeight: "700", fontSize: 12 },
+      dayTextSelected: { color: c.onSelection },
+      timeRow: { flexDirection: "row", gap: 10 },
+      error: { color: themeColor("#ff8585", "text"), fontSize: 13, lineHeight: 19, marginBottom: 14 },
+      saveButton: {
+        minHeight: 52,
+        borderRadius: 14,
+        backgroundColor: c.tabActive,
+        alignItems: "center",
+        justifyContent: "center",
+        marginTop: 4,
+      },
+      saveText: { color: c.onSelection, fontSize: 15, fontWeight: "800" },
+      disabled: { opacity: 0.55 },
+    });
+    return { homeDesign, themeColor, c, styles };
+  }, [appTheme]);
+}

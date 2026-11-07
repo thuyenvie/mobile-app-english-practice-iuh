@@ -64,10 +64,10 @@ function hookRuntime() {
 
 function environment(extraMocks = {}) {
   const cache = new Map(), secure = new Map(), local = new Map();
-  const requests = [], storageCalls = [], routerCalls = [], audioSources = [];
+  const requests = [], storageCalls = [], routerCalls = [], audioSources = [], alerts = [];
   const events = new EventEmitter(), hooks = hookRuntime();
   const env = {
-    secure, local, requests, storageCalls, routerCalls, audioSources, hooks,
+    secure, local, requests, storageCalls, routerCalls, audioSources, alerts, hooks,
     params: {}, focused: true,
     handler: async () => ({ code: 1000, result: [] }),
   };
@@ -79,11 +79,16 @@ function environment(extraMocks = {}) {
     } },
     StyleSheet: { create: value => value },
     AppState: { addEventListener: () => ({ remove() {} }) },
+    Alert: { alert: (...args) => alerts.push(args) },
+    TextInput: "TextInput", Switch: "Switch", FlatList: "FlatList", RefreshControl: "RefreshControl",
     Text: "Text", View: "View", Modal: "Modal", Pressable: "Pressable",
     ScrollView: "ScrollView", ActivityIndicator: "ActivityIndicator", Image: "Image",
   };
   const player = { replace: source => audioSources.push(source), pause() {}, seekTo: async () => {}, play() {}, setPlaybackRate() {} };
-  const colors = new Proxy({}, { get: () => "#ffffff" });
+  const studySession = {
+    useStudySession: () => ({ current: null, busy: false, error: "", refresh: async () => {}, start: async () => {}, pause: async () => {}, resume: async () => {}, end: async () => {} }),
+    useStudyElapsed: () => 0, formatStudyTime: () => "00:00",
+  };
   const modules = {
     react: hooks.react,
     "react/jsx-runtime": { jsx, jsxs: jsx, Fragment: "Fragment" },
@@ -97,6 +102,9 @@ function environment(extraMocks = {}) {
     "@react-native-async-storage/async-storage": {
       getItem: async key => { storageCalls.push(["local:get", key]); return local.get(key) ?? null; },
       setItem: async (key, value) => { storageCalls.push(["local:set", key]); local.set(key, value); },
+      removeItem: async key => { local.delete(key); },
+      getAllKeys: async () => [...local.keys()],
+      multiGet: async keys => keys.map(key => [key, local.get(key) ?? null]),
     },
     "expo-file-system/legacy": { documentDirectory: "file:///documents/", makeDirectoryAsync: async () => {}, copyAsync: async () => {} },
     "react-native-safe-area-context": { useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) },
@@ -109,8 +117,12 @@ function environment(extraMocks = {}) {
       useFocusEffect: fn => hooks.react.useEffect(() => env.focused ? fn() : undefined, [fn, env.focused]),
       Redirect: "Redirect",
     },
-    "@/theme/tokens": { homeDesign: { colors, maxWidth: 500, pagePadding: 16 } },
+    "@/theme/useAppTheme": { useAppTheme: () => env.theme ?? load("src/theme/palettes.ts").getAppTheme("dark") },
     "@/components/ui/AppButton": { AppButton: "AppButton" },
+    "@/providers/SettingsProvider": { useSettings: () => ({ preferences: { listeningAutoplay: true }, hydration: "ready" }) },
+    "../session/StudySessionProvider": studySession,
+    "./StudySessionProvider": studySession,
+    "../../study/session/StudySessionProvider": studySession,
     "../hooks/useDeviceDate": { useDeviceDate: () => "24/10/2026" },
     tamagui: { Text: "Text", YStack: "YStack", XStack: "XStack", Image: "Image" },
     axios: { ...axios, create: config => axios.create({ ...config, adapter: async request => {
@@ -137,10 +149,10 @@ function environment(extraMocks = {}) {
     }).outputText;
     const sourceRequire = name => {
       if (name in modules) return modules[name];
-      // Native font loading is mocked; verify that the referenced Metro asset still exists.
-      if (name.endsWith(".ttf")) {
+      // Mock Metro assets and verify the files exist.
+      if (/\.(ttf|jpg)$/.test(name)) {
         const assetPath = path.resolve(path.dirname(filename), name);
-        if (!fs.existsSync(assetPath)) throw new Error("Missing font asset " + assetPath);
+        if (!fs.existsSync(assetPath)) throw new Error("Missing asset " + assetPath);
         return assetPath;
       }
       if (name.startsWith("@expo/vector-icons/")) return { __esModule: true, default: "Icon" };

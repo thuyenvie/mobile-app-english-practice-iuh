@@ -4,6 +4,7 @@ import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
 import api from "@/lib/axios/axios";
+import { assertSessionGeneration } from "@/lib/auth/sessionStore";
 
 const LOCAL_PUSH_TOKEN_KEY = "expo_push_token_current_device";
 
@@ -14,8 +15,17 @@ interface ApiEnvelope<T> {
 }
 
 export type PushRegistrationResult = "registered" | "permission-denied";
+export type StudyPushStatus = "ready" | "permission-denied" | "unregistered" | "unsupported";
 
-export async function registerStudyPushToken(): Promise<PushRegistrationResult> {
+// Chi doc trang thai, khong tu mo hop thoai xin quyen khi vao Home.
+export async function getStudyPushStatus(): Promise<StudyPushStatus> {
+  if ((await Notifications.getPermissionsAsync()).status !== "granted") return "permission-denied";
+  return await AsyncStorage.getItem(LOCAL_PUSH_TOKEN_KEY) ? "ready" : "unregistered";
+}
+
+export async function registerStudyPushToken(options?: { generation?: number; preserveTokenOnDenied?: boolean }): Promise<PushRegistrationResult> {
+  const guard = () => { if (options?.generation !== undefined) assertSessionGeneration(options.generation); };
+  guard();
   if (Platform.OS === "android") {
     await Notifications.setNotificationChannelAsync("study-reminders", {
       name: "Nhắc lịch học",
@@ -25,14 +35,17 @@ export async function registerStudyPushToken(): Promise<PushRegistrationResult> 
     });
   }
 
+  guard();
   const existing = await Notifications.getPermissionsAsync();
+  guard();
   let status = existing.status;
   if (status !== "granted") {
     status = (await Notifications.requestPermissionsAsync()).status;
+    guard();
   }
 
   if (status !== "granted") {
-    await deactivateCurrentPushToken();
+    if (!options?.preserveTokenOnDenied) await deactivateCurrentPushToken();
     return "permission-denied";
   }
 
@@ -46,11 +59,14 @@ export async function registerStudyPushToken(): Promise<PushRegistrationResult> 
     await Notifications.getExpoPushTokenAsync({ projectId })
   ).data;
 
+  guard();
   await api.put<ApiEnvelope<unknown>>("/notification-service/push-tokens/me", {
     expoPushToken,
     platform: Platform.OS.toUpperCase(),
-  });
+  }, { sessionGeneration: options?.generation });
+  guard();
   await AsyncStorage.setItem(LOCAL_PUSH_TOKEN_KEY, expoPushToken);
+  guard();
   return "registered";
 }
 

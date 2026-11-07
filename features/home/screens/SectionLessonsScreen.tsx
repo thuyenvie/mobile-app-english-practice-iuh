@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo, useState } from "react";
+
 import { FlatList } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Text, XStack, YStack } from 'tamagui';
 
 import { AppButton } from '@/components/ui/AppButton';
-import { homeDesign } from '@/theme/tokens';
+
 import { HomeDataMessage } from '../components/HomeDataMessage';
 import { HomeScaffold } from '../components/HomeScaffold';
 import { LessonListCard } from '../components/LessonListCard';
@@ -16,6 +18,7 @@ import type { LessonSection, LessonStatus } from '../types';
 const filters = [{ status: 'all', label: 'Tất cả' }, ...lessonStatuses] as const;
 
 function SectionContent({ section }: { section: LessonSection }) {
+  const { homeDesign } = useThemedStyles();
   const [showFilters, setShowFilters] = useState(false);
   const [filter, setFilter] = useState<LessonStatus | 'all'>('all');
   const lessons = filter === 'all' ? section.lessons : section.lessons.filter((lesson) => lesson.status === filter);
@@ -41,7 +44,7 @@ function SectionContent({ section }: { section: LessonSection }) {
         <XStack paddingHorizontal={homeDesign.pagePadding} paddingBottom={12} gap={6} flexWrap="wrap">
           {filters.map((item) => (
             <AppButton key={item.status} appearance="text" paddingHorizontal={10} borderRadius={16} fontSize={11}
-              color={filter === item.status ? homeDesign.colors.cardText : homeDesign.colors.text}
+              color={filter === item.status ? homeDesign.colors.onSelection : homeDesign.colors.text}
               backgroundColor={filter === item.status ? homeDesign.colors.tabActive : homeDesign.colors.surfaceRaised}
               accessibilityState={{ selected: filter === item.status }} onPress={() => setFilter(item.status)}>
               {item.label}
@@ -61,6 +64,7 @@ function SectionContent({ section }: { section: LessonSection }) {
 }
 
 export default function SectionLessonsScreen() {
+  const { homeDesign } = useThemedStyles();
   const { sectionId } = useLocalSearchParams<{ sectionId: string | string[] }>();
   const id = Array.isArray(sectionId) ? sectionId[0] : sectionId;
   const { state, retry } = useHomeData();
@@ -79,4 +83,13 @@ export default function SectionLessonsScreen() {
             )}
     </HomeScaffold>
   );
+}
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { homeDesign } = appTheme;
+
+    return { homeDesign };
+  }, [appTheme]);
 }

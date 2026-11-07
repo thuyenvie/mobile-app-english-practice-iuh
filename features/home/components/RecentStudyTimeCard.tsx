@@ -1,4 +1,6 @@
-import { useCallback, useState } from "react";
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo, useCallback, useState } from "react";
+
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useFocusEffect } from "expo-router";
 import {
@@ -15,7 +17,7 @@ import {
 } from "react-native";
 
 import { AppButton } from "@/components/ui/AppButton";
-import { authDesign, homeDesign } from "@/theme/tokens";
+
 import { getExamErrorMessage } from "../../study/api/examApi";
 import { emptyRecentStudyTime, getRecentStudyTime, type StudyTimeDay } from "../../study/api/studyTimeApi";
 import {
@@ -42,6 +44,7 @@ function getPoints(values: number[], width: number, chartMax: number): Point[] {
 }
 
 function StudyLine({ points, color }: { points: Point[]; color: string }) {
+  const { styles } = useThemedStyles();
   return (
     <>
       {points.slice(1).map((point, index) => {
@@ -86,6 +89,7 @@ function StudyLine({ points, color }: { points: Point[]; color: string }) {
 }
 
 function LegendItem({ color, label }: { color: string; label: string }) {
+  const { styles } = useThemedStyles();
   return (
     <View style={styles.legendItem}>
       <View style={[styles.legendDot, { backgroundColor: color }]} />
@@ -95,6 +99,7 @@ function LegendItem({ color, label }: { color: string; label: string }) {
 }
 
 export function RecentStudyTimeCard({ authenticated }: { authenticated: boolean }) {
+  const { authDesign, homeDesign, themeColor, styles } = useThemedStyles();
   const [days, setDays] = useState<StudyTimeDay[]>(() => emptyRecentStudyTime());
   const [goal, setGoal] = useState<StudyTimeGoal>(DEFAULT_STUDY_TIME_GOAL);
   const [draftGoal, setDraftGoal] = useState<StudyTimeGoal>(DEFAULT_STUDY_TIME_GOAL);
@@ -295,7 +300,7 @@ export function RecentStudyTimeCard({ authenticated }: { authenticated: boolean 
                   value={draftGoal.enabled}
                   onValueChange={(enabled: boolean) => setDraftGoal((current) => ({ ...current, enabled }))}
                   trackColor={{ false: homeDesign.colors.border, true: authDesign.colors.primaryPressed }}
-                  thumbColor={draftGoal.enabled ? authDesign.colors.primary : "#d1d5db"}
+                  thumbColor={draftGoal.enabled ? authDesign.colors.primary : themeColor("#d1d5db", "text")}
                 />
               </View>
 
@@ -354,41 +359,51 @@ export function RecentStudyTimeCard({ authenticated }: { authenticated: boolean 
   );
 }
 
-const c = homeDesign.colors;
-const styles = StyleSheet.create({
-  section: { gap: 12 },
-  sectionTitle: { color: c.text, fontSize: 23, lineHeight: 30, fontWeight: "800" },
-  card: { backgroundColor: c.surface, borderRadius: 24, padding: 18, gap: 16 },
-  legend: { gap: 12 },
-  legendItem: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 28 },
-  legendDot: { width: 16, height: 16, borderRadius: 8 },
-  legendText: { color: c.text, fontSize: 16 },
-  graphRow: { height: 224, flexDirection: "row" },
-  axis: { width: 34, height: PLOT_HEIGHT, position: "relative" },
-  axisLabel: { position: "absolute", right: 6, color: c.text, fontSize: 13 },
-  plotColumn: { flex: 1, minWidth: 0 },
-  plot: { height: PLOT_HEIGHT, position: "relative", overflow: "visible" },
-  gridLine: { position: "absolute", left: 0, right: 0, height: StyleSheet.hairlineWidth, backgroundColor: c.border },
-  lineSegment: { position: "absolute", height: 4, borderRadius: 2 },
-  marker: { position: "absolute", width: MARKER_SIZE, height: MARKER_SIZE, borderRadius: MARKER_SIZE / 2 },
-  dayLabels: { height: 38, position: "relative" },
-  dayLabel: { position: "absolute", top: 8, width: 56, color: c.text, fontSize: 11, lineHeight: 14, textAlign: "center" },
-  messageRow: { minHeight: 24, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
-  message: { color: c.secondary, fontSize: 12 },
-  caption: { color: c.secondary, fontSize: 11, lineHeight: 16, textAlign: "center" },
-  modalOverlay: { flex: 1, alignItems: "center", justifyContent: "center", padding: 20, backgroundColor: "rgba(0, 0, 0, 0.68)" },
-  modalCard: { overflow: "hidden", borderRadius: 24, backgroundColor: c.surface },
-  modalHeader: { minHeight: 70, justifyContent: "center", alignItems: "center", paddingHorizontal: 18, backgroundColor: authDesign.colors.primary },
-  modalTitle: { color: c.text, fontSize: 19, lineHeight: 25, fontWeight: "700", textAlign: "center" },
-  modalContent: { minHeight: 245, alignItems: "center", justifyContent: "center", paddingHorizontal: 22, paddingVertical: 24, gap: 28 },
-  switchRow: { width: "100%", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 20 },
-  modalBodyText: { color: c.text, fontSize: 16 },
-  stepper: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 30 },
-  stepButton: { width: 52, height: 52, alignItems: "center", justifyContent: "center", borderRadius: 26, backgroundColor: c.surfaceRaised },
-  targetValue: { minWidth: 48, color: c.text, fontSize: 22, textAlign: "center" },
-  modalFooter: { minHeight: 58, flexDirection: "row", borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border },
-  footerButton: { flex: 1, minHeight: 58, alignItems: "center", justifyContent: "center" },
-  footerDivider: { width: StyleSheet.hairlineWidth, backgroundColor: c.border },
-  cancelText: { color: c.text, fontSize: 16, fontWeight: "600" },
-  saveText: { color: authDesign.colors.primary, fontSize: 16, fontWeight: "700" },
-});
+
+
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { authDesign, homeDesign, themeColor } = appTheme;
+    const c = homeDesign.colors;
+    const styles = StyleSheet.create({
+      section: { gap: 12 },
+      sectionTitle: { color: c.text, fontSize: 23, lineHeight: 30, fontWeight: "800" },
+      card: { backgroundColor: c.surface, borderRadius: 24, padding: 18, gap: 16 },
+      legend: { gap: 12 },
+      legendItem: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 28 },
+      legendDot: { width: 16, height: 16, borderRadius: 8 },
+      legendText: { color: c.text, fontSize: 16 },
+      graphRow: { height: 224, flexDirection: "row" },
+      axis: { width: 34, height: PLOT_HEIGHT, position: "relative" },
+      axisLabel: { position: "absolute", right: 6, color: c.text, fontSize: 13 },
+      plotColumn: { flex: 1, minWidth: 0 },
+      plot: { height: PLOT_HEIGHT, position: "relative", overflow: "visible" },
+      gridLine: { position: "absolute", left: 0, right: 0, height: StyleSheet.hairlineWidth, backgroundColor: c.border },
+      lineSegment: { position: "absolute", height: 4, borderRadius: 2 },
+      marker: { position: "absolute", width: MARKER_SIZE, height: MARKER_SIZE, borderRadius: MARKER_SIZE / 2 },
+      dayLabels: { height: 38, position: "relative" },
+      dayLabel: { position: "absolute", top: 8, width: 56, color: c.text, fontSize: 11, lineHeight: 14, textAlign: "center" },
+      messageRow: { minHeight: 24, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
+      message: { color: c.secondary, fontSize: 12 },
+      caption: { color: c.secondary, fontSize: 11, lineHeight: 16, textAlign: "center" },
+      modalOverlay: { flex: 1, alignItems: "center", justifyContent: "center", padding: 20, backgroundColor: themeColor("rgba(0, 0, 0, 0.68)", "background") },
+      modalCard: { overflow: "hidden", borderRadius: 24, backgroundColor: c.surface },
+      modalHeader: { minHeight: 70, justifyContent: "center", alignItems: "center", paddingHorizontal: 18, backgroundColor: authDesign.colors.primary },
+      modalTitle: { color: c.text, fontSize: 19, lineHeight: 25, fontWeight: "700", textAlign: "center" },
+      modalContent: { minHeight: 245, alignItems: "center", justifyContent: "center", paddingHorizontal: 22, paddingVertical: 24, gap: 28 },
+      switchRow: { width: "100%", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 20 },
+      modalBodyText: { color: c.text, fontSize: 16 },
+      stepper: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 30 },
+      stepButton: { width: 52, height: 52, alignItems: "center", justifyContent: "center", borderRadius: 26, backgroundColor: c.surfaceRaised },
+      targetValue: { minWidth: 48, color: c.text, fontSize: 22, textAlign: "center" },
+      modalFooter: { minHeight: 58, flexDirection: "row", borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border },
+      footerButton: { flex: 1, minHeight: 58, alignItems: "center", justifyContent: "center" },
+      footerDivider: { width: StyleSheet.hairlineWidth, backgroundColor: c.border },
+      cancelText: { color: c.text, fontSize: 16, fontWeight: "600" },
+      saveText: { color: authDesign.colors.primary, fontSize: 16, fontWeight: "700" },
+    });
+    return { authDesign, homeDesign, themeColor, c, styles };
+  }, [appTheme]);
+}

@@ -1,24 +1,35 @@
+import { useCallback, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
+import { useSession } from '@/lib/auth/useSession';
+import { ContinueExamCard } from "../../study/components/ContinueExamCard";
 import { ScrollView } from 'react-native';
 import { TodayStudySessionCard } from '../components/TodayStudySessionCard';
-import { HomeDataMessage } from '../components/HomeDataMessage';
 import { HomeHeader } from '../components/HomeHeader';
 import { HomeScaffold } from '../components/HomeScaffold';
-import { HomeSection } from '../components/HomeSection';
-import { useHomeData } from '../hooks/useHomeData';
+import { loadProfile } from '../data/homeDataSource';
+import type { HomeProfile } from '../types';
 
 export default function HomeScreen() {
-  const { state, retry } = useHomeData();
+  const session = useSession();
+  const { status, generation } = session;
+  const [profile, setProfile] = useState<{ generation: number; data: HomeProfile }>();
+  useFocusEffect(useCallback(() => {
+    if (status !== 'authenticated') return;
+    let active = true;
+    void loadProfile(status).then(data => {
+      if (active) setProfile({ generation, data });
+    }).catch(() => undefined);
+    return () => { active = false; };
+  }, [status, generation]));
   return (
     <HomeScaffold>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 16 }}>
-        {state.status === 'ready' ? <HomeHeader profile={state.data.profile} welcomeText={state.data.welcomeText} /> : null}
-        <TodayStudySessionCard />
-        {state.status === 'loading' ? <HomeDataMessage loading message="Đang tải bài học..." />
-          : state.status === 'error' ? <HomeDataMessage message={state.message} onRetry={retry} />
-          : <>
-            {state.data.sections.map((section) => <HomeSection key={section.id} section={section} />)}
-            {!state.data.sections.length && <HomeDataMessage message="Chưa có bài học." />}
-          </>}
+        {status !== 'loading' ? (
+          <HomeHeader profile={profile?.generation === generation ? profile.data : { fullName: 'bạn' }} />
+        ) : null}
+        <TodayStudySessionCard key={session.generation}>
+          <ContinueExamCard home />
+        </TodayStudySessionCard>
       </ScrollView>
     </HomeScaffold>
   );

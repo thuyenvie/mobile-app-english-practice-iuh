@@ -1,20 +1,23 @@
-import { useCallback, useRef, useState } from "react";
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo, useCallback, useRef, useState } from "react";
+import { BrandedPageState } from "@/components/ui/BrandedPageState";
+
 import { router, useFocusEffect } from "expo-router";
 import {
-  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
-import { homeDesign } from "@/theme/tokens";
+
 import { getExamErrorMessage } from "../api/examApi";
 import { getExamHistory, type ExamHistoryItem } from "../api/examResultApi";
 import { ExamResultCard } from "../components/ExamResultCard";
 import { StudyScaffold } from "../components/StudyScaffold";
 
 export default function ListeningHistoryScreen() {
+  const { styles } = useThemedStyles();
   const [items, setItems] = useState<ExamHistoryItem[]>([]);
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -87,7 +90,7 @@ export default function ListeningHistoryScreen() {
       </View>
       <ScrollView contentContainerStyle={styles.content}>
         {loading ? (
-          <ActivityIndicator />
+          <BrandedPageState compact loading message="Đang tải lịch sử bài làm..." />
         ) : items.length ? (
           items.map((item) => (
             <ExamResultCard key={item.resultId} item={item} />
@@ -96,16 +99,7 @@ export default function ListeningHistoryScreen() {
           <Text style={styles.muted}>Bạn chưa nộp bài thi nào.</Text>
         ) : null}
         {error ? (
-          <>
-            <Text style={styles.warning}>{error}</Text>
-            <Pressable
-              onPress={() =>
-                items.length ? void loadMore() : setRetry((value) => value + 1)
-              }
-            >
-              <Text style={styles.link}>Thử lại</Text>
-            </Pressable>
-          </>
+          <BrandedPageState compact message={error} onRetry={() => items.length ? void loadMore() : setRetry(value => value + 1)} />
         ) : null}
         {!loading && !error && page + 1 < totalPages ? (
           <Pressable disabled={loadingMore} onPress={() => void loadMore()}>
@@ -119,12 +113,22 @@ export default function ListeningHistoryScreen() {
   );
 }
 
-const c = homeDesign.colors;
-const styles = StyleSheet.create({
-  header: { padding: 16, gap: 8, borderBottomWidth: 1, borderColor: c.border },
-  title: { color: c.text, fontSize: 21, fontWeight: "700" },
-  link: { color: c.link, fontSize: 15, paddingVertical: 8 },
-  content: { padding: 16, gap: 12, paddingBottom: 32 },
-  muted: { color: c.secondary, fontSize: 14 },
-  warning: { color: c.inProgress, fontSize: 14 },
-});
+
+
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { homeDesign } = appTheme;
+    const c = homeDesign.colors;
+    const styles = StyleSheet.create({
+      header: { padding: 16, gap: 8, borderBottomWidth: 1, borderColor: c.border },
+      title: { color: c.text, fontSize: 21, fontWeight: "700" },
+      link: { color: c.link, fontSize: 15, paddingVertical: 8 },
+      content: { padding: 16, gap: 12, paddingBottom: 32 },
+      muted: { color: c.secondary, fontSize: 14 },
+      warning: { color: c.inProgress, fontSize: 14 },
+    });
+    return { homeDesign, c, styles };
+  }, [appTheme]);
+}

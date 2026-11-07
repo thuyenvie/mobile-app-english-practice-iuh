@@ -1,12 +1,15 @@
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo } from "react";
 import { ScrollView, useWindowDimensions } from 'react-native';
 import { router } from 'expo-router';
 import { Text, XStack, YStack } from 'tamagui';
 
 import { AppButton } from '@/components/ui/AppButton';
-import { homeDesign } from '@/theme/tokens';
+
 import type { LessonSection } from '../types';
 
 export function HomeSection({ section }: { section: LessonSection }) {
+  const { homeDesign } = useThemedStyles();
   const { width } = useWindowDimensions();
   const cardWidth = Math.round(Math.min(width, homeDesign.maxWidth) * 0.41);
   const preview = section.lessons.slice(0, section.previewLimit ?? 4);
@@ -30,11 +33,20 @@ export function HomeSection({ section }: { section: LessonSection }) {
               onPress={() => lesson.exam && router.push({ pathname: '/study/[year]/[testNumber]',
                 params: { year: String(lesson.exam.year), testNumber: String(lesson.exam.testNumber) } })}
               backgroundColor={homeDesign.colors.card} alignItems="center" justifyContent="center">
-              <Text color={homeDesign.colors.cardText} fontSize={13} fontWeight="700">{lesson.label}</Text>
+              <Text color={homeDesign.colors.onSelection} fontSize={13} fontWeight="700">{lesson.label}</Text>
             </YStack>
           ))}
         </ScrollView>
       ) : <Text padding="$medium" color={homeDesign.colors.secondary}>Chưa có bài học.</Text>}
     </YStack>
   );
+}
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { homeDesign } = appTheme;
+
+    return { homeDesign };
+  }, [appTheme]);
 }

@@ -1,9 +1,11 @@
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo } from "react";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { Text, XStack, YStack } from "tamagui";
 
 import { AppButton } from "@/components/ui/AppButton";
-import { homeDesign } from "@/theme/tokens";
+
 
 export function TestCard({
   year,
@@ -14,6 +16,7 @@ export function TestCard({
   testNumber: number;
   onPress: () => void;
 }) {
+  const { homeDesign } = useThemedStyles();
   return (
     <YStack
       backgroundColor={homeDesign.colors.surface}
@@ -35,7 +38,7 @@ export function TestCard({
           <MaterialCommunityIcons
             name="file-document-outline"
             size={27}
-            color="#111111"
+            color={homeDesign.colors.onAccent}
           />
         </YStack>
         <YStack flex={1} gap={4}>
@@ -57,4 +60,13 @@ export function TestCard({
       </AppButton>
     </YStack>
   );
+}
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { homeDesign, themeColor } = appTheme;
+
+    return { homeDesign, themeColor };
+  }, [appTheme]);
 }

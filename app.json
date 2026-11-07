@@ -11,37 +11,47 @@
     ],
     "scheme": "com.dohoainho.englishpractice",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "icon": "./assets/english-practice-icon.png",
+    "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.dohoainho.englishpractice"
+      "bundleIdentifier": "com.dohoainho.englishpractice",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.dohoainho.englishpractice",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#FFFFFF",
+        "foregroundImage": "./assets/english-practice-adaptive.png"
       },
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/english-practice-icon.png"
     },
     "plugins": [
-      "expo-router",
-      "expo-font",
-      "expo-secure-store",
-      [
-        "expo-image-picker",
-        {
-          "photosPermission": "Cho phép ứng dụng chọn ảnh câu hỏi để gia sư AI giải thích.",
-          "cameraPermission": "Cho phép ứng dụng chụp ảnh câu hỏi để gia sư AI giải thích."
-        }
-      ]
-    ],
+  "expo-router",
+  "expo-font",
+  "expo-secure-store",
+  [
+    "expo-image-picker",
+    {
+      "photosPermission": "Cho phép ứng dụng chọn ảnh câu hỏi để gia sư AI giải thích.",
+      "cameraPermission": "Cho phép ứng dụng chụp ảnh câu hỏi để gia sư AI giải thích."
+    }
+  ],
+  [
+    "expo-build-properties",
+    {
+      "android": {
+        "usesCleartextTraffic": true
+      }
+    }
+  ]
+],
     "extra": {
       "router": {},
       "eas": {

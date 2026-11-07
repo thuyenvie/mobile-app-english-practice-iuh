@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type PropsWithChildren } from "react";
-import { Alert, AppState } from "react-native";
+import { AppState } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { isAxiosError } from "axios";
 import { useSession } from "@/lib/auth/useSession";
@@ -78,8 +78,8 @@ export function StudySessionProvider({ children }: PropsWithChildren) {
         const existing = await getActiveStudySession();
         if (existing) {
           apply(existing);
-          Alert.alert("Bạn còn một phiên học đang mở", "Hãy kết thúc phiên hiện tại trước khi bắt đầu nhiệm vụ khác.");
-          return;
+          // Khong chuyen vao bo tu moi trong khi backend tra ve phien cua task khac.
+          throw new Error("Bạn còn một phiên học đang mở. Hãy kết thúc phiên đó trước khi bắt đầu nhiệm vụ khác.");
         }
       }
       throw cause;

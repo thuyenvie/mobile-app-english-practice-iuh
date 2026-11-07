@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo, useState } from "react";
+
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Image, YStack } from 'tamagui';
 
-import { homeDesign } from '@/theme/tokens';
+
 
 export function UserAvatar({ uri, name }: { uri?: string; name: string }) {
+  const { homeDesign } = useThemedStyles();
   const [failedUri, setFailedUri] = useState<string>();
   return (
     <YStack width={60} height={60} borderRadius={30} overflow="hidden"
@@ -17,4 +20,13 @@ export function UserAvatar({ uri, name }: { uri?: string; name: string }) {
       )}
     </YStack>
   );
+}
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { homeDesign } = appTheme;
+
+    return { homeDesign };
+  }, [appTheme]);
 }

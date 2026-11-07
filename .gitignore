@@ -32,7 +32,17 @@ yarn-error.*
 
 # local env files
 .env
-.env*.local
+.env.*
+!.env.example
+!.env.*.example
+
+# private Firebase / Expo credentials
+.secrets/
+credentials.json
+*firebase-adminsdk*.json
+*service-account*.json
+*service_account*.json
+*serviceAccount*.json
 
 # typescript
 *.tsbuildinfo

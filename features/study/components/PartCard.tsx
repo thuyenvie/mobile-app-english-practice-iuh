@@ -1,8 +1,10 @@
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo } from "react";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { Pressable } from "react-native";
 import { Text, XStack, YStack } from "tamagui";
 
-import { homeDesign } from "@/theme/tokens";
+
 import type { ToeicPartDefinition } from "../types";
 
 export function PartCard({
@@ -14,6 +16,7 @@ export function PartCard({
   onStart: () => void;
   selected?: boolean;
 }) {
+  const { homeDesign } = useThemedStyles();
   const listening = part.section === "LISTENING";
 
   return (
@@ -45,7 +48,7 @@ export function PartCard({
         <MaterialCommunityIcons
           name={listening ? "headphones" : "book-open-page-variant-outline"}
           size={23}
-          color={homeDesign.colors.cardText}
+          color={listening ? homeDesign.colors.onAccent : homeDesign.colors.onSelection}
         />
       </YStack>
       <YStack flex={1} minWidth={0} gap={3}>
@@ -65,4 +68,13 @@ export function PartCard({
     </XStack>
     </Pressable>
   );
+}
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { homeDesign } = appTheme;
+
+    return { homeDesign };
+  }, [appTheme]);
 }

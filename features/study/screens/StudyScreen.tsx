@@ -1,11 +1,15 @@
-import { useCallback, useState } from "react";
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo, useCallback, useState } from "react";
+import { BrandedPageState } from "@/components/ui/BrandedPageState";
+import { ContinueExamCard } from "../components/ContinueExamCard";
+
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { router, useFocusEffect } from "expo-router";
 import { ScrollView } from "react-native";
 import { Text, XStack, YStack } from "tamagui";
 
 import { AppButton } from "@/components/ui/AppButton";
-import { homeDesign } from "@/theme/tokens";
+
 import { HomeDataMessage } from "../../home/components/HomeDataMessage";
 import { toeicYears } from "../data/toeicCatalog";
 import { useTestsByYear } from "../hooks/useTestsByYear";
@@ -21,6 +25,7 @@ import { StartStudyButton } from "../session/StudySessionControls";
 import { getTodaySchedule, type StudySchedule } from "../api/studyPlanApi";
 
 export default function StudyScreen() {
+  const { homeDesign } = useThemedStyles();
   const session = useSession();
   const isGuest = session.status === "guest";
   const [selectedYear, setSelectedYear] = useState<number>(toeicYears[0]);
@@ -90,6 +95,19 @@ export default function StudyScreen() {
       };
     }, [session.status, studyPlanRetry])
   );
+  const [dismissedError, setDismissedError] = useState("");
+  const planLoading = !isGuest && (session.status !== "authenticated" || studyPlanLoading);
+  const historyLoading = !isGuest && recentLoading;
+  const loading = state.status === "loading" || planLoading || historyLoading;
+  const examError = state.status === "error" ? state.message : "";
+  const error = examError || (!isGuest ? studyPlanError || recentError : "");
+  const retryFailed = () => {
+    setDismissedError("");
+    if (examError) retry();
+    if (!isGuest && studyPlanError) setStudyPlanRetry(value => value + 1);
+    if (!isGuest && recentError) setRecentRetry(value => value + 1);
+  };
+
   // back end ch co cai nay
   const openTest = (testNumber: number) => {
     router.push({
@@ -159,16 +177,7 @@ export default function StudyScreen() {
                 Đăng nhập
               </AppButton>
             </>
-          ) : session.status !== "authenticated" ? (
-            <HomeDataMessage loading message="Đang kiểm tra tài khoản..." />
-          ) : studyPlanLoading ? (
-            <HomeDataMessage loading message="Đang tải kế hoạch học..." />
-          ) : studyPlanError ? (
-            <HomeDataMessage
-              message={studyPlanError}
-              onRetry={() => setStudyPlanRetry((value) => value + 1)}
-            />
-          ) : !todaySchedule?.plan ? (
+          ) : planLoading || studyPlanError ? null : !todaySchedule?.plan ? (
             <>
               <Text color={homeDesign.colors.secondary} fontSize={12}>
                 Đặt mục tiêu TOEIC và thời gian học mỗi ngày để tạo lộ trình 7
@@ -242,29 +251,7 @@ export default function StudyScreen() {
           )}
         </YStack>
 
-        <YStack
-          backgroundColor={homeDesign.colors.surface}
-          borderRadius={18}
-          padding={16}
-          gap={8}
-          marginBottom={24}
-        >
-          <XStack alignItems="center" gap={10}>
-            <MaterialCommunityIcons
-              name="progress-clock"
-              size={25}
-              color={homeDesign.colors.inProgress}
-            />
-            <Text color={homeDesign.colors.text} fontSize={15} fontWeight="700">
-              Tiếp tục bài đang làm
-            </Text>
-          </XStack>
-          <Text color={homeDesign.colors.secondary} fontSize={12}>
-            {isGuest
-              ? "Bạn đang học thử. Bài làm chỉ được giữ khi đang mở bài."
-              : "Chưa có bài thi được lưu nháp."}
-          </Text>
-        </YStack>
+        <ContinueExamCard />
 
         <YStack gap={12} marginBottom={25}>
           <SectionTitle title="Thi thử TOEIC" hint="Chọn năm ETS" />
@@ -277,11 +264,7 @@ export default function StudyScreen() {
 
         <YStack gap={12} marginBottom={26}>
           <SectionTitle title={`Danh sách đề ETS ${selectedYear}`} />
-          {state.status === "loading" ? (
-            <HomeDataMessage loading message="Đang tải danh sách đề..." />
-          ) : state.status === "error" ? (
-            <HomeDataMessage message={state.message} onRetry={retry} />
-          ) : state.testNumbers.length ? (
+          {state.status !== "ready" ? null : state.testNumbers.length ? (
             state.testNumbers.map((testNumber) => (
               <TestCard
                 key={testNumber}
@@ -312,14 +295,7 @@ export default function StudyScreen() {
         ) : (
           <YStack gap={8}>
             <SectionTitle title="Kết quả gần đây" hint="Listening và Reading" />
-            {recentLoading ? (
-              <HomeDataMessage loading message="Đang tải kết quả..." />
-            ) : recentError ? (
-              <HomeDataMessage
-                message={recentError}
-                onRetry={() => setRecentRetry((value) => value + 1)}
-              />
-            ) : recent.length ? (
+            {recentLoading || recentError ? null : recent.length ? (
               recent.map((item) => (
                 <ExamResultCard key={item.resultId} item={item} />
               ))
@@ -336,7 +312,28 @@ export default function StudyScreen() {
             </AppButton>
           </YStack>
         )}
+        {!loading && error && error === dismissedError ? (
+          <AppButton appearance="text" onPress={retryFailed}>Thử tải lại dữ liệu</AppButton>
+        ) : null}
       </ScrollView>
+      {loading || (error && error !== dismissedError) ? (
+        <BrandedPageState
+          overlay
+          loading={loading}
+          message={loading ? "Đang tải dữ liệu học tập..." : error}
+          onRetry={retryFailed}
+          onBack={loading ? undefined : () => setDismissedError(error)}
+        />
+      ) : null}
     </StudyScaffold>
   );
+}
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { homeDesign } = appTheme;
+
+    return { homeDesign };
+  }, [appTheme]);
 }

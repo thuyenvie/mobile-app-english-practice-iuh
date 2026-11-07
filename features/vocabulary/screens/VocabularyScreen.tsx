@@ -1,6 +1,9 @@
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo, useCallback, useEffect, useRef, useState } from "react";
+import { BrandedPageState } from "@/components/ui/BrandedPageState";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { useFocusEffect } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+
 import {
   ActivityIndicator,
   Alert,
@@ -13,7 +16,7 @@ import {
 } from "react-native";
 import { Text, XStack, YStack } from "tamagui";
 
-import { homeDesign } from "@/theme/tokens";
+
 import { getExamErrorMessage } from "../../study/api/examApi";
 import { HomeScaffold } from "../../home/components/HomeScaffold";
 import {
@@ -37,12 +40,15 @@ const FILTERS: { id: DateFilter; label: string }[] = [
 ];
 
 export default function VocabularyScreen() {
+  const { homeDesign, themeColor, styles } = useThemedStyles();
   const [filter, setFilter] = useState<DateFilter>("all");
   const [items, setItems] = useState<SavedVocabulary[]>([]);
   const [totalItems, setTotalItems] = useState(0);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "flashcard">("list");
+  const [selecting, setSelecting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [reviewIndex, setReviewIndex] = useState(0);
   const [answerRevealed, setAnswerRevealed] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -156,6 +162,7 @@ export default function VocabularyScreen() {
   };
 
   const chooseFilter = (nextFilter: DateFilter) => {
+    setSelectedIds([]);
     setFilter(nextFilter);
     setViewMode("list");
     setReviewIndex(0);
@@ -165,6 +172,7 @@ export default function VocabularyScreen() {
   const deleteItem = async (item: SavedVocabulary) => {
     try {
       await deleteSavedVocabulary(item.id);
+      setSelectedIds(current => current.filter(id => id !== item.id));
       setItems((current) => current.filter((saved) => saved.id !== item.id));
       setTotalItems((current) => Math.max(0, current - 1));
     } catch (deleteError: unknown) {
@@ -239,7 +247,16 @@ export default function VocabularyScreen() {
             >
               <Text style={[styles.filterText, viewMode === "flashcard" && styles.activeFilterText]}>Ôn Flashcard</Text>
             </Pressable>
+            <Pressable accessibilityRole="button" onPress={() => { setViewMode("list"); setSelecting(value => !value); setSelectedIds([]); }} style={[styles.modeChip, selecting && styles.activeFilterChip]}>
+              <Text style={[styles.filterText, selecting && styles.activeFilterText]}>{selecting ? "Hủy chọn" : "Lên lịch ôn"}</Text>
+            </Pressable>
           </XStack>
+          {selecting && viewMode === "list" ? <XStack alignItems="center" justifyContent="space-between">
+            <Text color={homeDesign.colors.secondary} fontSize={12}>Đã chọn {selectedIds.length}/100 từ</Text>
+            <Pressable accessibilityRole="button" onPress={() => setSelectedIds(selectedIds.length ? [] : items.slice(0, 100).map(item => item.id))}>
+              <Text color={homeDesign.colors.link} fontSize={12}>{selectedIds.length ? "Bỏ chọn" : `Chọn ${Math.min(100, items.length)} từ đã tải`}</Text>
+            </Pressable>
+          </XStack> : null}
           {viewMode === "list" ? (
             <ScrollView
               horizontal
@@ -280,9 +297,9 @@ export default function VocabularyScreen() {
             <MaterialCommunityIcons
               name="alert-circle-outline"
               size={19}
-              color="#ff8c8c"
+              color={themeColor("#ff8c8c", "text")}
             />
-            <Text flex={1} color="#ffaaaa" fontSize={13}>
+            <Text flex={1} color={themeColor("#ffaaaa", "text")} fontSize={13}>
               {error}
             </Text>
             <Pressable
@@ -320,6 +337,14 @@ export default function VocabularyScreen() {
           data={items}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
+            <View style={{ gap: 6 }}>
+            {selecting ? <Pressable
+              accessibilityRole="checkbox" accessibilityState={{ checked: selectedIds.includes(item.id) }}
+              accessibilityLabel={`Chọn ${item.word}`} style={styles.selectRow}
+              onPress={() => setSelectedIds(current => current.includes(item.id) ? current.filter(id => id !== item.id) : current.length < 100 ? [...current, item.id] : current)}>
+              <MaterialCommunityIcons name={selectedIds.includes(item.id) ? "checkbox-marked" : "checkbox-blank-outline"} color={homeDesign.colors.tabActive} size={24} />
+              <Text color={homeDesign.colors.text}>Chọn {item.word}</Text>
+            </Pressable> : null}
             <VocabularyWordCard
               item={item}
               onDelete={confirmDelete}
@@ -328,6 +353,7 @@ export default function VocabularyScreen() {
               phoneticRepairFailed={phoneticRepairFailedIds.has(item.id)}
               pronunciation={pronunciationProps}
             />
+            </View>
           )}
           contentContainerStyle={
             items.length ? styles.listContent : styles.emptyListContent
@@ -344,35 +370,9 @@ export default function VocabularyScreen() {
           }
           ListEmptyComponent={
             loading ? (
-              <YStack alignItems="center" gap={10} padding={24}>
-                <ActivityIndicator color={homeDesign.colors.link} />
-                <Text color={homeDesign.colors.secondary}>
-                  Đang tải từ vựng...
-                </Text>
-              </YStack>
+              <BrandedPageState compact loading message="Đang tải từ vựng..." />
             ) : error ? (
-              <YStack alignItems="center" gap={10} padding={24}>
-                <MaterialCommunityIcons
-                  name="cloud-alert-outline"
-                  size={40}
-                  color={homeDesign.colors.secondary}
-                />
-                <Text
-                  color={homeDesign.colors.text}
-                  fontSize={16}
-                  fontWeight="700"
-                >
-                  Chưa tải được danh sách
-                </Text>
-                <Pressable
-                  onPress={() => void loadFirstPage()}
-                  accessibilityRole="button"
-                >
-                  <Text color={homeDesign.colors.link} fontWeight="800">
-                    Tải lại
-                  </Text>
-                </Pressable>
-              </YStack>
+              <BrandedPageState compact message={error} onRetry={() => void loadFirstPage()} />
             ) : (
               <YStack alignItems="center" gap={10} padding={24}>
                 <MaterialCommunityIcons
@@ -406,6 +406,12 @@ export default function VocabularyScreen() {
             ) : null
           }
         />}
+        {selecting && viewMode === "list" ? <View style={styles.scheduleFooter}>
+          <Pressable disabled={!selectedIds.length} accessibilityRole="button" style={[styles.scheduleButton, !selectedIds.length && styles.disabledChip]}
+            onPress={() => router.push({ pathname: "/vocabulary/schedule", params: { ids: selectedIds.join(","), words: items.filter(item => selectedIds.includes(item.id)).slice(0, 6).map(item => item.word).join(" · ") } })}>
+            <Text style={styles.activeFilterText}>{`Lên lịch ôn (${selectedIds.length} từ)`}</Text>
+          </Pressable>
+        </View> : null}
       </YStack>
     </HomeScaffold>
   );
@@ -452,47 +458,59 @@ function getDateRange(filter: DateFilter): { from?: string; to?: string } {
   return { from: weekStart.toISOString(), to: tomorrow.toISOString() };
 }
 
-const styles = StyleSheet.create({
-  filters: { gap: 8, paddingVertical: 12, paddingRight: 8 },
-  filterChip: {
-    minHeight: 38,
-    justifyContent: "center",
-    paddingHorizontal: 15,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: homeDesign.colors.border,
-    backgroundColor: homeDesign.colors.surfaceRaised,
-  },
-  modeChip: {
-    minHeight: 36,
-    justifyContent: "center",
-    paddingHorizontal: 13,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: homeDesign.colors.border,
-    backgroundColor: homeDesign.colors.surfaceRaised,
-  },
-  disabledChip: { opacity: 0.5 },
-  activeFilterChip: {
-    borderColor: homeDesign.colors.tabActive,
-    backgroundColor: homeDesign.colors.tabActive,
-  },
-  filterText: {
-    color: homeDesign.colors.text,
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  activeFilterText: { color: homeDesign.colors.cardText },
-  listContent: {
-    paddingHorizontal: homeDesign.pagePadding,
-    paddingTop: 4,
-    paddingBottom: 24,
-  },
-  emptyListContent: {
-    flexGrow: 1,
-    justifyContent: "center",
-    paddingHorizontal: homeDesign.pagePadding,
-  },
-  separator: { height: 12 },
-  footerLoading: { paddingVertical: 18 },
-});
+
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { homeDesign, themeColor } = appTheme;
+    const styles = StyleSheet.create({
+      selectRow: { flexDirection: "row", alignItems: "center", gap: 9, minHeight: 44 },
+      scheduleFooter: { padding: 14, backgroundColor: homeDesign.colors.background, borderTopWidth: 1, borderTopColor: homeDesign.colors.border },
+      scheduleButton: { minHeight: 48, backgroundColor: homeDesign.colors.tabActive, borderRadius: 14, alignItems: "center", justifyContent: "center", padding: 12 },
+      filters: { gap: 8, paddingVertical: 12, paddingRight: 8 },
+      filterChip: {
+        minHeight: 38,
+        justifyContent: "center",
+        paddingHorizontal: 15,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: homeDesign.colors.border,
+        backgroundColor: homeDesign.colors.surfaceRaised,
+      },
+      modeChip: {
+        minHeight: 36,
+        justifyContent: "center",
+        paddingHorizontal: 13,
+        borderRadius: 18,
+        borderWidth: 1,
+        borderColor: homeDesign.colors.border,
+        backgroundColor: homeDesign.colors.surfaceRaised,
+      },
+      disabledChip: { opacity: 0.5 },
+      activeFilterChip: {
+        borderColor: homeDesign.colors.tabActive,
+        backgroundColor: homeDesign.colors.tabActive,
+      },
+      filterText: {
+        color: homeDesign.colors.text,
+        fontSize: 13,
+        fontWeight: "700",
+      },
+      activeFilterText: { color: homeDesign.colors.onSelection },
+      listContent: {
+        paddingHorizontal: homeDesign.pagePadding,
+        paddingTop: 4,
+        paddingBottom: 24,
+      },
+      emptyListContent: {
+        flexGrow: 1,
+        justifyContent: "center",
+        paddingHorizontal: homeDesign.pagePadding,
+      },
+      separator: { height: 12 },
+      footerLoading: { paddingVertical: 18 },
+    });
+    return { homeDesign, themeColor, styles };
+  }, [appTheme]);
+}

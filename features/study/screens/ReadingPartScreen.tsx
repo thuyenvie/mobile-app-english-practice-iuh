@@ -1,12 +1,15 @@
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo, useEffect, useMemo, useRef, useState } from "react";
+import { readExamDraft, writeExamDraft } from "../utils/examDrafts";
 import { useStudySession } from "../session/StudySessionProvider";
-import { useMemo, useRef, useState } from "react";
+
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { router, useLocalSearchParams } from "expo-router";
 import { Modal, ScrollView, StyleSheet, View } from "react-native";
 import { Text, XStack, YStack } from "tamagui";
 
 import { AppButton } from "@/components/ui/AppButton";
-import { homeDesign } from "@/theme/tokens";
+
 import { HomeDataMessage } from "../../home/components/HomeDataMessage";
 import { QuestionSheetModal } from "../components/QuestionSheetModal";
 import { ReadingExamFooter } from "../components/ReadingExamFooter";
@@ -30,6 +33,7 @@ import { useReadingTimer } from "../hooks/useReadingTimer";
 import type { ExamAnswers, ExamPart, ExamQuestion } from "../types";
 
 export default function ReadingPartScreen() {
+  const { homeDesign } = useThemedStyles();
   const params = useLocalSearchParams<{
     year?: string;
     testNumber?: string;
@@ -103,6 +107,7 @@ export default function ReadingPartScreen() {
 }
 
 function ReadingPartContent({ part }: { part: ExamPart }) {
+  const { homeDesign, themeColor, styles } = useThemedStyles();
   const session = useSession();
   const { refresh: refreshStudySession } = useStudySession();
   const questions = useMemo(
@@ -119,7 +124,7 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
   const [submitError, setSubmitError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<PracticeResult | null>(null);
-  const [startedAt] = useState(() => new Date().toISOString());
+  const [startedAt, setStartedAt] = useState(() => new Date().toISOString());
   const submittingRef = useRef(false);
   const { label: timerLabel, expired: timerExpired } = useReadingTimer(
     part.partNumber
@@ -134,6 +139,42 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
   const [vocabularySaved, setVocabularySaved] = useState(false);
   const [vocabularySaveError, setVocabularySaveError] = useState("");
   const lookupRequestId = useRef(0);
+
+  const draftKey = session.status === "authenticated" && session.subject
+    ? `reading:v1:${encodeURIComponent(session.subject)}:${part.year}:${part.testNumber}:${part.partNumber}`
+    : null;
+  const [draftReady, setDraftReady] = useState(!draftKey);
+  useEffect(() => {
+    if (!draftKey) return;
+    let active = true;
+    void readExamDraft(draftKey).then(raw => {
+      if (!active || !raw) return;
+      const draft = JSON.parse(raw);
+      setAnswers(Object.fromEntries(questions.flatMap(question => {
+        const label = draft?.answers?.[question.questionNumber];
+        return question.options.some(option => option.label === label)
+          ? [[question.questionNumber, label]]
+          : [];
+      })));
+      const index = questions.findIndex(question => question.questionNumber === draft?.questionNumber);
+      if (index >= 0) setCurrentIndex(index);
+      if (typeof draft?.startedAt === "string" && Number.isFinite(Date.parse(draft.startedAt))) {
+        setStartedAt(draft.startedAt);
+      }
+    }).catch(() => {
+      if (active) setSubmitError("Không đọc được bản nháp trên thiết bị.");
+    }).finally(() => {
+      if (active) setDraftReady(true);
+    });
+    return () => { active = false; };
+  }, [draftKey, questions]);
+
+  useEffect(() => {
+    if (!draftReady || !draftKey || (!result && !Object.keys(answers).length)) return;
+    void writeExamDraft(draftKey, result ? null : {
+      answers, startedAt, questionNumber: questions[currentIndex]?.questionNumber,
+    }).catch(() => setSubmitError("Không cập nhật được bản nháp trên thiết bị."));
+  }, [draftReady, draftKey, result, answers, startedAt, questions, currentIndex]);
 
   const currentQuestion = questions[currentIndex];
   const currentPassage = part.passages.find(
@@ -251,6 +292,8 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
     }
   };
 
+  if (!draftReady) return <StudyScaffold><Text color={homeDesign.colors.text}>Đang tải bản nháp…</Text></StudyScaffold>;
+
   return (
     <StudyScaffold>
       <GuestPracticeNotice
@@ -271,10 +314,10 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
           paddingVertical={8}
           alignItems="center"
           gap={7}
-          backgroundColor="#3a1818"
+          backgroundColor={themeColor("#3a1818", "background")}
         >
-          <MaterialIcons name="warning-amber" size={19} color="#ff7676" />
-          <Text flex={1} color="#ffb3b3" fontSize={12}>
+          <MaterialIcons name="warning-amber" size={19} color={themeColor("#ff7676", "text")} />
+          <Text flex={1} color={themeColor("#ffb3b3", "text")} fontSize={12}>
             Đã hết thời gian gợi ý cho Part {part.partNumber}. Bạn vẫn có thể
             tiếp tục luyện tập.
           </Text>
@@ -317,14 +360,14 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
               backgroundColor={homeDesign.colors.tabActive}
             >
               <Text
-                color={homeDesign.colors.cardText}
+                color={homeDesign.colors.onSelection}
                 fontSize={15}
                 fontWeight="800"
               >
                 Nội dung bài đọc
               </Text>
               <Text
-                color={homeDesign.colors.cardText}
+                color={homeDesign.colors.onSelection}
                 fontSize={12}
                 fontWeight="700"
               >
@@ -376,7 +419,7 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
               backgroundColor={homeDesign.colors.link}
             >
               <Text
-                color={homeDesign.colors.cardText}
+                color={homeDesign.colors.onSelection}
                 fontSize={14}
                 fontWeight="800"
               >
@@ -570,24 +613,33 @@ function getQuestionLabel(
   }`;
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  singleQuestionContent: { padding: 14, paddingBottom: 28 },
-  passageContent: { padding: 15, paddingBottom: 26 },
-  relatedQuestionsContent: { padding: 10, paddingBottom: 24, gap: 10 },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: "center",
-    padding: 20,
-    backgroundColor: "rgba(0,0,0,0.72)",
-  },
-  modalCard: {
-    width: "100%",
-    maxWidth: 440,
-    alignSelf: "center",
-    padding: 18,
-    gap: 12,
-    borderRadius: 16,
-    backgroundColor: homeDesign.colors.surface,
-  },
-});
+
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { homeDesign, themeColor } = appTheme;
+    const styles = StyleSheet.create({
+      flex: { flex: 1 },
+      singleQuestionContent: { padding: 14, paddingBottom: 28 },
+      passageContent: { padding: 15, paddingBottom: 26 },
+      relatedQuestionsContent: { padding: 10, paddingBottom: 24, gap: 10 },
+      modalOverlay: {
+        flex: 1,
+        justifyContent: "center",
+        padding: 20,
+        backgroundColor: themeColor("rgba(0,0,0,0.72)", "background"),
+      },
+      modalCard: {
+        width: "100%",
+        maxWidth: 440,
+        alignSelf: "center",
+        padding: 18,
+        gap: 12,
+        borderRadius: 16,
+        backgroundColor: homeDesign.colors.surface,
+      },
+    });
+    return { homeDesign, themeColor, styles };
+  }, [appTheme]);
+}

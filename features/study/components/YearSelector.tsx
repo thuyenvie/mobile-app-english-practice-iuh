@@ -1,8 +1,10 @@
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo } from "react";
 import { ScrollView } from "react-native";
 import { Text, XStack } from "tamagui";
 
 import { AppButton } from "@/components/ui/AppButton";
-import { homeDesign } from "@/theme/tokens";
+
 
 export function YearSelector({
   years,
@@ -13,6 +15,7 @@ export function YearSelector({
   selectedYear: number;
   onSelect: (year: number) => void;
 }) {
+  const { homeDesign } = useThemedStyles();
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
       <XStack gap={10}>
@@ -32,7 +35,7 @@ export function YearSelector({
                   : homeDesign.colors.surfaceRaised
               }
               color={
-                selected ? homeDesign.colors.cardText : homeDesign.colors.text
+                selected ? homeDesign.colors.onSelection : homeDesign.colors.text
               }
               accessibilityState={{ selected }}
               onPress={() => onSelect(year)}
@@ -46,4 +49,13 @@ export function YearSelector({
       </XStack>
     </ScrollView>
   );
+}
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { homeDesign } = appTheme;
+
+    return { homeDesign };
+  }, [appTheme]);
 }

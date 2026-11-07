@@ -2,6 +2,17 @@ import { defaultConfig } from '@tamagui/config/v5';
 import { createTamagui } from 'tamagui';
 
 import { authDesign, spacing } from './src/theme/tokens';
+import { getAppTheme } from './src/theme/palettes';
+
+function appTheme(mode: 'light' | 'dark') {
+  const p = getAppTheme(mode).palette;
+  return {
+    ...defaultConfig.themes[mode], background: p.background, color: p.text,
+    textSecondary: p.muted, primary: p.accent, primaryPressed: p.accentPressed,
+    onPrimary: p.onAccent, inputBackground: p.surface, borderColor: p.border,
+    placeholderColor: p.muted,
+  };
+}
 
 export const config = createTamagui({
   ...defaultConfig,
@@ -13,6 +24,8 @@ export const config = createTamagui({
     radius: { ...defaultConfig.tokens.radius, control: 12 },
   },
   themes: {
+    light_app: appTheme('light'),
+    dark_app: appTheme('dark'),
     light_auth: {
       ...defaultConfig.themes.light,
       background: authDesign.colors.background,

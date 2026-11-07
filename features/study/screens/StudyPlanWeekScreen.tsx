@@ -1,8 +1,10 @@
-import { useCallback, useState } from "react";
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo, useCallback, useState } from "react";
+import { BrandedPageState } from "@/components/ui/BrandedPageState";
+
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { router, useFocusEffect } from "expo-router";
 import {
-  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,7 +13,7 @@ import {
 } from "react-native";
 
 import { useSession } from "@/lib/auth/useSession";
-import { homeDesign } from "@/theme/tokens";
+
 import { getExamErrorMessage } from "../api/examApi";
 import {
   getWeekSchedule,
@@ -21,9 +23,10 @@ import {
 import { StartStudyButton } from "../session/StudySessionControls";
 import { StudyScaffold } from "../components/StudyScaffold";
 
-const c = homeDesign.colors;
+
 
 export default function StudyPlanWeekScreen() {
+  const { c, styles } = useThemedStyles();
   const session = useSession();
   const [schedule, setSchedule] = useState<StudySchedule | null>(null);
   const [loading, setLoading] = useState(true);
@@ -89,17 +92,9 @@ export default function StudyPlanWeekScreen() {
               />
             </View>
           ) : loading ? (
-            <ActivityIndicator color={c.tabActive} style={styles.loader} />
+            <BrandedPageState compact loading message="Đang tải lịch học..." />
           ) : error ? (
-            <View style={styles.card}>
-              <Text style={styles.error}>{error}</Text>
-              <Action
-                label="Thử lại"
-                onPress={() => {
-                  void load();
-                }}
-              />
-            </View>
+            <BrandedPageState compact message={error} onRetry={() => void load()} />
           ) : !schedule?.plan ? (
             <View style={styles.card}>
               <Text style={styles.cardTitle}>Bạn chưa đặt mục tiêu học</Text>
@@ -183,6 +178,7 @@ export default function StudyPlanWeekScreen() {
 }
 
 function TaskCard({ task }: { task: StudyTask }) {
+  const { c, styles } = useThemedStyles();
   const done = task.status === "COMPLETED";
   return (
     <View style={[styles.task, done && styles.taskDone]}>
@@ -197,13 +193,14 @@ function TaskCard({ task }: { task: StudyTask }) {
                 : "menu-book"
             }
             size={20}
-            color={done ? c.cardText : c.link}
+            color={done ? c.onSelection : c.link}
           />
         </View>
         <View style={styles.flex}>
           <Text style={styles.taskTitle}>{task.title}</Text>
           <Text style={styles.muted}>
             {formatDate(task.dueDate)} · {task.estimatedMinutes} phút
+            {task.scheduledAt ? ` · ${new Date(task.scheduledAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}` : ""}
           </Text>
         </View>
         <Text style={[styles.status, done && styles.statusDone]}>
@@ -225,6 +222,7 @@ function TaskCard({ task }: { task: StudyTask }) {
 }
 
 function Action({ label, onPress }: { label: string; onPress: () => void }) {
+  const { styles } = useThemedStyles();
   return (
     <Pressable style={styles.action} onPress={onPress}>
       <Text style={styles.actionText}>{label}</Text>
@@ -241,100 +239,110 @@ function formatDate(value: string) {
   });
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1 },
-  content: { padding: 17, paddingBottom: 36 },
-  flex: { flex: 1 },
-  back: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 17,
-    paddingVertical: 12,
-  },
-  backText: { color: c.text, fontWeight: "600", fontSize: 15 },
-  title: { color: c.text, fontWeight: "800", fontSize: 26 },
-  subtitle: {
-    color: c.secondary,
-    fontSize: 14,
-    lineHeight: 20,
-    marginTop: 6,
-    marginBottom: 20,
-  },
-  loader: { marginTop: 42 },
-  card: {
-    backgroundColor: c.surface,
-    borderRadius: 17,
-    borderWidth: 1,
-    borderColor: c.border,
-    padding: 17,
-    gap: 10,
-  },
-  cardTitle: { color: c.text, fontSize: 17, fontWeight: "800", flexShrink: 1 },
-  muted: { color: c.secondary, fontSize: 13, lineHeight: 19 },
-  error: { color: "#ff8585", fontSize: 14 },
-  summary: {
-    backgroundColor: c.surface,
-    borderRadius: 18,
-    padding: 17,
-    gap: 10,
-    borderWidth: 1,
-    borderColor: c.border,
-    marginBottom: 20,
-  },
-  summaryTitleRow: { flexDirection: "row", alignItems: "center", gap: 9 },
-  track: {
-    height: 9,
-    borderRadius: 6,
-    backgroundColor: c.surfaceRaised,
-    overflow: "hidden",
-  },
-  fill: { height: "100%", backgroundColor: c.tabActive, borderRadius: 6 },
-  link: { color: c.link, fontSize: 13, fontWeight: "700", marginTop: 4 },
-  dateRange: {
-    color: c.secondary,
-    fontWeight: "700",
-    fontSize: 13,
-    marginBottom: 12,
-  },
-  task: {
-    backgroundColor: c.surface,
-    borderRadius: 16,
-    padding: 15,
-    borderWidth: 1,
-    borderColor: c.border,
-    marginBottom: 12,
-    gap: 10,
-  },
-  taskDone: { borderColor: "#31543c" },
-  taskTop: { flexDirection: "row", alignItems: "center", gap: 11 },
-  taskIcon: {
-    height: 42,
-    width: 42,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: c.surfaceRaised,
-  },
-  taskIconDone: { backgroundColor: c.tabActive },
-  taskTitle: {
-    color: c.text,
-    fontSize: 15,
-    fontWeight: "700",
-    marginBottom: 4,
-  },
-  status: { color: c.inProgress, fontSize: 10, fontWeight: "800" },
-  statusDone: { color: c.completed },
-  taskDescription: { color: c.secondary, fontSize: 12, lineHeight: 18 },
-  action: {
-    minHeight: 42,
-    borderRadius: 12,
-    backgroundColor: c.tabActive,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    marginTop: 4,
-  },
-  actionText: { color: c.cardText, fontWeight: "800", fontSize: 13 },
-  completedNote: { color: c.completed, fontSize: 12 },
-});
+
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { homeDesign, themeColor } = appTheme;
+    const c = homeDesign.colors;
+    const styles = StyleSheet.create({
+      screen: { flex: 1 },
+      content: { padding: 17, paddingBottom: 36 },
+      flex: { flex: 1 },
+      back: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+        paddingHorizontal: 17,
+        paddingVertical: 12,
+      },
+      backText: { color: c.text, fontWeight: "600", fontSize: 15 },
+      title: { color: c.text, fontWeight: "800", fontSize: 26 },
+      subtitle: {
+        color: c.secondary,
+        fontSize: 14,
+        lineHeight: 20,
+        marginTop: 6,
+        marginBottom: 20,
+      },
+      loader: { marginTop: 42 },
+      card: {
+        backgroundColor: c.surface,
+        borderRadius: 17,
+        borderWidth: 1,
+        borderColor: c.border,
+        padding: 17,
+        gap: 10,
+      },
+      cardTitle: { color: c.text, fontSize: 17, fontWeight: "800", flexShrink: 1 },
+      muted: { color: c.secondary, fontSize: 13, lineHeight: 19 },
+      error: { color: themeColor("#ff8585", "text"), fontSize: 14 },
+      summary: {
+        backgroundColor: c.surface,
+        borderRadius: 18,
+        padding: 17,
+        gap: 10,
+        borderWidth: 1,
+        borderColor: c.border,
+        marginBottom: 20,
+      },
+      summaryTitleRow: { flexDirection: "row", alignItems: "center", gap: 9 },
+      track: {
+        height: 9,
+        borderRadius: 6,
+        backgroundColor: c.surfaceRaised,
+        overflow: "hidden",
+      },
+      fill: { height: "100%", backgroundColor: c.tabActive, borderRadius: 6 },
+      link: { color: c.link, fontSize: 13, fontWeight: "700", marginTop: 4 },
+      dateRange: {
+        color: c.secondary,
+        fontWeight: "700",
+        fontSize: 13,
+        marginBottom: 12,
+      },
+      task: {
+        backgroundColor: c.surface,
+        borderRadius: 16,
+        padding: 15,
+        borderWidth: 1,
+        borderColor: c.border,
+        marginBottom: 12,
+        gap: 10,
+      },
+      taskDone: { borderColor: themeColor("#31543c", "border") },
+      taskTop: { flexDirection: "row", alignItems: "center", gap: 11 },
+      taskIcon: {
+        height: 42,
+        width: 42,
+        borderRadius: 14,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: c.surfaceRaised,
+      },
+      taskIconDone: { backgroundColor: c.tabActive },
+      taskTitle: {
+        color: c.text,
+        fontSize: 15,
+        fontWeight: "700",
+        marginBottom: 4,
+      },
+      status: { color: c.inProgress, fontSize: 10, fontWeight: "800" },
+      statusDone: { color: c.completed },
+      taskDescription: { color: c.secondary, fontSize: 12, lineHeight: 18 },
+      action: {
+        minHeight: 42,
+        borderRadius: 12,
+        backgroundColor: c.tabActive,
+        justifyContent: "center",
+        alignItems: "center",
+        paddingHorizontal: 12,
+        marginTop: 4,
+      },
+      actionText: { color: c.onSelection, fontWeight: "800", fontSize: 13 },
+      completedNote: { color: c.completed, fontSize: 12 },
+    });
+    return { homeDesign, themeColor, c, styles };
+  }, [appTheme]);
+}

@@ -2,6 +2,7 @@ import { GoogleLogin } from "@react-oauth/google";
 import { YStack } from "tamagui";
 
 import { AppButton } from "@/components/ui/AppButton";
+import { useAppTheme } from "@/theme/useAppTheme";
 
 interface GoogleButtonProps {
   variant?: "login";
@@ -17,6 +18,7 @@ export function GoogleButton({
   onError,
   onIdToken,
 }: GoogleButtonProps) {
+  const { resolvedMode } = useAppTheme();
   const clientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
 
   if (!clientId) {
@@ -34,6 +36,7 @@ export function GoogleButton({
   return (
     <YStack alignItems="center">
       <GoogleLogin
+        theme={resolvedMode === "dark" ? "filled_black" : "outline"}
         onSuccess={(response) => {
           if (response.credential) onIdToken?.(response.credential);
           else onError?.("Google không trả về ID token.");

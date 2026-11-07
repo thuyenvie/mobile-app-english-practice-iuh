@@ -1,33 +1,37 @@
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { ActivityIndicator, AppState, Pressable, StyleSheet, Text, View, type GestureResponderEvent, type LayoutChangeEvent } from "react-native";
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+
+import { ActivityIndicator, Pressable, StyleSheet, Text, View, type GestureResponderEvent, type LayoutChangeEvent } from "react-native";
 import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
-import { useFocusEffect } from "expo-router";
 
 import { API_BASE_URL } from "@/lib/axios/axios";
-import { homeDesign } from "@/theme/tokens";
+
 import type { QuestionAudioSegment } from "../types";
 import { createPlaybackScheduler } from "../utils/playbackScheduler";
+import { useListeningAutoplay } from "../hooks/useListeningAutoplay";
 
 type Props = {
   audio: QuestionAudioSegment | null;
   activeQuestionNumber: number;
   paused: boolean;
+  autoplayHistory?: Set<string>;
 };
 
 const SPEEDS = [0.8, 1, 1.2, 1.5];
 
 /** Plays one approved question/dialogue range from the test's public MP3 stream. */
-export function PracticeAudioPlayer({ audio, activeQuestionNumber, paused }: Props) {
+export function PracticeAudioPlayer({ audio, activeQuestionNumber, paused, autoplayHistory }: Props) {
+  const { homeDesign, styles } = useThemedStyles();
   const player = useAudioPlayer(null, { updateInterval: 150 });
   const status = useAudioPlayerStatus(player);
   const [preparing, setLoading] = useState(false);
+  const [loadedSource, setLoadedSource] = useState("");
   const playback = useMemo(() => createPlaybackScheduler(), []);
   const waiting = useSyncExternalStore(playback.subscribe, playback.getSnapshot, playback.getSnapshot);
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
   const [speedIndex, setSpeedIndex] = useState(1);
   const [trackWidth, setTrackWidth] = useState(0);
-  const activeQuestionRef = useRef(activeQuestionNumber);
   const pauseSafely = useCallback(() => {
     playback.cancel();
     try {
@@ -46,7 +50,7 @@ export function PracticeAudioPlayer({ audio, activeQuestionNumber, paused }: Pro
     : 0;
   const streamUrl = audio ? toAbsoluteUrl(audio.audioUrl || audio.streamPath) : "";
 
-  const loading = preparing || (!!streamUrl && !status.isLoaded && !status.error && !error);
+  const loading = preparing || (!!streamUrl && (loadedSource !== streamUrl || !status.isLoaded) && !status.error && !error);
 
   useEffect(() => {
     let cancelled = false;
@@ -67,6 +71,7 @@ export function PracticeAudioPlayer({ audio, activeQuestionNumber, paused }: Pro
 
       // Audio is public; native requests deliberately omit account credentials.
       player.replace({ uri: streamUrl });
+      setLoadedSource(streamUrl);
       setLoading(false);
     })().catch((cause: unknown) => {
       if (!cancelled) { setLoading(false); setError(cause instanceof Error ? cause.message : "Không tải được audio."); }
@@ -80,12 +85,6 @@ export function PracticeAudioPlayer({ audio, activeQuestionNumber, paused }: Pro
   }, [attempt, pauseSafely, player, streamUrl]);
 
   useEffect(() => {
-    // The current question may change inside a 3-question dialogue; stop so audio never overlaps.
-    if (activeQuestionRef.current !== activeQuestionNumber) pauseSafely();
-    activeQuestionRef.current = activeQuestionNumber;
-  }, [activeQuestionNumber, pauseSafely]);
-
-  useEffect(() => {
     if (paused || !audio) pauseSafely();
   }, [audio, paused, pauseSafely]);
 
@@ -95,15 +94,6 @@ export function PracticeAudioPlayer({ audio, activeQuestionNumber, paused }: Pro
       void player.seekTo(end);
     }
   }, [audio, end, pauseSafely, player, status.currentTime, status.playing]);
-
-  useEffect(() => {
-    const subscription = AppState.addEventListener("change", state => {
-      if (state !== "active") pauseSafely();
-    });
-    return () => subscription.remove();
-  }, [pauseSafely]);
-
-  useFocusEffect(useCallback(() => () => pauseSafely(), [pauseSafely]));
 
   const seekWithinSegment = async (time: number) => {
     if (!audio || !status.isLoaded) return;
@@ -116,7 +106,7 @@ export function PracticeAudioPlayer({ audio, activeQuestionNumber, paused }: Pro
     }
   };
 
-  const playRange = async (restart = false) => {
+  const playRange = useCallback(async (restart = false) => {
     if (!audio || paused || loading || !status.isLoaded) return;
     const fromStart = restart || status.currentTime <= start + 0.05 || status.currentTime >= end;
     const delay = fromStart ? (audio.preparationDelayMs ?? 0) : 0;
@@ -133,14 +123,26 @@ export function PracticeAudioPlayer({ audio, activeQuestionNumber, paused }: Pro
     } catch {
       setError("Không phát được audio. Hãy thử tải lại.");
     }
-  };
+  }, [audio, paused, loading, status.isLoaded, status.currentTime, start, end, pauseSafely, playback, player]);
+
+  const autoStart = useCallback(() => { void playRange(true); }, [playRange]);
+  const autoplay = useListeningAutoplay({
+    unit: audio ? `${streamUrl}:${audio.segmentId}:${start}:${end}` : "",
+    ready: !loading && status.isLoaded && !status.error && !error,
+    active: !paused && !!audio,
+    start: autoStart,
+    stop: pauseSafely,
+    history: autoplayHistory,
+  });
 
   const togglePlayback = async () => {
-    if (status.playing || waiting) {
+    const wasWaiting = playback.getSnapshot();
+    const canPlay = autoplay.manual();
+    if (status.playing || wasWaiting) {
       pauseSafely();
       return;
     }
-    await playRange();
+    if (canPlay) await playRange();
   };
 
   const changeSpeed = () => {
@@ -190,7 +192,7 @@ export function PracticeAudioPlayer({ audio, activeQuestionNumber, paused }: Pro
         <Control label="Tua lùi 5 giây" text="−5s" disabled={loading || !status.isLoaded} onPress={() => void seekWithinSegment(status.currentTime - 5)} />
         <Control label="Phát hoặc tạm dừng" text={waiting ? "Hủy chờ" : status.playing ? "Tạm dừng" : "Phát"} disabled={loading || !status.isLoaded} onPress={() => void togglePlayback()} primary />
         <Control label="Tua tới 5 giây" text="+5s" disabled={loading || !status.isLoaded} onPress={() => void seekWithinSegment(status.currentTime + 5)} />
-        <Control label="Phát lại đoạn audio" text="Phát lại" disabled={loading || !status.isLoaded} onPress={() => void playRange(true)} />
+        <Control label="Phát lại đoạn audio" text="Phát lại" disabled={loading || !status.isLoaded} onPress={() => { if (autoplay.manual()) void playRange(true); }} />
       </View>
     </>}
   </View>;
@@ -199,9 +201,10 @@ export function PracticeAudioPlayer({ audio, activeQuestionNumber, paused }: Pro
 function Control({ label, text, disabled, onPress, primary = false }: {
   label: string; text: string; disabled: boolean; onPress: () => void; primary?: boolean;
 }) {
+  const { styles, colors } = useThemedStyles();
   return <Pressable accessibilityRole="button" accessibilityLabel={label} disabled={disabled} onPress={onPress}
     style={[styles.button, primary && styles.primary, disabled && styles.disabled]}>
-    <Text style={styles.controlText}>{text}</Text>
+    <Text style={[styles.controlText, primary && { color: colors.onAccent }]}>{text}</Text>
   </Pressable>;
 }
 
@@ -220,22 +223,32 @@ function formatTime(value: number) {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 }
 
-const colors = homeDesign.colors;
-const styles = StyleSheet.create({
-  box: { padding: 12, gap: 10, backgroundColor: colors.surface, borderRadius: 12 },
-  heading: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
-  copy: { flex: 1, gap: 2 },
-  title: { color: colors.text, fontSize: 14, fontWeight: "700" },
-  note: { color: colors.secondary, fontSize: 12 },
-  error: { color: colors.inProgress, fontSize: 13 },
-  link: { color: colors.link, paddingVertical: 6, fontWeight: "600" },
-  progressTrack: { height: 8, borderRadius: 4, overflow: "hidden", backgroundColor: colors.border },
-  progressFill: { height: "100%", backgroundColor: colors.link },
-  row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  controls: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  button: { minHeight: 40, justifyContent: "center", paddingHorizontal: 10, borderRadius: 9, backgroundColor: colors.surfaceRaised },
-  primary: { backgroundColor: colors.link },
-  smallButton: { minHeight: 34, minWidth: 54, justifyContent: "center", alignItems: "center", borderRadius: 8, backgroundColor: colors.surfaceRaised },
-  controlText: { color: colors.text, fontSize: 13, fontWeight: "600" },
-  disabled: { opacity: 0.45 },
-});
+
+
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { homeDesign } = appTheme;
+    const colors = homeDesign.colors;
+    const styles = StyleSheet.create({
+      box: { padding: 12, gap: 10, backgroundColor: colors.surface, borderRadius: 12 },
+      heading: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+      copy: { flex: 1, gap: 2 },
+      title: { color: colors.text, fontSize: 14, fontWeight: "700" },
+      note: { color: colors.secondary, fontSize: 12 },
+      error: { color: colors.inProgress, fontSize: 13 },
+      link: { color: colors.link, paddingVertical: 6, fontWeight: "600" },
+      progressTrack: { height: 8, borderRadius: 4, overflow: "hidden", backgroundColor: colors.border },
+      progressFill: { height: "100%", backgroundColor: colors.link },
+      row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+      controls: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+      button: { minHeight: 40, justifyContent: "center", paddingHorizontal: 10, borderRadius: 9, backgroundColor: colors.surfaceRaised },
+      primary: { backgroundColor: colors.link },
+      smallButton: { minHeight: 34, minWidth: 54, justifyContent: "center", alignItems: "center", borderRadius: 8, backgroundColor: colors.surfaceRaised },
+      controlText: { color: colors.text, fontSize: 13, fontWeight: "600" },
+      disabled: { opacity: 0.45 },
+    });
+    return { homeDesign, colors, styles };
+  }, [appTheme]);
+}

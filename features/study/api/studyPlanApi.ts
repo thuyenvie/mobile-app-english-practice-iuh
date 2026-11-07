@@ -1,7 +1,8 @@
 import api from "@/lib/axios/axios";
+import { assertSessionGeneration, requireAccount } from "@/lib/auth/sessionStore";
 
 export type StudyTaskStatus = "PENDING" | "COMPLETED" | "SKIPPED";
-export type StudySection = "LISTENING" | "READING";
+export type StudySection = "LISTENING" | "READING" | "VOCABULARY";
 
 export interface StudyPlan {
   id: number;
@@ -30,6 +31,11 @@ export interface StudyTask {
   status: StudyTaskStatus;
   completedAt: string | null;
   completedResultId: number | null;
+  source?: "SYSTEM" | "USER";
+  scheduledAt?: string | null;
+  reminderAt?: string | null;
+  reminderMinutesBefore?: number | null;
+  vocabularyCount?: number;
 }
 
 export interface StudySchedule {
@@ -65,8 +71,22 @@ interface ApiEnvelope<T> {
 
 const basePath = "/exam-service/study-plans/me";
 
-export async function getStudyPlan(): Promise<StudyPlan | null> {
-  return (await api.get<ApiEnvelope<StudyPlan | null>>(basePath)).data.result;
+export async function getStudyPlan(generation?: number): Promise<StudyPlan | null> {
+  if (generation !== undefined) assertSessionGeneration(generation);
+  const response = await api.get<ApiEnvelope<StudyPlan | null>>(basePath, { sessionGeneration: generation });
+  if (generation !== undefined) assertSessionGeneration(generation);
+  return response.data.result;
+}
+
+export type StudyReminderInput = Pick<StudyPlan, "reminderEnabled" | "reminderTime" | "quietStart" | "quietEnd">;
+/** Whitelist the reminder contract even when a caller passes an entire plan. */
+export async function updateStudyReminder(input: StudyReminderInput): Promise<StudyPlan> {
+  const { generation } = requireAccount();
+  const { reminderEnabled, reminderTime, quietStart, quietEnd } = input;
+  const response = await api.patch<ApiEnvelope<StudyPlan>>(`${basePath}/reminder`,
+    { reminderEnabled, reminderTime, quietStart, quietEnd }, { sessionGeneration: generation });
+  assertSessionGeneration(generation);
+  return response.data.result;
 }
 
 export async function saveStudyPlan(input: SaveStudyPlanInput): Promise<StudyPlan> {

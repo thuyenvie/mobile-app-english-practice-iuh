@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo, useEffect, useRef, useState } from "react";
+import { BrandedPageState } from "@/components/ui/BrandedPageState";
+
 import { router, useLocalSearchParams } from "expo-router";
 import {
-  ActivityIndicator,
   Image,
   Pressable,
   ScrollView,
@@ -9,7 +11,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { homeDesign } from "@/theme/tokens";
+
 import { getExamErrorMessage, getExamPart } from "../api/examApi";
 import { getExamResult, type ExamResult } from "../api/examResultApi";
 import { StudyScaffold } from "../components/StudyScaffold";
@@ -28,6 +30,7 @@ type QuestionContext = {
 };
 
 export default function ListeningReviewScreen() {
+  const { styles } = useThemedStyles();
   const { resultId } = useLocalSearchParams<{ resultId: string }>();
   const id = Number(resultId);
   const [result, setResult] = useState<ExamResult | null>(null);
@@ -192,14 +195,9 @@ export default function ListeningReviewScreen() {
       </View>
       <ScrollView contentContainerStyle={styles.content}>
         {loading ? (
-          <ActivityIndicator />
+          <BrandedPageState compact loading message="Đang tải bài làm..." />
         ) : error ? (
-          <>
-            <Text style={styles.warning}>{error}</Text>
-            <Pressable onPress={() => setRetry((value) => value + 1)}>
-              <Text style={styles.link}>Thử lại</Text>
-            </Pressable>
-          </>
+          <BrandedPageState compact message={error} onRetry={() => setRetry(value => value + 1)} />
         ) : result ? (
           <>
             <View style={styles.card}>
@@ -344,26 +342,36 @@ export default function ListeningReviewScreen() {
   );
 }
 
-const c = homeDesign.colors;
-const styles = StyleSheet.create({
-  header: { padding: 16, gap: 8, borderBottomWidth: 1, borderColor: c.border },
-  content: { padding: 16, paddingBottom: 36, gap: 12 },
-  card: { backgroundColor: c.surface, borderRadius: 14, padding: 16, gap: 8 },
-  row: { flexDirection: "row", gap: 20 },
-  optionRow: { flexDirection: "row", alignItems: "flex-start", gap: 6 },
-  title: { color: c.text, fontSize: 17, fontWeight: "700" },
-  body: { color: c.text, fontSize: 14, lineHeight: 21 },
-  optionText: { flex: 1, color: c.text, fontSize: 14, lineHeight: 21 },
-  muted: { color: c.secondary, fontSize: 13, lineHeight: 20 },
-  link: { color: c.link, fontSize: 14, paddingVertical: 8 },
-  active: { fontWeight: "700", textDecorationLine: "underline" },
-  warning: { color: c.inProgress, fontSize: 14 },
-  correct: { color: c.completed, fontSize: 14 },
-  image: { width: "100%", height: 180 },
-  passage: {
-    padding: 12,
-    gap: 6,
-    borderRadius: 10,
-    backgroundColor: c.background,
-  },
-});
+
+
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { homeDesign } = appTheme;
+    const c = homeDesign.colors;
+    const styles = StyleSheet.create({
+      header: { padding: 16, gap: 8, borderBottomWidth: 1, borderColor: c.border },
+      content: { padding: 16, paddingBottom: 36, gap: 12 },
+      card: { backgroundColor: c.surface, borderRadius: 14, padding: 16, gap: 8 },
+      row: { flexDirection: "row", gap: 20 },
+      optionRow: { flexDirection: "row", alignItems: "flex-start", gap: 6 },
+      title: { color: c.text, fontSize: 17, fontWeight: "700" },
+      body: { color: c.text, fontSize: 14, lineHeight: 21 },
+      optionText: { flex: 1, color: c.text, fontSize: 14, lineHeight: 21 },
+      muted: { color: c.secondary, fontSize: 13, lineHeight: 20 },
+      link: { color: c.link, fontSize: 14, paddingVertical: 8 },
+      active: { fontWeight: "700", textDecorationLine: "underline" },
+      warning: { color: c.inProgress, fontSize: 14 },
+      correct: { color: c.completed, fontSize: 14 },
+      image: { width: "100%", height: 180 },
+      passage: {
+        padding: 12,
+        gap: 6,
+        borderRadius: 10,
+        backgroundColor: c.background,
+      },
+    });
+    return { homeDesign, c, styles };
+  }, [appTheme]);
+}

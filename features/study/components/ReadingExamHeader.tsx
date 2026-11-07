@@ -1,9 +1,11 @@
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo } from "react";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { Text, XStack } from "tamagui";
 
 import { AppButton } from "@/components/ui/AppButton";
-import { homeDesign } from "@/theme/tokens";
+
 
 export function ReadingExamHeader({
   questionLabel,
@@ -18,6 +20,7 @@ export function ReadingExamHeader({
   onBack: () => void;
   onOpenQuestionSheet: () => void;
 }) {
+  const { homeDesign, themeColor } = useThemedStyles();
   return (
     <XStack
       minHeight={62}
@@ -57,11 +60,11 @@ export function ReadingExamHeader({
         <MaterialCommunityIcons
           name="timer-outline"
           size={22}
-          color={timerExpired ? "#ff4d4f" : homeDesign.colors.inProgress}
+          color={timerExpired ? themeColor("#ff4d4f", "text") : homeDesign.colors.inProgress}
         />
         <Text
           minWidth={48}
-          color={timerExpired ? "#ff4d4f" : homeDesign.colors.inProgress}
+          color={timerExpired ? themeColor("#ff4d4f", "text") : homeDesign.colors.inProgress}
           fontSize={14}
           fontWeight="800"
         >
@@ -101,4 +104,13 @@ export function ReadingExamHeader({
       />
     </XStack>
   );
+}
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { homeDesign, themeColor } = appTheme;
+
+    return { homeDesign, themeColor };
+  }, [appTheme]);
 }

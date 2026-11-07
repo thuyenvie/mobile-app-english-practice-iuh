@@ -1,4 +1,4 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { readExamDraft, writeExamDraft } from "../utils/examDrafts";
 import { useEffect, useRef, useState } from "react";
 import { useSession } from "@/lib/auth/useSession";
 import { assertSessionGeneration, getSessionSnapshot } from "@/lib/auth/sessionStore";
@@ -43,9 +43,9 @@ export function useListeningDraft(year: number, test: number, part: number) {
     const storageKey = legacyKey + ":part:" + part;
     (async () => {
       await writes.current;
-      const saved = await AsyncStorage.getItem(storageKey);
+      const saved = await readExamDraft(storageKey);
       // Chi doc ban nhap cu de chuyen dap an, khong xoa ban nhap cua Part khac.
-      const legacy = !saved ? await AsyncStorage.getItem(legacyKey) : null;
+      const legacy = !saved ? await readExamDraft(legacyKey) : null;
       const draft: unknown = saved ? JSON.parse(saved) : legacy ? JSON.parse(legacy) : null;
       if (!active) return;
       assertSessionGeneration(session.generation);
@@ -77,15 +77,19 @@ export function useListeningDraft(year: number, test: number, part: number) {
     }
     if (session.status !== "authenticated" || !key.current) return;
     const storageKey = key.current;
-    const value = JSON.stringify({ answers: next, startedAt });
-    writes.current = writes.current.then(async () => {
-      assertSessionGeneration(session.generation);
-      await AsyncStorage.setItem(storageKey, value);
-    }).catch(() => {
+    writes.current = writeExamDraft(storageKey, { answers: next, startedAt }).catch(() => {
       if (mounted.current && getSessionSnapshot().generation === session.generation) {
         setError("Không lưu được bản nháp trên thiết bị.");
       }
     });
   };
-  return { answers, ready: ready && loadedScope === scope, error, select, startedAt };
+  const clear = () => {
+    if (key.current && getSessionSnapshot().generation === session.generation) {
+      // Keep an empty marker so an older unscoped Listening draft cannot reappear.
+      writes.current = writeExamDraft(key.current, { answers: {} }).catch(() => {
+        if (mounted.current) setError("Không xóa được bản nháp trên thiết bị.");
+      });
+    }
+  };
+  return { clear, answers, ready: ready && loadedScope === scope, error, select, startedAt };
 }

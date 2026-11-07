@@ -1,7 +1,9 @@
+import { useAppTheme } from "@/theme/useAppTheme";
+import { useMemo as useThemeMemo } from "react";
 import { Button, type ButtonProps } from "tamagui";
 import { Platform } from "react-native";
 
-import { authDesign, typography } from "@/theme/tokens";
+import { typography } from "@/theme/tokens";
 
 type AppButtonProps = ButtonProps & { appearance?: "primary" | "text" };
 
@@ -10,6 +12,7 @@ export function AppButton({
   accessibilityState,
   ...props
 }: AppButtonProps) {
+  const { authDesign } = useThemedStyles();
   // Web dung ARIA; khong dua accessibilityState vao the button cua DOM.
   const accessibilityProps = accessibilityState
     ? Platform.OS === "web"
@@ -47,7 +50,7 @@ export function AppButton({
       paddingVertical="$medium"
       borderRadius="$control"
       backgroundColor={authDesign.colors.primary}
-      color={authDesign.colors.text}
+      color={authDesign.colors.onAccent}
       {...typography.button}
       borderWidth={0}
       role="button"
@@ -56,4 +59,13 @@ export function AppButton({
       {...props}
     />
   );
+}
+
+function useThemedStyles() {
+  const appTheme = useAppTheme();
+  return useThemeMemo(() => {
+    const { authDesign } = appTheme;
+
+    return { authDesign };
+  }, [appTheme]);
 }
