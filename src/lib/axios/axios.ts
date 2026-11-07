@@ -71,7 +71,10 @@ interface AuthEnvelope {
 type RetriableRequest = InternalAxiosRequestConfig & {
   _accessTokenRetried?: boolean;
   _skipAuthRefresh?: boolean;
+  _transientRetryCount?: number;
 };
+
+const MAX_TRANSIENT_RETRIES = 2;
 
 class RefreshUnavailableError extends Error {
   constructor() {
@@ -178,6 +181,33 @@ api.interceptors.response.use(
     if (isAxiosError(error) && error.config?.sessionGeneration !== undefined) {
       assertSessionGeneration(error.config.sessionGeneration);
     }
+
+    // Render Free co the tra loi cham hoac 502 tam thoi khi service dang khoi dong.
+    // Chi thu lai GET/HEAD de tranh gui lap cac thao tac ghi du lieu.
+    if (isAxiosError(error) && error.config) {
+      const request = error.config as RetriableRequest;
+      const method = request.method?.toLowerCase();
+      const status = error.response?.status;
+      const retryableStatus = [408, 429, 502, 503, 504].includes(status ?? 0);
+      const canRetry =
+        (method === "get" || method === "head") &&
+        (!error.response || retryableStatus) &&
+        (request._transientRetryCount ?? 0) < MAX_TRANSIENT_RETRIES;
+
+      if (canRetry) {
+        if (request.sessionGeneration !== undefined) {
+          assertSessionGeneration(request.sessionGeneration);
+        }
+        const retryCount = request._transientRetryCount ?? 0;
+        request._transientRetryCount = retryCount + 1;
+        await new Promise((resolve) => setTimeout(resolve, retryCount === 0 ? 800 : 1600));
+        if (request.sessionGeneration !== undefined) {
+          assertSessionGeneration(request.sessionGeneration);
+        }
+        return api(request);
+      }
+    }
+
     if (
       !isAxiosError(error) ||
       error.response?.status !== 401 ||
