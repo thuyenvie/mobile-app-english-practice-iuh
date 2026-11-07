@@ -27,7 +27,7 @@ test("successful login persists both credentials before publishing authenticated
   assert.equal(app.requests[0].headers.get("Authorization"), undefined);
 });
 
-test("secondary API retry 401 preserves a session confirmed by Identity and rejects the feature request", async () => {
+test("secondary API 401 confirmed by Identity rejects the feature without refreshing", async () => {
   const app = environment();
   await signIn(app);
   const generation = app.session.getSessionSnapshot().generation;
@@ -40,10 +40,10 @@ test("secondary API retry 401 preserves a session confirmed by Identity and reje
     error => error.response?.status === 401);
   assert.equal(app.session.getSessionSnapshot().status, "authenticated");
   assert.equal(app.session.getSessionSnapshot().generation, generation);
-  assert.equal(app.secure.get("refresh_token"), "rotated-refresh");
-  assert.equal(app.requests.filter(r => r.url === "/identity/auth/refresh").length, 1);
+  assert.equal(app.secure.get("refresh_token"), "fixture-refresh");
+  assert.equal(app.requests.filter(r => r.url === "/identity/auth/refresh").length, 0);
   assert.equal(app.requests.filter(r => r.url === "/identity/user/my-info").length, 1);
-  assert.equal(app.requests.filter(r => r.url === "/exam-service/study-sessions/me/active").length, 2);
+  assert.equal(app.requests.filter(r => r.url === "/exam-service/study-sessions/me/active").length, 1);
 });
 
 for (const reason of ["expired", "revoked"]) {
@@ -77,7 +77,8 @@ for (const status of [0, 403, 503]) {
     await assert.rejects(app.load("features/study/session/studySessionApi.ts").getActiveStudySession(),
       error => error.response?.status === 401);
     assert.equal(app.session.getSessionSnapshot().status, "authenticated");
-    assert.equal(app.secure.get("refresh_token"), "rotated-refresh");
+    assert.equal(app.secure.get("refresh_token"), "fixture-refresh");
+    assert.equal(app.requests.filter(r => r.url === "/identity/auth/refresh").length, 0);
   });
 }
 
@@ -185,9 +186,11 @@ test("a late Identity rejection cannot sign out a newly logged-in account", asyn
 test("diagnostics record request/status, refresh outcome and transitions without credentials", async () => {
   const app = environment();
   await signIn(app);
+  let refreshed = false;
   app.handler = async config => {
-    if (config.url === "/identity/auth/refresh") return credentials("fixture-user", "rotated-refresh");
-    if (config.url === "/identity/user/my-info") return { success: true, result: { userName: "fixture-user" } };
+    if (config.url === "/identity/auth/refresh") { refreshed = true; return credentials("fixture-user", "rotated-refresh"); }
+    if (config.url === "/identity/user/my-info") return refreshed
+      ? { success: true, result: { userName: "fixture-user" } } : app.fail(config, 401);
     return app.fail(config, 401);
   };
   await assert.rejects(app.load("features/study/session/studySessionApi.ts").getActiveStudySession());
@@ -239,7 +242,7 @@ test("a diagnostics sink failure cannot interrupt session publication", () => {
   assert.equal(app.session.getSessionSnapshot().status, "guest");
 });
 
-test("concurrent downstream retry failures share one in-flight Identity verification", async () => {
+test("concurrent downstream failures share one in-flight Identity verification", async () => {
   const app = environment();
   await signIn(app);
   let finishVerification;
@@ -252,13 +255,14 @@ test("concurrent downstream retry failures share one in-flight Identity verifica
   const result = Promise.allSettled([
     client.get("/exam-service/study-sessions/me/active"), client.get("/exam-service/study-tasks"),
   ]);
-  for (let i = 0; i < 30 && app.requests.filter(r => r.url.startsWith("/exam-service/")).length < 4; i++) await tick();
+  for (let i = 0; i < 30 && !finishVerification; i++) await tick();
   assert.equal(typeof finishVerification, "function");
   assert.equal(app.requests.filter(r => r.url === "/identity/user/my-info").length, 1);
   finishVerification({ success: true, result: { userName: "fixture-user" } });
   const failures = await result;
   assert.equal(failures.every(r => r.status === "rejected" && r.reason.response?.status === 401), true);
   assert.equal(app.session.getSessionSnapshot().status, "authenticated");
+  assert.equal(app.requests.filter(r => r.url === "/identity/auth/refresh").length, 0);
 });
 
 test("Identity my-info retry 401 expires without recursive verification or refresh", async () => {
@@ -304,4 +308,227 @@ test("a verification of an older access token cannot delete a subsequently rotat
   await failure;
   assert.equal(app.session.getSessionSnapshot().status, "authenticated");
   assert.equal(app.secure.get("refresh_token"), "subsequently-rotated-refresh");
+});
+
+const countRequests = (app, path) => app.requests.filter(request => request.url === path).length;
+const identityPath = "/identity/user/my-info";
+const refreshPath = "/identity/auth/refresh";
+const studyPaths = ["/exam-service/study-tasks", "/exam-service/study-plans/me/today",
+  "/exam-service/study-plans/me", "/exam-service/study-sessions/me/active"];
+
+test("sequential study denials share a short Identity cache and never report session expiry", async () => {
+  const app = environment();
+  await signIn(app);
+  app.handler = async config => config.url === identityPath
+    ? { success: true, result: { userName: "fixture-user" } } : app.fail(config, 401);
+  const client = app.load("src/lib/axios/axios.ts").default;
+  for (const path of studyPaths) {
+    await assert.rejects(client.get(path), error => {
+      assert.equal(error.response.status, 401);
+      assert.equal(app.load("features/study/api/examApi.ts").getExamErrorMessage(error),
+        "Chưa tải được dữ liệu học tập. Vui lòng thử lại.");
+      return true;
+    });
+  }
+  assert.equal(countRequests(app, identityPath), 1);
+  assert.equal(countRequests(app, refreshPath), 0);
+  assert.equal(app.session.getSessionSnapshot().status, "authenticated");
+});
+
+test("an expired access token refreshes once, but an Exam retry denial preserves the verified session", async () => {
+  const app = environment();
+  await signIn(app);
+  let refreshed = false;
+  app.handler = async config => {
+    if (config.url === refreshPath) { refreshed = true; return credentials("fixture-user", "rotated-refresh"); }
+    if (config.url === identityPath) return refreshed
+      ? { success: true, result: { userName: "fixture-user" } } : app.fail(config, 401);
+    return app.fail(config, 401);
+  };
+  const client = app.load("src/lib/axios/axios.ts").default;
+  await assert.rejects(client.get(studyPaths[0]), error => error.response?.status === 401);
+  await assert.rejects(client.get(studyPaths[1]), error => error.response?.status === 401);
+  assert.equal(countRequests(app, refreshPath), 1);
+  assert.equal(countRequests(app, studyPaths[0]), 2);
+  assert.equal(countRequests(app, identityPath), 2);
+  assert.equal(app.session.getSessionSnapshot().status, "authenticated");
+});
+
+test("verification expires at JWT expiry even within the 30-second cache lifetime", async () => {
+  const app = environment();
+  await signIn(app);
+  let now = 1_800_000_000_000;
+  app.now = () => now;
+  const expiring = "header." + Buffer.from(JSON.stringify({ sub: "fixture-user", exp: now / 1000 + 2 }))
+    .toString("base64url") + ".signature";
+  await app.load("src/lib/auth/tokenStorage.ts").saveTokenPair(expiring, "fixture-refresh");
+  app.handler = async config => {
+    if (config.url === refreshPath) return credentials("fixture-user", "rotated-refresh");
+    if (config.url === identityPath) return now < 1_800_000_002_000
+      ? { success: true, result: { userName: "fixture-user" } } : app.fail(config, 401);
+    return config.headers.get("Authorization") === "Bearer " + expiring ? app.fail(config, 401) : { result: [] };
+  };
+  const client = app.load("src/lib/axios/axios.ts").default;
+  await assert.rejects(client.get(studyPaths[0]));
+  now += 2_001;
+  await client.get(studyPaths[0]);
+  assert.equal(countRequests(app, refreshPath), 1);
+  assert.equal(countRequests(app, identityPath), 2);
+});
+
+test("Identity is rechecked after 30 seconds, token rotation and account generation changes", async () => {
+  const app = environment();
+  await signIn(app);
+  let now = 1_800_000_000_000;
+  app.now = () => now;
+  app.handler = async config => config.url === identityPath
+    ? { success: true, result: { userName: "fixture-user" } } : app.fail(config, 401);
+  const client = app.load("src/lib/axios/axios.ts").default;
+  const denied = () => assert.rejects(client.get(studyPaths[0]));
+  await denied(); await denied();
+  assert.equal(countRequests(app, identityPath), 1);
+  now += 30_001;
+  await denied();
+  assert.equal(countRequests(app, identityPath), 2);
+  await app.load("src/lib/auth/tokenStorage.ts").saveTokenPair(token("fixture-user") + "-rotated", "rotated-refresh");
+  await denied();
+  assert.equal(countRequests(app, identityPath), 3);
+  app.session.authenticateSession("fixture-user");
+  await denied();
+  assert.equal(countRequests(app, identityPath), 4);
+  assert.equal(countRequests(app, refreshPath), 0);
+});
+
+test("Identity and refresh outages use bounded cooldowns and allow later recovery", async () => {
+  const app = environment();
+  await signIn(app);
+  let now = 1_800_000_000_000;
+  app.now = () => now;
+  app.handler = async config => app.fail(config, config.url === identityPath ? 503 : 401);
+  const client = app.load("src/lib/axios/axios.ts").default;
+  await assert.rejects(client.get(studyPaths[0]));
+  await assert.rejects(client.get(studyPaths[1]));
+  assert.equal(countRequests(app, identityPath), 1);
+  assert.equal(countRequests(app, refreshPath), 0);
+  now += 5_001;
+  app.handler = async config => app.fail(config, config.url === refreshPath ? 503 : 401);
+  await assert.rejects(client.get(studyPaths[0]));
+  await assert.rejects(client.get(studyPaths[1]));
+  assert.equal(countRequests(app, refreshPath), 1);
+  assert.equal(countRequests(app, identityPath), 2);
+  now += 5_001;
+  app.handler = async config => {
+    if (config.url === identityPath) return app.fail(config, 401);
+    if (config.url === refreshPath) return credentials("fixture-user", "recovered-refresh");
+    return config._accessTokenRetried ? { result: [] } : app.fail(config, 401);
+  };
+  await client.get(studyPaths[0]);
+  assert.equal(countRequests(app, refreshPath), 2);
+  assert.equal(app.session.getSessionSnapshot().status, "authenticated");
+});
+
+test("a direct Identity 401 overrides cached validity and a revoked refresh ends the session", async () => {
+  const app = environment();
+  await signIn(app);
+  app.handler = async config => config.url === identityPath
+    ? { success: true, result: { userName: "fixture-user" } } : app.fail(config, 401);
+  const client = app.load("src/lib/axios/axios.ts").default;
+  await assert.rejects(client.get(studyPaths[0]));
+  app.handler = async config => app.fail(config, 401);
+  await assert.rejects(client.get(identityPath));
+  assert.equal(countRequests(app, refreshPath), 1);
+  assert.equal(app.session.getSessionSnapshot().status, "guest");
+  assert.equal(app.secure.size, 0);
+});
+
+test("a late 401 from the old access token reuses the rotated token without a second refresh", async () => {
+  const app = environment();
+  await signIn(app);
+  let rejectOldRequest;
+  const rotated = credentials("fixture-user", "rotated-refresh");
+  rotated.result.token += "-rotated";
+  app.handler = async config => {
+    if (config.url === refreshPath) return rotated;
+    if (config.url === identityPath) return config._accessTokenRetried ? { success: true } : app.fail(config, 401);
+    if (config.headers.get("Authorization") === "Bearer " + rotated.result.token) return { result: [] };
+    return new Promise((_, reject) => { rejectOldRequest = () => {
+      try { app.fail(config, 401); } catch (error) { reject(error); }
+    }; });
+  };
+  const client = app.load("src/lib/axios/axios.ts").default;
+  const pending = client.get(studyPaths[0]);
+  for (let i = 0; i < 30 && !rejectOldRequest; i++) await tick();
+  await client.get(identityPath);
+  rejectOldRequest();
+  await pending;
+  assert.equal(countRequests(app, refreshPath), 1);
+  assert.equal(app.session.getSessionSnapshot().status, "authenticated");
+});
+
+test("Exam 403 remains a feature rejection without verification or refresh", async () => {
+  const app = environment();
+  await signIn(app);
+  app.handler = async config => app.fail(config, 403);
+  await assert.rejects(app.load("src/lib/axios/axios.ts").default.get(studyPaths[0]), error => error.response.status === 403);
+  assert.equal(countRequests(app, identityPath), 0);
+  assert.equal(countRequests(app, refreshPath), 0);
+  assert.equal(app.session.getSessionSnapshot().status, "authenticated");
+});
+
+test("an Identity outage still backs off when the cached JWT expiry is already past", async () => {
+  const app = environment();
+  await signIn(app);
+  const expired = "header." + Buffer.from(JSON.stringify({ sub: "fixture-user", exp: 1 })).toString("base64url") + ".signature";
+  await app.load("src/lib/auth/tokenStorage.ts").saveTokenPair(expired, "fixture-refresh");
+  app.handler = async config => app.fail(config, config.url === identityPath ? 503 : 401);
+  const client = app.load("src/lib/axios/axios.ts").default;
+  for (const path of studyPaths) await assert.rejects(client.get(path));
+  assert.equal(countRequests(app, identityPath), 1);
+  assert.equal(countRequests(app, refreshPath), 0);
+  assert.equal(app.session.getSessionSnapshot().status, "authenticated");
+});
+
+test("response diagnostics preserve only numeric business codes", async () => {
+  const app = environment();
+  await signIn(app);
+  app.handler = async config => {
+    if (config.url === identityPath) return { success: true, result: { userName: "fixture-user" } };
+    try { app.fail(config, 401); } catch (error) {
+      error.response.data = { code: 1006, message: "sensitive-fixture-message" };
+      throw error;
+    }
+  };
+  await assert.rejects(app.load("src/lib/axios/axios.ts").default.get(studyPaths[0]));
+  assert.ok(app.diagnostics.some(event => event.status === 401 && event.code === 1006));
+  const { recordAuthDiagnostic } = app.load("src/lib/auth/authDiagnostics.ts");
+  recordAuthDiagnostic("response", { code: "sensitive-fixture-code" });
+  assert.equal("code" in app.diagnostics.at(-1), false);
+  assert.equal(JSON.stringify(app.diagnostics).includes("sensitive-fixture"), false);
+});
+
+test("Google login keeps the normal credential and session flow when study APIs are denied", async () => {
+  const app = environment();
+  app.session.enterGuestSession();
+  app.handler = async config => {
+    if (config.url === "/identity/auth/google") return credentials();
+    if (config.url === identityPath) return { success: true, result: { userName: "fixture-user" } };
+    return app.fail(config, 401);
+  };
+  await app.load("features/auth/api/authApi.ts").loginWithGoogleIdToken("offline-google-id-token-fixture");
+  assert.equal(app.requests[0].headers.get("Authorization"), undefined);
+  await assert.rejects(app.load("src/lib/axios/axios.ts").default.get(studyPaths[0]));
+  assert.equal(app.session.getSessionSnapshot().status, "authenticated");
+  assert.equal(app.session.getSessionSnapshot().subject, "fixture-user");
+  assert.equal(countRequests(app, refreshPath), 0);
+  assert.equal(JSON.stringify(app.diagnostics).includes("offline-google-id-token-fixture"), false);
+});
+
+test("Google login rejection does not trigger Identity verification or refresh", async () => {
+  const app = environment();
+  app.session.enterGuestSession();
+  app.handler = async config => app.fail(config, 401);
+  await assert.rejects(app.load("features/auth/api/authApi.ts").loginWithGoogleIdToken("offline-google-id-token-fixture"));
+  assert.equal(app.session.getSessionSnapshot().status, "guest");
+  assert.equal(countRequests(app, identityPath), 0);
+  assert.equal(countRequests(app, refreshPath), 0);
 });

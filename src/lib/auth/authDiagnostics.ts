@@ -4,6 +4,7 @@ type DiagnosticEvent = "request" | "response" | "refresh" | "session" | "credent
 interface DiagnosticFields {
   endpoint?: string;
   status?: number | null;
+  code?: number;
   sessionBefore?: SessionStatus;
   sessionAfter?: SessionStatus;
   refresh?: "success" | "failure";
@@ -45,6 +46,9 @@ export function recordAuthDiagnostic(event: DiagnosticEvent, fields: DiagnosticF
     const status = fields.status;
     if (status === null || (typeof status === "number" && Number.isInteger(status) && status >= 0 && status <= 599)) {
       safe.status = status;
+    }
+    if (typeof fields.code === "number" && Number.isInteger(fields.code) && fields.code >= 0 && fields.code <= 9999) {
+      safe.code = fields.code;
     }
     for (const key of ["sessionBefore", "sessionAfter"] as const) {
       const value = fields[key];
