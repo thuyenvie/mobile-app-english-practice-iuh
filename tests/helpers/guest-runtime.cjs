@@ -64,10 +64,10 @@ function hookRuntime() {
 
 function environment(extraMocks = {}) {
   const cache = new Map(), secure = new Map(), local = new Map();
-  const requests = [], storageCalls = [], routerCalls = [], audioSources = [], alerts = [];
+  const requests = [], storageCalls = [], routerCalls = [], audioSources = [], alerts = [], diagnostics = [];
   const events = new EventEmitter(), hooks = hookRuntime();
   const env = {
-    secure, local, requests, storageCalls, routerCalls, audioSources, alerts, hooks,
+    secure, local, requests, storageCalls, routerCalls, audioSources, alerts, diagnostics, hooks,
     params: {}, focused: true,
     handler: async () => ({ code: 1000, result: [] }),
   };
@@ -93,6 +93,10 @@ function environment(extraMocks = {}) {
     react: hooks.react,
     "react/jsx-runtime": { jsx, jsxs: jsx, Fragment: "Fragment" },
     "react-native": native,
+    "expo-updates": {
+      isEnabled: true, isEmbeddedLaunch: true, channel: "preview", runtimeVersion: "1.0.0",
+      updateId: "11111111-1111-4111-8111-111111111111",
+    },
     "expo-font": { isLoaded: () => true, loadAsync: async () => {} },
     "expo-secure-store": {
       getItemAsync: async key => { storageCalls.push(["secure:get", key]); return secure.get(key) ?? null; },
@@ -162,7 +166,10 @@ function environment(extraMocks = {}) {
     };
     vm.runInNewContext(compiled, { module, exports: module.exports, require: sourceRequire,
       process: { env: {} }, atob, decodeURIComponent, setTimeout, clearTimeout,
-      setInterval, clearInterval, console }, { filename });
+      setInterval, clearInterval, console: { ...console, info: (...args) => {
+        if (args[0] === "[auth-diagnostic]") diagnostics.push(JSON.parse(args[1]));
+        else console.info(...args);
+      } } }, { filename });
     return module.exports;
   }
   env.load = load;

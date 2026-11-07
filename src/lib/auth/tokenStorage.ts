@@ -2,6 +2,7 @@ import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 import { resetSessionExpiration } from "./sessionEvents";
 import { assertSessionGeneration, getSessionSnapshot } from "./sessionStore";
+import { recordAuthDiagnostic } from "./authDiagnostics";
 
 interface CredentialChange {
   generation?: number;
@@ -47,6 +48,7 @@ export async function saveTokenPair(
     await saveAccessToken(accessToken);
     assertSessionGeneration(generation);
     resetSessionExpiration();
+    recordAuthDiagnostic("credentials", { hasAccessToken: true, hasRefreshToken: true });
     options.onSaved?.();
   });
 }
@@ -86,6 +88,7 @@ export async function removeTokens(options: CredentialChange = {}): Promise<void
     if (Platform.OS === "web") {
       localStorage.removeItem(ACCESS_TOKEN_KEY);
       localStorage.removeItem(REFRESH_TOKEN_KEY);
+      recordAuthDiagnostic("credentials", { hasAccessToken: false, hasRefreshToken: false });
       options.onSaved?.();
       return;
     }
@@ -94,6 +97,7 @@ export async function removeTokens(options: CredentialChange = {}): Promise<void
       SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY),
       SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY),
     ]);
+    recordAuthDiagnostic("credentials", { hasAccessToken: false, hasRefreshToken: false });
     options.onSaved?.();
   });
 }
