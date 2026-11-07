@@ -33,17 +33,25 @@
       "favicon": "./assets/english-practice-icon.png"
     },
     "plugins": [
-      "expo-router",
-      "expo-font",
-      "expo-secure-store",
-      [
-        "expo-image-picker",
-        {
-          "photosPermission": "Cho phép ứng dụng chọn ảnh câu hỏi để gia sư AI giải thích.",
-          "cameraPermission": "Cho phép ứng dụng chụp ảnh câu hỏi để gia sư AI giải thích."
-        }
-      ]
-    ],
+  "expo-router",
+  "expo-font",
+  "expo-secure-store",
+  [
+    "expo-image-picker",
+    {
+      "photosPermission": "Cho phép ứng dụng chọn ảnh câu hỏi để gia sư AI giải thích.",
+      "cameraPermission": "Cho phép ứng dụng chụp ảnh câu hỏi để gia sư AI giải thích."
+    }
+  ],
+  [
+    "expo-build-properties",
+    {
+      "android": {
+        "usesCleartextTraffic": true
+      }
+    }
+  ]
+],
     "extra": {
       "router": {},
       "eas": {
