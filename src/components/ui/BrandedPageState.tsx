@@ -1,6 +1,6 @@
 import { useAppTheme } from "@/theme/useAppTheme";
 import { DialogContent } from "./DialogContent";
-import { useMemo as useThemeMemo, useEffect, useRef } from "react";
+import { useMemo as useThemeMemo, useEffect, useState } from "react";
 import { Animated, Easing, Image, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -13,6 +13,7 @@ type Props = {
   overlay?: boolean;
   onRetry?: () => void;
   onBack?: () => void;
+  backLabel?: string;
 };
 
 const logo = require("../../../assets/english-practice-logo.jpg");
@@ -20,7 +21,7 @@ const logo = require("../../../assets/english-practice-logo.jpg");
 
 function LoadingDots({ light }: { light?: boolean }) {
   const { styles } = useThemedStyles();
-  const phase = useRef(new Animated.Value(0)).current;
+  const [phase] = useState(() => new Animated.Value(0));
   useEffect(() => {
     const animation = Animated.loop(Animated.timing(phase, {
       toValue: 3, duration: 1050, easing: Easing.linear, useNativeDriver: true,
@@ -40,7 +41,7 @@ function LoadingDots({ light }: { light?: boolean }) {
   </View>;
 }
 
-export function BrandedPageState({ message, loading, compact, overlay, onRetry, onBack }: Props) {
+export function BrandedPageState({ message, loading, compact, overlay, onRetry, onBack, backLabel }: Props) {
   const { themeColor, blue, styles } = useThemedStyles();
   const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -62,7 +63,7 @@ export function BrandedPageState({ message, loading, compact, overlay, onRetry, 
         <Text style={styles.buttonText}>Thử lại</Text>
       </Pressable> : null}
       {onBack ? <Pressable accessibilityRole="button" onPress={onBack} style={[styles.back, overlay && styles.overlayButton]}>
-        <Text style={[styles.heading, overlay && styles.lightHeading]}>{overlay ? "Đóng" : "Quay lại"}</Text>
+        <Text style={[styles.heading, overlay && styles.lightHeading]}>{backLabel ?? (overlay ? "Đóng" : "Quay lại")}</Text>
       </Pressable> : null}
     </View> : null}
     {!small && <Text style={styles.footer}>Your English Learning Journey Starts Here!</Text>}

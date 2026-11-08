@@ -170,7 +170,9 @@ function environment(extraMocks = {}) {
       return require(name);
     };
     vm.runInNewContext(compiled, { module, exports: module.exports, require: sourceRequire,
-      process: { env: {} }, atob, decodeURIComponent, setTimeout, clearTimeout,
+      process: { env: {} }, atob, decodeURIComponent, AbortController,
+      setTimeout: (...args) => (env.setTimeout ?? setTimeout)(...args),
+      clearTimeout: (...args) => (env.clearTimeout ?? clearTimeout)(...args),
       Date: class extends Date { static now() { return env.now?.() ?? Date.now(); } },
       setInterval, clearInterval, console: { ...console, info: (...args) => {
         if (args[0] === "[auth-diagnostic]") diagnostics.push(JSON.parse(args[1]));

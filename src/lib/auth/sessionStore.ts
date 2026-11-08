@@ -28,7 +28,7 @@ export function authenticateSession(subject: string) {
 export function enterGuestSession() {
   publish({ status: "guest", subject: null, generation: snapshot.generation + 1, error: null });
 }
-export function sessionUnavailable(message: string) {
+export function setSessionRestoreError(message: string | null) {
   publish({ ...snapshot, error: message });
 }
 export class SessionChangedError extends Error {
