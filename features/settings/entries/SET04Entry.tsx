@@ -117,6 +117,10 @@ export function SET04Entry({ theme, authenticated }: SettingsEntryProps) {
             style={[settingsFormStyles.button, { backgroundColor: theme.selection, opacity: disabled ? 0.55 : 1 }]}>
             <Text style={[settingsFormStyles.buttonText, { color: theme.background }]}>{saving ? "Đang lưu…" : "Lưu thông tin"}</Text>
           </Pressable>
+          <Pressable accessibilityRole="button" onPress={() => { setExpanded(false); setError(""); setSaved(false); }}
+            style={settingsFormStyles.button}>
+            <Text style={{ color: theme.selection }}>Thu gọn thông tin cá nhân</Text>
+          </Pressable>
         </View>
       ) : null}
     </View>

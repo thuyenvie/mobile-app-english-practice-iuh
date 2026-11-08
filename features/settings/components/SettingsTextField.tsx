@@ -2,6 +2,7 @@ import { useState, type Ref } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View, type TextInputProps } from "react-native";
 import { useFormInputFocus } from "@/components/ui/FormScrollView";
 import type { SettingsTheme } from "@/theme/settingsTheme.types";
+import { getInteractionColors } from "./interactionColors";
 
 interface SettingsTextFieldProps {
   label: string;
@@ -35,14 +36,17 @@ export function SettingsTextField({
   hint,
 }: SettingsTextFieldProps) {
   const [revealed, setRevealed] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const feedback = getInteractionColors(theme);
   const focusInput = useFormInputFocus();
   return (
     <View style={styles.field}>
-      <Text style={[styles.label, { color: theme.text }]}>{label}</Text>
+      <Text style={[styles.label, { color: focused && !disabled ? theme.selection : theme.text }]}>{label}</Text>
       <View style={styles.inputRow}>
       <TextInput
         ref={inputRef}
-        onFocus={focusInput}
+        onFocus={() => { setFocused(true); focusInput?.(); }}
+        onBlur={() => setFocused(false)}
         returnKeyType={returnKeyType}
         submitBehavior={returnKeyType === "next" ? "submit" : "blurAndSubmit"}
         onSubmitEditing={onSubmitEditing}
@@ -59,7 +63,8 @@ export function SettingsTextField({
         onChangeText={onChangeText}
         style={[
           styles.input,
-          { backgroundColor: theme.background, borderColor: theme.border, color: theme.text, opacity: disabled ? 0.6 : 1 },
+          { backgroundColor: focused && !disabled ? feedback.selectedBackground : theme.background,
+            borderColor: focused && !disabled ? theme.selection : theme.border, color: theme.text, opacity: disabled ? 0.6 : 1 },
         ]}
       />
       {secureTextEntry ? <Pressable accessibilityRole="button"

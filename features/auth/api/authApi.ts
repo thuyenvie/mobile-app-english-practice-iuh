@@ -10,6 +10,32 @@ export interface LoginRequest {
   passWord: string;
 }
 
+export interface RegisterRequest {
+  fullName: string;
+  email: string;
+  password: string;
+}
+
+export async function register(request: RegisterRequest): Promise<void> {
+  const response = await api.post<ApiResponse<{ userName: string }>>(
+    "/identity/auth/register",
+    { ...request, fullName: request.fullName.trim().replace(/\s+/g, " "), email: request.email.trim().toLowerCase() },
+  );
+  if (!response.data.success || response.data.code !== 201 || !response.data.result?.userName) {
+    throw new Error(response.data.message || "Đăng ký không thành công. Vui lòng thử lại.");
+  }
+}
+
+export function getRegisterErrorMessage(error: unknown): string {
+  if (isAxiosError<ApiResponse<unknown>>(error)) {
+    if (!error.response) return "Không thể kết nối đến máy chủ. Hãy kiểm tra kết nối mạng và thử lại.";
+    if (error.response.status === 409) return "Email đã tồn tại. Vui lòng dùng email khác hoặc đăng nhập.";
+    if (error.response.status === 400) return error.response.data?.message || "Dữ liệu đăng ký không hợp lệ.";
+    return "Chưa thể tạo tài khoản. Vui lòng thử lại sau.";
+  }
+  return error instanceof Error ? error.message : "Đăng ký không thành công. Vui lòng thử lại.";
+}
+
 export interface LoginResult {
   token: string;
   success: boolean;

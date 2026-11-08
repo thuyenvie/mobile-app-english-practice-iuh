@@ -92,6 +92,10 @@ export function SET05Entry({ theme, authenticated }: SettingsEntryProps) {
             style={[settingsFormStyles.button, { backgroundColor: theme.selection, opacity: disabled ? 0.55 : 1 }]}>
             <Text style={[settingsFormStyles.buttonText, { color: theme.background }]}>{saving ? "Đang cập nhật…" : "Đổi mật khẩu"}</Text>
           </Pressable>
+          <Pressable accessibilityRole="button" onPress={() => { clear(); setExpanded(false); setError(""); setSaved(false); }}
+            style={settingsFormStyles.button}>
+            <Text style={{ color: theme.selection }}>Thu gọn đổi mật khẩu</Text>
+          </Pressable>
         </View>
       ) : null}
     </View>

@@ -287,6 +287,7 @@ async function expireLocalSession(generation: number): Promise<void> {
 }
 
 const loginEndpoints = new Set([
+  "/identity/auth/register",
   "/identity/auth/login",
   "/identity/auth/google",
   "/identity/auth/google/mobile",

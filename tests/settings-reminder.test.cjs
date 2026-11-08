@@ -63,7 +63,9 @@ for (const draft of [{reminderTime:"24:00"},{reminderTime:"9:00"},{quietStart:""
 test("clearing quiet pair sends two explicit nulls; OFF preserves daily time", async () => {
  const f = fixture(); await f.controller.load(); f.controller.edit({ quietStart:"", quietEnd:"", reminderEnabled:false }); await f.controller.save();
  assert.deepEqual(f.calls[1][1], {reminderEnabled:false, reminderTime:"20:00", quietStart:null, quietEnd:null});
- await f.controller.register(); assert.equal(f.calls.length, 2);
+ await f.controller.register(); assert.equal(f.calls.length, 3);
+ assert.equal(f.controller.getSnapshot().plan.reminderEnabled, false);
+ assert.equal(f.controller.getSnapshot().device, "registered");
 });
 for (const result of ["permission-denied", "unsupported", "error"]) test("remote saved remains distinct from device " + result, async () => {
  const f = fixture({ register: async () => { if(result === "error") throw Error("offline"); return result; } });
@@ -122,9 +124,12 @@ test("inline editor renders read-only days/timezone and setup CTA, disables edit
  assert.equal(nodes(tree).filter(n=>n.type === "TextInput").length,0);
  button(tree,"Chi tiết nhắc học").props.onPress(); tree=render(); assert.match(text(tree),/Asia\/Ho_Chi_Minh/);
  button(tree,"Chỉnh sửa nhắc học").props.onPress(); tree=render();
- assert.deepEqual(nodes(tree).filter(n=>n.type === "TextInput").map(n=>n.props.accessibilityLabel),["Giờ nhắc học","Yên lặng từ","Yên lặng đến"]);
+ assert.deepEqual(nodes(tree).filter(n=>n.type === "TextInput").map(n=>n.props.accessibilityLabel),["Giờ nhắc học"]);
+ const quietFields=nodes(tree).find(n=>n.type?.name === "QuietHoursFields");
+ assert.equal(quietFields.props.start,"22:00"); assert.equal(quietFields.props.end,"07:00");
  let resolve; app.handler=()=>new Promise(r=>{resolve=r;}); button(tree,"Lưu nhắc học").props.onPress(); await tick(); tree=render();
  assert.ok(nodes(tree).filter(n=>n.type === "TextInput").every(n=>n.props.editable===false)); assert.match(text(tree),/Đang xử lý/);
+ assert.equal(nodes(tree).find(n=>n.type?.name === "QuietHoursFields").props.disabled,true);
  resolve({code:1000,result:plan()}); await app.hooks.flush();
  app.handler=async()=>({code:1000,result:null}); button(render(),"Kiểm tra lại lịch nhắc").props.onPress(); await app.hooks.flush();
  tree=render(); button(tree,"Tạo kế hoạch học").props.onPress(); assert.deepEqual(app.routerCalls,[["push","/study-plan/setup"]]);

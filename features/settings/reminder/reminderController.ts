@@ -1,5 +1,7 @@
 import { getSessionSnapshot, type SessionSnapshot } from "@/lib/auth/sessionStore";
 import type { StudyPlan, StudyReminderInput } from "../../study/api/studyPlanApi";
+import { getPushRegistrationError } from "../../notifications/api/pushRegistrationError";
+import { getQuietHoursError } from "./reminderSchedule";
 
 export interface ReminderDraft { reminderEnabled: boolean; reminderTime: string; quietStart: string; quietEnd: string }
 export type DeviceStatus = "unregistered" | "registered" | "permission-denied" | "unsupported" | "error";
@@ -51,9 +53,10 @@ export function createReminderController(owner: SessionSnapshot, deps: Dependenc
     async save() {
       if (!active() || state.busy || state.phase !== "ready" || !state.plan) return;
       const d = state.draft;
+      const quietError = getQuietHoursError(d.quietStart, d.quietEnd);
       if ((d.reminderEnabled && !validTime(d.reminderTime)) || (d.reminderTime && !validTime(d.reminderTime))
-          || (!!d.quietStart !== !!d.quietEnd) || (d.quietStart && (!validTime(d.quietStart) || !validTime(d.quietEnd)))) {
-        publish({ error: "Giờ cần đúng HH:mm; giờ yên lặng cần đủ cả hai hoặc để trống cả hai.", saved: false }); return;
+          || quietError) {
+        publish({ error: quietError ?? "Giờ nhắc cần đúng HH:mm.", saved: false }); return;
       }
       publish({ busy: true, error: "", saved: false });
       try {
@@ -64,10 +67,10 @@ export function createReminderController(owner: SessionSnapshot, deps: Dependenc
       finally { publish({ busy: false }); }
     },
     async register() {
-      if (!active() || state.busy || !state.plan?.reminderEnabled) return;
+      if (!active() || state.busy || state.phase !== "ready" || !state.plan) return;
       publish({ busy: true, error: "" });
       try { publish({ device: await deps.register(owner.generation) }); }
-      catch { publish({ device: "error" }); }
+      catch (error) { publish({ device: "error", error: getPushRegistrationError(error) }); }
       finally { publish({ busy: false }); }
     },
   };

@@ -19,6 +19,9 @@ import { useSession } from "@/lib/auth/useSession";
 import { getExamErrorMessage } from "../api/examApi";
 import { getStudyPlan, saveStudyPlan } from "../api/studyPlanApi";
 import { registerStudyPushToken } from "../../notifications/api/pushNotificationApi";
+import { getPushRegistrationError } from "../../notifications/api/pushRegistrationError";
+import { QuietHoursFields } from "../../settings/reminder/QuietHoursFields";
+import { getQuietHoursError, isReminderInQuietHours } from "../../settings/reminder/reminderSchedule";
 import { StudyScaffold } from "../components/StudyScaffold";
 import { FormScrollView, useFormInputFocus } from "@/components/ui/FormScrollView";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -35,7 +38,7 @@ const weekDays = [
 ];
 
 export default function StudyPlanSetupScreen() {
-  const { themeColor, c, styles } = useThemedStyles();
+  const { themeColor, c, styles, settingsTheme } = useThemedStyles();
   const session = useSession();
   const insets = useSafeAreaInsets();
   const [targetScore, setTargetScore] = useState("700");
@@ -47,13 +50,14 @@ export default function StudyPlanSetupScreen() {
   const [reminderDays, setReminderDays] = useState<number[]>([1, 2, 3, 4, 5]);
   const [quietStart, setQuietStart] = useState("22:00");
   const [quietEnd, setQuietEnd] = useState("07:00");
+  const [timezone, setTimezone] = useState(() =>
+    Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Ho_Chi_Minh");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (session.status !== "authenticated") {
-      setLoading(false);
       return;
     }
     let active = true;
@@ -71,8 +75,9 @@ export default function StudyPlanSetupScreen() {
         setReminderDays(
           plan.reminderDays.length ? plan.reminderDays : [1, 2, 3, 4, 5]
         );
-        setQuietStart(plan.quietStart?.slice(0, 5) ?? "22:00");
-        setQuietEnd(plan.quietEnd?.slice(0, 5) ?? "07:00");
+        setQuietStart(plan.quietStart?.slice(0, 5) ?? "");
+        setQuietEnd(plan.quietEnd?.slice(0, 5) ?? "");
+        setTimezone(plan.timezone);
       })
       .catch((cause: unknown) => {
         if (active) setError(getExamErrorMessage(cause));
@@ -124,12 +129,9 @@ export default function StudyPlanSetupScreen() {
       setError("Chọn giờ nhắc hợp lệ và ít nhất một ngày trong tuần.");
       return;
     }
-    if (
-      reminderEnabled &&
-      (!/^([01]\d|2[0-3]):[0-5]\d$/.test(quietStart) ||
-        !/^([01]\d|2[0-3]):[0-5]\d$/.test(quietEnd))
-    ) {
-      setError("Giờ yên lặng phải nhập theo dạng HH:mm.");
+    const quietError = getQuietHoursError(quietStart, quietEnd);
+    if (quietError) {
+      setError(quietError);
       return;
     }
 
@@ -145,14 +147,12 @@ export default function StudyPlanSetupScreen() {
         currentScore: current,
         targetDate: targetDate || null,
         dailyMinutes: minutes,
-        timezone:
-          Intl.DateTimeFormat().resolvedOptions().timeZone ||
-          "Asia/Ho_Chi_Minh",
+        timezone,
         reminderEnabled,
         reminderTime: reminderEnabled ? reminderTime : null,
         reminderDays,
-        quietStart: reminderEnabled ? quietStart : null,
-        quietEnd: reminderEnabled ? quietEnd : null,
+        quietStart: quietStart || null,
+        quietEnd: quietEnd || null,
       });
 
       let reminderNotice = "";
@@ -166,9 +166,8 @@ export default function StudyPlanSetupScreen() {
             reminderNotice =
               "Kế hoạch đã lưu. Push notification chỉ chạy trên ứng dụng iOS/Android, chưa hỗ trợ bản web.";
           }
-        } catch {
-          reminderNotice =
-            "Kế hoạch đã lưu, nhưng chưa đăng ký được thiết bị nhận thông báo. Kiểm tra kết nối Gateway rồi lưu lại kế hoạch.";
+        } catch (registrationError) {
+          reminderNotice = getPushRegistrationError(registrationError);
         }
       }
 
@@ -305,24 +304,12 @@ export default function StudyPlanSetupScreen() {
                       placeholder="20:00"
                       hint="Định dạng 24 giờ, ví dụ 20:00"
                     />
-                    <View style={styles.timeRow}>
-                      <View style={styles.flex}>
-                        <Field
-                          label="Bắt đầu yên lặng"
-                          value={quietStart}
-                          onChangeText={setQuietStart}
-                          placeholder="22:00"
-                        />
-                      </View>
-                      <View style={styles.flex}>
-                        <Field
-                          label="Kết thúc yên lặng"
-                          value={quietEnd}
-                          onChangeText={setQuietEnd}
-                          placeholder="07:00"
-                        />
-                      </View>
-                    </View>
+                    <QuietHoursFields start={quietStart} end={quietEnd} onStartChange={setQuietStart}
+                      onEndChange={setQuietEnd} theme={settingsTheme} disabled={saving} />
+                    <Text style={styles.hint}>Giờ nhắc và giờ yên lặng theo múi giờ {timezone}.</Text>
+                    {isReminderInQuietHours(reminderTime, quietStart, quietEnd) ? <Text style={styles.error} accessibilityRole="alert">
+                      Giờ nhắc nằm trong khoảng yên lặng nên sẽ không gửi thông báo. Hãy đổi giờ nhắc hoặc khoảng yên lặng.
+                    </Text> : null}
                   </>
                 ) : null}
               </View>
@@ -394,7 +381,7 @@ function Field(props: {
 function useThemedStyles() {
   const appTheme = useAppTheme();
   return useThemeMemo(() => {
-    const { homeDesign, themeColor } = appTheme;
+    const { homeDesign, themeColor, settingsTheme } = appTheme;
     const c = homeDesign.colors;
     const styles = StyleSheet.create({
       flex: { flex: 1 },
@@ -461,7 +448,6 @@ function useThemedStyles() {
       dayChipSelected: { backgroundColor: c.tabActive },
       dayText: { color: c.text, fontWeight: "700", fontSize: 14 },
       dayTextSelected: { color: c.onSelection },
-      timeRow: { gap: 10 },
       error: { color: themeColor("#ff8585", "text"), fontSize: 13, lineHeight: 19, marginBottom: 14 },
       saveButton: {
         minHeight: 52,
@@ -474,6 +460,6 @@ function useThemedStyles() {
       saveText: { color: c.onSelection, fontSize: 15, fontWeight: "800" },
       disabled: { opacity: 0.55 },
     });
-    return { homeDesign, themeColor, c, styles };
+    return { homeDesign, themeColor, c, styles, settingsTheme };
   }, [appTheme]);
 }

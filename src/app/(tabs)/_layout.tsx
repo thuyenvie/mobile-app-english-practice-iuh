@@ -1,4 +1,5 @@
 import { useAppTheme } from "@/theme/useAppTheme";
+import { getInteractionColors } from "../../../features/settings/components/interactionColors";
 import { useMemo as useThemeMemo } from "react";
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Tabs } from 'expo-router';
@@ -9,15 +10,16 @@ import { YStack } from 'tamagui';
 
 
 const tabs = [
-  { name: 'home', title: 'Trang chủ', icon: 'home-outline' },
-  { name: 'ai', title: 'Gia sư AI', icon: 'auto-fix' },
-  { name: 'study', title: 'Học tập', icon: 'file-document-outline' },
-  { name: 'vocabulary', title: 'Từ vựng', icon: 'book-alphabet' },
-  { name: 'settings', title: 'Cài đặt', icon: 'cog-outline' },
+  { name: 'home', title: 'Trang chủ', icon: 'home-outline', activeIcon: 'home' },
+  { name: 'ai', title: 'Gia sư AI', icon: 'auto-fix', activeIcon: 'auto-fix' },
+  { name: 'study', title: 'Học tập', icon: 'file-document-outline', activeIcon: 'file-document' },
+  { name: 'vocabulary', title: 'Từ vựng', icon: 'book-alphabet', activeIcon: 'book-alphabet' },
+  { name: 'settings', title: 'Cài đặt', icon: 'cog-outline', activeIcon: 'cog' },
 ] as const;
 
 export default function TabsLayout() {
-  const { homeDesign, loginDesign, themeColor } = useThemedStyles();
+  const { homeDesign, palette } = useThemedStyles();
+  const feedback = getInteractionColors(palette);
   const insets = useSafeAreaInsets();
   const { width, fontScale } = useWindowDimensions();
   const bottomPadding = Math.max(insets.bottom, 8);
@@ -33,10 +35,10 @@ export default function TabsLayout() {
           tabBarHideOnKeyboard: true,
           animation: 'none',
           sceneStyle: { backgroundColor: homeDesign.colors.background },
-          tabBarActiveTintColor: loginDesign.colors.link,
-          tabBarInactiveTintColor: themeColor("#98a3b4", "text"),
-          tabBarActiveBackgroundColor: homeDesign.colors.surfaceRaised,
-          tabBarInactiveBackgroundColor: homeDesign.colors.surfaceRaised,
+          tabBarActiveTintColor: palette.selection,
+          tabBarInactiveTintColor: palette.muted,
+          tabBarActiveBackgroundColor: feedback.selectedBackground,
+          tabBarInactiveBackgroundColor: 'transparent',
           tabBarLabelPosition: 'below-icon',
           tabBarIconStyle: styles.icon,
           tabBarItemStyle: styles.item,
@@ -44,9 +46,9 @@ export default function TabsLayout() {
             height: barHeight + bottomPadding,
             paddingTop: 6,
             paddingBottom: bottomPadding,
-            backgroundColor: themeColor("#161c26", "background"),
+            backgroundColor: palette.surface,
             borderTopWidth: StyleSheet.hairlineWidth,
-            borderTopColor: themeColor("#343c49", "border"),
+            borderTopColor: palette.border,
             elevation: 0,
           },
         }}>
@@ -54,17 +56,17 @@ export default function TabsLayout() {
             <Tabs.Screen key={tab.name} name={tab.name} options={{
               title: tab.title,
               tabBarAccessibilityLabel: tab.title,
-              tabBarLabel: ({ color }) => (
+              tabBarLabel: ({ color, focused }) => (
                 <Text numberOfLines={2}
-                  style={[styles.label, { color, minHeight: labelHeight }]}>
+                  style={[styles.label, { color, minHeight: labelHeight, fontWeight: focused ? '800' : '500' }]}>
                   {tab.title}
                 </Text>
               ),
               tabBarIcon: ({ color, focused }) => (
                 <YStack width={44} height={30} borderRadius={12}
                   alignItems="center" justifyContent="center"
-                  backgroundColor={focused ? themeColor("#203c5c", "background") : 'transparent'}>
-                  <MaterialCommunityIcons name={tab.icon} size={24} color={color} />
+                  backgroundColor="transparent">
+                  <MaterialCommunityIcons name={focused ? tab.activeIcon : tab.icon} size={24} color={color} />
                 </YStack>
               ),
             }} />
@@ -76,7 +78,7 @@ export default function TabsLayout() {
 }
 
 const styles = StyleSheet.create({
-  item: { flex: 1, minWidth: 0, paddingHorizontal: 0, paddingVertical: 0, borderWidth: 0 },
+  item: { flex: 1, minWidth: 0, minHeight: 48, marginHorizontal: 3, borderRadius: 14, overflow: 'hidden', paddingHorizontal: 0, paddingVertical: 0, borderWidth: 0 },
   icon: { width: 44, height: 30 },
   label: { fontSize: 11, lineHeight: 14, fontWeight: '600', textAlign: 'center', textAlignVertical: 'center', marginTop: 2 },
 });
@@ -84,8 +86,8 @@ const styles = StyleSheet.create({
 function useThemedStyles() {
   const appTheme = useAppTheme();
   return useThemeMemo(() => {
-    const { homeDesign, loginDesign, themeColor } = appTheme;
+    const { homeDesign, palette } = appTheme;
 
-    return { homeDesign, loginDesign, themeColor };
+    return { homeDesign, palette };
   }, [appTheme]);
 }

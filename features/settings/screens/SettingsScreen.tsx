@@ -8,7 +8,7 @@ import { SET01Entry } from "../entries/SET01Entry";
 import { SET02Entry } from "../entries/SET02Entry";
 import { SET03Entry } from "../entries/SET03Entry";
 import { SET04Entry } from "../entries/SET04Entry";
-import { SET05Entry } from "../entries/SET05Entry";
+import { AccountPasswordEntry } from "../entries/AccountPasswordEntry";
 import { SET06Entry } from "../entries/SET06Entry";
 import { SET07Entry } from "../entries/SET07Entry";
 import { SET08Entry } from "../entries/SET08Entry";
@@ -146,7 +146,7 @@ export default function SettingsScreen() {
         <SettingsSection title="Tài khoản">
           <RequireAccount title="Cài đặt tài khoản">
             <SET04Entry {...entryProps} />
-            <SET05Entry {...entryProps} />
+            <AccountPasswordEntry {...entryProps} />
           </RequireAccount>
           {session.status === "authenticated" ? <>
             {error ? <Text role="alert" color={settingsTheme.error}>{error}</Text> : null}
