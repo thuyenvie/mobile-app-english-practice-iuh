@@ -10,6 +10,7 @@ interface DiagnosticFields {
   refresh?: "success" | "failure";
   hasAccessToken?: boolean;
   hasRefreshToken?: boolean;
+  updatesAvailable?: boolean;
   updatesEnabled?: boolean;
   isEmbeddedLaunch?: boolean;
   channel?: string | null;
@@ -55,7 +56,7 @@ export function recordAuthDiagnostic(event: DiagnosticEvent, fields: DiagnosticF
       if (value === "loading" || value === "guest" || value === "authenticated") safe[key] = value;
     }
     if (fields.refresh === "success" || fields.refresh === "failure") safe.refresh = fields.refresh;
-    for (const key of ["hasAccessToken", "hasRefreshToken", "updatesEnabled", "isEmbeddedLaunch"] as const) {
+    for (const key of ["hasAccessToken", "hasRefreshToken", "updatesAvailable", "updatesEnabled", "isEmbeddedLaunch"] as const) {
       if (typeof fields[key] === "boolean") safe[key] = fields[key];
     }
     if ("channel" in fields) {

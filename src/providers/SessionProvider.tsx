@@ -7,7 +7,7 @@ import { recordUpdateDiagnostic } from "@/lib/auth/updateDiagnostics";
 export function SessionProvider({ children }: PropsWithChildren) {
   const session = useSession();
   useEffect(() => {
-    void recordUpdateDiagnostic();
+    recordUpdateDiagnostic();
     void restoreSession();
   }, []);
   if (session.status === "loading") {

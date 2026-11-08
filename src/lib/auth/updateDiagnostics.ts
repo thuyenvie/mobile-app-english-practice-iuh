@@ -1,20 +1,29 @@
+import { requireOptionalNativeModule } from "expo-modules-core";
 import { recordAuthDiagnostic } from "./authDiagnostics";
 
-type ExpoUpdatesModule = typeof import("expo-updates");
+interface ExpoUpdatesDiagnostics {
+  isEnabled?: boolean;
+  isEmbeddedLaunch?: boolean;
+  channel?: string | null;
+  runtimeVersion?: string | null;
+  updateId?: string | null;
+}
 
-export async function recordUpdateDiagnostic(): Promise<void> {
-  try {
-    // Older development clients may not include the Expo Updates native module.
-    // Load it lazily so diagnostics never prevent the app from starting.
-    const Updates: ExpoUpdatesModule = await import("expo-updates");
-    recordAuthDiagnostic("updates", {
-      updatesEnabled: Updates.isEnabled,
-      isEmbeddedLaunch: Updates.isEmbeddedLaunch,
-      channel: Updates.channel,
-      runtimeVersion: Updates.runtimeVersion,
-      updateId: Updates.updateId,
-    });
-  } catch {
-    recordAuthDiagnostic("updates");
+export function recordUpdateDiagnostic(): void {
+  // Older development clients may not include Expo Updates. The optional lookup
+  // returns null without importing its JS entry point or throwing during startup.
+  const updates = requireOptionalNativeModule<ExpoUpdatesDiagnostics>("ExpoUpdates");
+  if (!updates) {
+    recordAuthDiagnostic("updates", { updatesAvailable: false });
+    return;
   }
+
+  recordAuthDiagnostic("updates", {
+    updatesAvailable: true,
+    updatesEnabled: updates.isEnabled,
+    isEmbeddedLaunch: updates.isEmbeddedLaunch,
+    channel: updates.channel,
+    runtimeVersion: updates.runtimeVersion,
+    updateId: updates.updateId,
+  });
 }
