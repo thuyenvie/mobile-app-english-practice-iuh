@@ -12,14 +12,16 @@ export function useFormInputFocus() {
 }
 
 /** Measure the actual top, including safe area and any session banner above us. */
-export function KeyboardViewport({ children }: PropsWithChildren) {
+export function KeyboardViewport({ children, androidBehavior = "height" }: PropsWithChildren<{
+  androidBehavior?: "height" | "padding";
+}>) {
   const container = useRef<View>(null);
   const [top, setTop] = useState(0);
   return (
     <View ref={container} collapsable={false} style={styles.flex}
       onLayout={() => container.current?.measureInWindow((_x, y) => setTop(y))}>
       <KeyboardAvoidingView style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : androidBehavior}
         keyboardVerticalOffset={top}>
         {children}
       </KeyboardAvoidingView>

@@ -136,7 +136,8 @@ export default function AiTutorScreen() {
 
   return (
     <HomeScaffold>
-      <KeyboardViewport>
+      {/* Keep flex sizing when the bottom tab bar hides; height mode can oscillate. */}
+      <KeyboardViewport androidBehavior="padding">
         <XStack
           alignItems="center"
           justifyContent="space-between"

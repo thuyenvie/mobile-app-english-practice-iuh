@@ -42,6 +42,28 @@ for (const os of ["android", "ios"]) test(`keyboard offset follows measured safe
   app.hooks.dispose();
 });
 
+for (const os of ["android", "ios"]) test(`AI chat keeps flexible keyboard avoidance when its tab bar hides: ${os}`, () => {
+  const app = environment({
+    "react-native": { Platform: { OS: os }, StyleSheet: { create: x => x }, View: "View", KeyboardAvoidingView: "KeyboardAvoidingView" },
+    "expo-image-picker": {},
+  });
+  const screen = app.hooks.render(app.load("features/ai/screens/AiTutorScreen.tsx").default);
+  const viewport = nodeWith(screen, n => n.type?.name === "KeyboardViewport");
+  app.hooks.dispose();
+  let tree = app.hooks.render(viewport.type, viewport.props);
+  for (const height of [776, 864, 500, 864]) {
+    tree.props.ref.current = { measureInWindow: callback => callback(0, 50, 360, height) };
+    tree.props.onLayout(); tree = app.hooks.render(viewport.type, viewport.props);
+    const avoidance = tree.props.children;
+    assert.equal(avoidance.props.behavior, "padding");
+    assert.equal(avoidance.props.keyboardVerticalOffset, 50);
+    assert.equal(style(avoidance.props.style).flex, 1);
+    assert.equal(style(avoidance.props.style).height, undefined);
+  }
+  assert.equal(app.requests.length, 0);
+  app.hooks.dispose();
+});
+
 for (const pending of [true, false]) test(`catalog stays usable while auxiliary sections ${pending ? "wait" : "fail"}; retry stays scoped`, async () => {
   const calls = { catalog: 0, plan: 0, history: 0 };
   const app = environment({
