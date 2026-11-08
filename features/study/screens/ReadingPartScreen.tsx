@@ -1,4 +1,5 @@
 import { useAppTheme } from "@/theme/useAppTheme";
+import { DialogContent } from "@/components/ui/DialogContent";
 import { useMemo as useThemeMemo, useEffect, useMemo, useRef, useState } from "react";
 import { readExamDraft, writeExamDraft } from "../utils/examDrafts";
 import { useStudySession } from "../session/StudySessionProvider";
@@ -504,7 +505,7 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
         }}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
+          <DialogContent style={styles.modalCard} contentStyle={{ gap: 14 }}>
             {result ? (
               <>
                 <Text
@@ -593,7 +594,7 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
                 </AppButton>
               </>
             )}
-          </View>
+          </DialogContent>
         </View>
       </Modal>
     </StudyScaffold>

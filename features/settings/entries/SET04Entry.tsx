@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { Pressable, Text, TextInput, View } from "react-native";
 import { useSession } from "@/lib/auth/useSession";
 import { SettingsRow } from "../components/SettingsRow";
 import { SettingsTextField, settingsFormStyles } from "../components/SettingsTextField";
@@ -20,6 +20,8 @@ export function SET04Entry({ theme, authenticated }: SettingsEntryProps) {
   const [dob, setDob] = useState("");
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
+  const lastNameInput = useRef<TextInput>(null);
+  const dobInput = useRef<TextInput>(null);
 
   useEffect(() => {
     if (session.status === "authenticated" && authenticated) return;
@@ -106,9 +108,9 @@ export function SET04Entry({ theme, authenticated }: SettingsEntryProps) {
         <View style={[settingsFormStyles.form, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Text style={[settingsFormStyles.hint, { color: theme.muted }]}>Thông tin này được lưu vào hồ sơ tài khoản của bạn.</Text>
           {loading ? <Text style={{ color: theme.muted }}>Đang tải hồ sơ…</Text> : null}
-          <SettingsTextField label="Tên" value={firstName} onChangeText={value => { setFirstName(value); setSaved(false); }} theme={theme} autoComplete="given-name" maxLength={100} disabled={disabled} />
-          <SettingsTextField label="Họ" value={lastName} onChangeText={value => { setLastName(value); setSaved(false); }} theme={theme} autoComplete="family-name" maxLength={100} disabled={disabled} />
-          <SettingsTextField label="Ngày sinh (YYYY-MM-DD)" value={dob} onChangeText={value => { setDob(value); setSaved(false); }} theme={theme} autoComplete="birthdate-full" placeholder="Ví dụ: 2000-01-31" maxLength={10} disabled={disabled} />
+          <SettingsTextField label="Tên" value={firstName} onChangeText={value => { setFirstName(value); setSaved(false); }} theme={theme} autoComplete="given-name" maxLength={100} disabled={disabled} returnKeyType="next" onSubmitEditing={() => lastNameInput.current?.focus()} />
+          <SettingsTextField inputRef={lastNameInput} label="Họ" value={lastName} onChangeText={value => { setLastName(value); setSaved(false); }} theme={theme} autoComplete="family-name" maxLength={100} disabled={disabled} returnKeyType="next" onSubmitEditing={() => dobInput.current?.focus()} />
+          <SettingsTextField inputRef={dobInput} label="Ngày sinh (YYYY-MM-DD)" value={dob} onChangeText={value => { setDob(value); setSaved(false); }} theme={theme} autoComplete="birthdate-full" placeholder="Ví dụ: 2000-01-31" hint="Không bắt buộc · Năm-Tháng-Ngày" maxLength={10} disabled={disabled} />
           {error ? <Text accessibilityRole="alert" style={{ color: theme.error }}>{error}</Text> : null}
           {saved ? <Text accessibilityLiveRegion="polite" style={{ color: theme.success }}>Đã cập nhật thông tin cá nhân.</Text> : null}
           <Pressable accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={() => void save()}

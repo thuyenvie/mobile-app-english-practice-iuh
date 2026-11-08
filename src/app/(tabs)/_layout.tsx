@@ -30,6 +30,7 @@ export default function TabsLayout() {
       <YStack flex={1} width="100%" maxWidth={homeDesign.maxWidth} alignSelf="center">
         <Tabs initialRouteName="home" backBehavior="initialRoute" screenOptions={{
           headerShown: false,
+          tabBarHideOnKeyboard: true,
           animation: 'none',
           sceneStyle: { backgroundColor: homeDesign.colors.background },
           tabBarActiveTintColor: loginDesign.colors.link,

@@ -13,6 +13,8 @@ function hookRuntime() {
   const changed = (old, next) => !old || !next || old.length !== next.length || next.some((item, i) => !Object.is(item, old[i]));
   const react = {
     Fragment: "Fragment",
+    createContext: value => ({ Provider: "ContextProvider", value }),
+    useContext: context => context.value,
     useSyncExternalStore: (_subscribe, getSnapshot) => getSnapshot(),
     useState(initial) {
       const index = cursor++;
@@ -74,6 +76,9 @@ function environment(extraMocks = {}) {
   const jsx = (type, props, key) => ({ type, props: props || {}, key });
   const native = {
     Platform: { OS: "android" },
+    KeyboardAvoidingView: "KeyboardAvoidingView",
+    Keyboard: { addListener: () => ({ remove() {} }) },
+    useWindowDimensions: () => ({ width: 360, height: 640, fontScale: 1, scale: 1 }),
     DeviceEventEmitter: { emit: (...args) => events.emit(...args), addListener: (name, fn) => {
       events.on(name, fn); return { remove: () => events.off(name, fn) };
     } },

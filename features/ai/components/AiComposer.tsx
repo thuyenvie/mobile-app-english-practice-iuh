@@ -17,7 +17,7 @@ export function AiComposer({ value, loading, onChange, onCamera, onSend }: {
   const { resolvedMode } = useAppTheme();
   const { aiDesign, homeDesign } = useThemedStyles();
   return (
-    <XStack alignItems="center" gap={16} paddingTop={18} paddingBottom={20}>
+    <XStack alignItems="center" gap={8} paddingTop={8} paddingBottom={8}>
       <AppButton appearance="text" width={56} height={56} borderRadius={28}
         alignItems="center" backgroundColor={aiDesign.colors.camera}
         aria-label="Chụp ảnh câu hỏi" disabled={loading} opacity={loading ? 0.5 : 1} onPress={onCamera}
@@ -27,9 +27,9 @@ export function AiComposer({ value, loading, onChange, onCamera, onSend }: {
         <Input keyboardAppearance={resolvedMode} flex={1} multiline minHeight={54} maxHeight={100} paddingHorizontal={10}
           paddingVertical={10} backgroundColor="transparent" borderWidth={0}
           color={aiDesign.colors.text} placeholderTextColor="$placeholderColor"
-          fontSize={13} fontWeight="600" value={value} onChangeText={onChange}
+          fontSize={16} fontWeight="600" value={value} onChangeText={onChange}
           placeholder={aiMock.inputPlaceholder} aria-label={aiMock.inputPlaceholder} />
-        <AppButton appearance="text" width={44} height={44} alignItems="center"
+        <AppButton appearance="text" width={48} minHeight={48} alignItems="center"
           aria-label="Gửi câu hỏi" disabled={loading || !value.trim()}
           opacity={loading || !value.trim() ? 0.5 : 1} onPress={onSend}
           icon={<MaterialCommunityIcons name="send" size={30} color={aiDesign.colors.send} />} />

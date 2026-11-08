@@ -6,10 +6,7 @@ import { router } from "expo-router";
 import {
   Alert,
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Switch,
   Text,
@@ -23,6 +20,8 @@ import { getExamErrorMessage } from "../api/examApi";
 import { getStudyPlan, saveStudyPlan } from "../api/studyPlanApi";
 import { registerStudyPushToken } from "../../notifications/api/pushNotificationApi";
 import { StudyScaffold } from "../components/StudyScaffold";
+import { FormScrollView, useFormInputFocus } from "@/components/ui/FormScrollView";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 
 const weekDays = [
@@ -38,6 +37,7 @@ const weekDays = [
 export default function StudyPlanSetupScreen() {
   const { themeColor, c, styles } = useThemedStyles();
   const session = useSession();
+  const insets = useSafeAreaInsets();
   const [targetScore, setTargetScore] = useState("700");
   const [currentScore, setCurrentScore] = useState("");
   const [targetDate, setTargetDate] = useState("");
@@ -188,13 +188,8 @@ export default function StudyPlanSetupScreen() {
 
   return (
     <StudyScaffold>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
-        <ScrollView
-          contentContainerStyle={styles.content}
-          keyboardShouldPersistTaps="handled"
+        <FormScrollView
+          contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}
         >
           <Pressable
             style={styles.back}
@@ -266,6 +261,9 @@ export default function StudyPlanSetupScreen() {
                     return (
                       <Pressable
                         key={day.value}
+                        accessibilityRole="checkbox"
+                        accessibilityLabel={day.value === 7 ? "Chủ nhật" : `Thứ ${day.value + 1}`}
+                        accessibilityState={{ checked: selected }}
                         onPress={() => toggleDay(day.value)}
                         style={[
                           styles.dayChip,
@@ -292,6 +290,7 @@ export default function StudyPlanSetupScreen() {
                     </Text>
                   </View>
                   <Switch
+                    accessibilityLabel="Nhắc lịch theo kế hoạch học"
                     value={reminderEnabled}
                     onValueChange={setReminderEnabled}
                     trackColor={{ true: c.tabActive }}
@@ -337,6 +336,8 @@ export default function StudyPlanSetupScreen() {
           ) : null}
           {session.status === "authenticated" ? (
             <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ disabled: loading || saving, busy: saving }}
               onPress={() => void submit()}
               disabled={loading || saving}
               style={[
@@ -351,8 +352,7 @@ export default function StudyPlanSetupScreen() {
               )}
             </Pressable>
           ) : null}
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </FormScrollView>
     </StudyScaffold>
   );
 }
@@ -366,11 +366,17 @@ function Field(props: {
   hint?: string;
 }) {
   const { resolvedMode } = useAppTheme();
+  const focusInput = useFormInputFocus();
   const { c, styles } = useThemedStyles();
   return (
     <View style={styles.field}>
       <Text style={styles.label}>{props.label}</Text>
       <TextInput keyboardAppearance={resolvedMode}
+        accessibilityLabel={props.label}
+        onFocus={focusInput}
+        returnKeyType="done"
+        autoCapitalize="none"
+        autoCorrect={false}
         value={props.value}
         onChangeText={props.onChangeText}
         keyboardType={props.keyboardType ?? "default"}
@@ -392,7 +398,7 @@ function useThemedStyles() {
     const c = homeDesign.colors;
     const styles = StyleSheet.create({
       flex: { flex: 1 },
-      content: { padding: 18, paddingBottom: 36 },
+      content: { padding: 16 },
       back: {
         flexDirection: "row",
         alignItems: "center",
@@ -439,22 +445,23 @@ function useThemedStyles() {
       },
       daysRow: {
         flexDirection: "row",
-        justifyContent: "space-between",
-        gap: 5,
+        flexWrap: "wrap",
+        gap: 8,
         marginBottom: 17,
       },
       dayChip: {
-        width: 39,
-        height: 39,
+        minWidth: 48,
+        minHeight: 48,
+        padding: 10,
         borderRadius: 20,
         alignItems: "center",
         justifyContent: "center",
         backgroundColor: c.surfaceRaised,
       },
       dayChipSelected: { backgroundColor: c.tabActive },
-      dayText: { color: c.text, fontWeight: "700", fontSize: 12 },
+      dayText: { color: c.text, fontWeight: "700", fontSize: 14 },
       dayTextSelected: { color: c.onSelection },
-      timeRow: { flexDirection: "row", gap: 10 },
+      timeRow: { gap: 10 },
       error: { color: themeColor("#ff8585", "text"), fontSize: 13, lineHeight: 19, marginBottom: 14 },
       saveButton: {
         minHeight: 52,

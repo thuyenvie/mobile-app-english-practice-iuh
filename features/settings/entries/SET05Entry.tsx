@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { Pressable, Text, TextInput, View } from "react-native";
 import { useSession } from "@/lib/auth/useSession";
 import { SettingsRow } from "../components/SettingsRow";
 import { SettingsTextField, settingsFormStyles } from "../components/SettingsTextField";
@@ -15,6 +15,8 @@ export function SET05Entry({ theme, authenticated }: SettingsEntryProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
+  const newPasswordInput = useRef<TextInput>(null);
+  const confirmInput = useRef<TextInput>(null);
 
   const clear = () => {
     setCurrentPassword("");
@@ -81,9 +83,9 @@ export function SET05Entry({ theme, authenticated }: SettingsEntryProps) {
         <View style={[settingsFormStyles.form, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Text style={[settingsFormStyles.hint, { color: theme.muted }]}>Nhập mật khẩu hiện tại để xác nhận thay đổi. Mật khẩu mới có từ 8 đến 72 ký tự.</Text>
           {!authenticated ? <Text style={{ color: theme.error }}>Hãy đăng nhập lại để đổi mật khẩu.</Text> : null}
-          <SettingsTextField label="Mật khẩu hiện tại" value={currentPassword} onChangeText={setCurrentPassword} theme={theme} secureTextEntry autoComplete="current-password" disabled={disabled} />
-          <SettingsTextField label="Mật khẩu mới" value={newPassword} onChangeText={setNewPassword} theme={theme} secureTextEntry autoComplete="new-password" maxLength={72} disabled={disabled} />
-          <SettingsTextField label="Xác nhận mật khẩu mới" value={confirmPassword} onChangeText={setConfirmPassword} theme={theme} secureTextEntry autoComplete="new-password" maxLength={72} disabled={disabled} />
+          <SettingsTextField label="Mật khẩu hiện tại" value={currentPassword} onChangeText={setCurrentPassword} theme={theme} secureTextEntry autoComplete="current-password" disabled={disabled} returnKeyType="next" onSubmitEditing={() => newPasswordInput.current?.focus()} />
+          <SettingsTextField inputRef={newPasswordInput} label="Mật khẩu mới" value={newPassword} onChangeText={setNewPassword} theme={theme} secureTextEntry autoComplete="new-password" maxLength={72} disabled={disabled} returnKeyType="next" onSubmitEditing={() => confirmInput.current?.focus()} />
+          <SettingsTextField inputRef={confirmInput} label="Xác nhận mật khẩu mới" value={confirmPassword} onChangeText={setConfirmPassword} theme={theme} secureTextEntry autoComplete="new-password" maxLength={72} disabled={disabled} />
           {error ? <Text accessibilityRole="alert" style={{ color: theme.error }}>{error}</Text> : null}
           {saved ? <Text accessibilityLiveRegion="polite" style={{ color: theme.success }}>Đã đổi mật khẩu thành công.</Text> : null}
           <Pressable accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={() => void save()}
