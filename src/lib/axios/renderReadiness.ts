@@ -1,7 +1,10 @@
 import { create, isAxiosError } from "axios";
 
 const readyForMs = 5 * 60_000;
-const maxWaitMs = 60_000;
+// Render Free cold starts in the provided service logs took up to ~157 seconds.
+const maxWaitMs = 4 * 60_000;
+const probeTimeoutMs = 30_000;
+const retryDelayMs = 5_000;
 const probes = create({ headers: { Accept: "application/json" } });
 const services = new Map<string, { readyAt: number; pending?: Promise<void> }>();
 
@@ -28,7 +31,7 @@ export async function waitForRenderService(baseURL: string, requestPath = ""): P
     while (Date.now() < deadline) {
       try {
         const response = await probes.get<unknown>(`${baseURL.replace(/\/+$/, "")}${path}`, {
-          timeout: Math.min(15_000, deadline - Date.now()),
+          timeout: Math.min(probeTimeoutMs, deadline - Date.now()),
           validateStatus: () => true,
         });
         // GET login khong dang nhap: 401/405 xac nhan Identity da chay, khong tao token.
@@ -46,9 +49,9 @@ export async function waitForRenderService(baseURL: string, requestPath = ""): P
         if (!isAxiosError(error)) throw error;
       }
       const remaining = deadline - Date.now();
-      if (remaining > 0) await new Promise<void>(resolve => setTimeout(resolve, Math.min(2_000, remaining)));
+      if (remaining > 0) await new Promise<void>(resolve => setTimeout(resolve, Math.min(retryDelayMs, remaining)));
     }
-    throw new Error("Máy chủ Render đang khởi động hoặc chưa kết nối được. Vui lòng thử lại sau ít phút.");
+    throw new Error("Máy chủ Render chưa sẵn sàng sau 4 phút. Vui lòng kiểm tra trạng thái service và thử lại.");
   })().finally(() => { current.pending = undefined; });
   return current.pending;
 }
