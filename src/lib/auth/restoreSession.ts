@@ -1,6 +1,7 @@
 import api from "@/lib/axios/axios";
 import { getAccessToken, getRefreshToken } from "./tokenStorage";
 import { authenticateSession, enterGuestSession, getSessionSnapshot, sessionUnavailable } from "./sessionStore";
+import { recordAuthDiagnostic } from "./authDiagnostics";
 
 let restoring: Promise<void> | null = null;
 export function restoreSession(): Promise<void> {
@@ -10,6 +11,7 @@ export function restoreSession(): Promise<void> {
   restoring = (async () => {
     try {
       const [access, refresh] = await Promise.all([getAccessToken(), getRefreshToken()]);
+      recordAuthDiagnostic("credentials", { hasAccessToken: !!access, hasRefreshToken: !!refresh });
       if (getSessionSnapshot().generation !== generation) return;
       if (!access && !refresh) {
         enterGuestSession();

@@ -51,7 +51,7 @@ export function getExamErrorMessage(error: unknown): string {
     if (error.response.status === 401) {
       return getSessionSnapshot().status === "guest"
         ? "Tài nguyên này yêu cầu đăng nhập. Bạn vẫn có thể học các đề công khai."
-        : "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
+        : "Chưa tải được dữ liệu học tập. Vui lòng thử lại.";
     }
 
     if (error.response.status === 403) {

@@ -1,4 +1,5 @@
 import { useAppTheme } from "@/theme/useAppTheme";
+import { DialogContent } from "@/components/ui/DialogContent";
 import { useMemo as useThemeMemo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BrandedPageState } from "@/components/ui/BrandedPageState";
 import { useStudySession } from "../session/StudySessionProvider";
@@ -525,13 +526,15 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
               bảng câu hỏi.</>}
             </Text>
             <Text style={styles.muted}>
-              {practice ? `Đã tải ${allQuestions.length} câu. Kết quả lưu riêng từng Part; Part chưa trả lời câu nào sẽ không được gửi chấm.` : "Đề đã tải đủ 200 câu. Khi nộp, backend sẽ lưu một kết quả Listening và tối đa ba kết quả Reading theo Part."}
+              {practice ? `Đã tải ${allQuestions.length} câu. Kết quả lưu riêng từng Part; Part chưa trả lời câu nào sẽ không được gửi chấm.` : "Đã tải đủ 200 câu. Kết quả gồm phần Listening và từng Part Reading đã nộp."}
             </Text>
             {session.status === "guest" ? (
-              <Text style={styles.muted}>
-                Bài làm khách được giữ trong phiên hiện tại; đăng nhập để lưu
-                bản nháp và lịch sử.
-              </Text>
+              <View style={{ gap: 12 }}>
+                <Text style={styles.body}>{practice
+                  ? "Học thử · Kết quả chỉ hiển thị trong lượt này, không lưu vào tài khoản."
+                  : "Học thử Full Test chưa hỗ trợ chấm điểm hoặc lưu kết quả. Đăng nhập trước khi làm bài để nhận kết quả; đăng nhập giữa chừng không chuyển bài học thử vào tài khoản."}</Text>
+                {!practice ? <Action title="Quay lại chọn Part để luyện có chấm điểm" onPress={back} /> : null}
+              </View>
             ) : null}
             {practice ? null : fullAudioError ? (
               <Text style={styles.warning}>
@@ -707,7 +710,7 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
           }}
         >
           <View style={styles.overlay}>
-            <View style={styles.dialog}>
+            <DialogContent style={styles.dialog} contentStyle={{ gap: 14 }}>
               {results.length > 0 ? (
                 <>
                   <Text style={styles.title}>
@@ -722,7 +725,7 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
                   <Text style={styles.muted}>
                     {practice ? "Mỗi Part đã làm có một kết quả riêng. Part chưa trả lời câu nào không được gửi chấm." : "Backend lưu từng phần riêng, nên lịch sử có một kết quả Listening và các kết quả Reading đã nộp."}
                   </Text>
-                  <ScrollView style={styles.sheetScroll}>
+                  <View>
                   {results.map((result) => (
                     <View
                       key={
@@ -753,7 +756,7 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
                       {practice && !("resultId" in result) ? <GuestResultDetails result={result} /> : null}
                     </View>
                   ))}
-                  </ScrollView>
+                  </View>
                   {submitError ? (
                     <Text style={styles.warning}>{submitError}</Text>
                   ) : null}
@@ -821,7 +824,7 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
               ) : (
                 <>
                   <Text style={styles.title}>Bảng câu hỏi</Text>
-                  <ScrollView style={styles.sheetScroll}>
+                  <View>
                     {toeicParts.filter((part) => partNumbers.includes(part.number)).map((part) => {
                       const partData = loadState.parts.find(
                         (item) => item.partNumber === part.number
@@ -866,7 +869,7 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
                         </View>
                       );
                     })}
-                  </ScrollView>
+                  </View>
                   <Action
                     title="Đóng bảng câu hỏi"
                     onPress={() => setQuestionSheet(false)}
@@ -880,7 +883,7 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
                   />
                 </>
               )}
-            </View>
+            </DialogContent>
           </View>
         </Modal>
       </View>

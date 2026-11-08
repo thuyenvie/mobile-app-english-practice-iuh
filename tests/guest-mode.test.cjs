@@ -336,7 +336,7 @@ test("Guest Home shows login CTA, User Home keeps its greeting without CTA", () 
   assert.ok(text(app.hooks.output).includes("Đăng nhập để bắt đầu học"));
   app.session.authenticateSession("alice"); app.hooks.render();
   assert.equal(text(app.hooks.output).includes("Đăng nhập để bắt đầu học"),false);
-  assert.ok(text(app.hooks.output).includes("Chào mừng quay lại Alice!"));
+  assert.ok(text(app.hooks.output).includes("Chào Alice!"));
 });
 
 test("native practice player supplies a public URI without Authorization", async () => {

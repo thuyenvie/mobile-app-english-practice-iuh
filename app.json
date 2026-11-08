@@ -27,36 +27,46 @@
         "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/english-practice-adaptive.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ]
     },
     "web": {
       "favicon": "./assets/english-practice-icon.png"
     },
     "plugins": [
-  "expo-router",
-  "expo-font",
-  "expo-secure-store",
-  [
-    "expo-image-picker",
-    {
-      "photosPermission": "Cho phép ứng dụng chọn ảnh câu hỏi để gia sư AI giải thích.",
-      "cameraPermission": "Cho phép ứng dụng chụp ảnh câu hỏi để gia sư AI giải thích."
-    }
-  ],
-  [
-    "expo-build-properties",
-    {
-      "android": {
-        "usesCleartextTraffic": true
-      }
-    }
-  ]
-],
+      "expo-router",
+      "expo-font",
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Cho phép ứng dụng chọn ảnh câu hỏi để gia sư AI giải thích.",
+          "cameraPermission": "Cho phép ứng dụng chụp ảnh câu hỏi để gia sư AI giải thích."
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
+    ],
     "extra": {
       "router": {},
       "eas": {
         "projectId": "bb2d820e-fed5-4ce3-b1b7-f73c92003d6a"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/bb2d820e-fed5-4ce3-b1b7-f73c92003d6a"
     }
   }
 }

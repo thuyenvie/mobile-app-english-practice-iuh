@@ -1,3 +1,5 @@
+import { recordAuthDiagnostic } from "./authDiagnostics";
+
 export type SessionStatus = "loading" | "guest" | "authenticated";
 export interface SessionSnapshot {
   status: SessionStatus;
@@ -16,6 +18,7 @@ export function subscribeSession(listener: () => void) {
   return () => { listeners.delete(listener); };
 }
 function publish(next: SessionSnapshot) {
+  recordAuthDiagnostic("session", { sessionBefore: snapshot.status, sessionAfter: next.status });
   snapshot = next;
   listeners.forEach(listener => listener());
 }

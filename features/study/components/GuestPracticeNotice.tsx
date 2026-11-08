@@ -1,4 +1,5 @@
 import { useAppTheme } from "@/theme/useAppTheme";
+import { DialogContent } from "@/components/ui/DialogContent";
 import { useMemo as useThemeMemo, useState } from "react";
 
 import { Modal } from "react-native";
@@ -23,11 +24,11 @@ export function GuestPracticeNotice({ hasAnswers, busy = false }: { hasAnswers: 
     </YStack>
     <Modal visible={confirm} transparent animationType="fade" onRequestClose={() => setConfirm(false)}>
       <YStack flex={1} justifyContent="center" padding={24} backgroundColor={themeColor("#000b", "background")}>
-        <YStack padding={20} borderRadius={16} gap={16} backgroundColor={homeDesign.colors.surface}>
+        <DialogContent style={{ padding: 20, borderRadius: 16, backgroundColor: homeDesign.colors.surface }} contentStyle={{ gap: 16 }}>
           <Text color={homeDesign.colors.text}>Đăng nhập sẽ hủy bài học thử hiện tại. Bài làm và kết quả sẽ không được chuyển vào tài khoản.</Text>
           <AppButton onPress={openLogin}>Hủy bài và đăng nhập</AppButton>
           <AppButton appearance="text" onPress={() => setConfirm(false)}>Tiếp tục làm bài</AppButton>
-        </YStack>
+        </DialogContent>
       </YStack>
     </Modal>
   </>;

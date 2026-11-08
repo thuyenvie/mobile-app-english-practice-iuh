@@ -118,7 +118,10 @@ test("inline editor renders read-only days/timezone and setup CTA, disables edit
  const Entry = app.load("features/settings/entries/SET03Entry.tsx").SET03Entry;
  const theme = app.load("src/theme/palettes.ts").getAppTheme("light").settingsTheme;
  const render = () => app.hooks.render(Entry,{ authenticated:true,theme }); render(); await app.hooks.flush();
- let tree=render(); assert.match(text(tree),/Asia\/Ho_Chi_Minh/); assert.match(text(tree),/1, 3, 5/);
+ let tree=render(); assert.match(text(tree),/T2, T4, T6/);
+ assert.equal(nodes(tree).filter(n=>n.type === "TextInput").length,0);
+ button(tree,"Chi tiết nhắc học").props.onPress(); tree=render(); assert.match(text(tree),/Asia\/Ho_Chi_Minh/);
+ button(tree,"Chỉnh sửa nhắc học").props.onPress(); tree=render();
  assert.deepEqual(nodes(tree).filter(n=>n.type === "TextInput").map(n=>n.props.accessibilityLabel),["Giờ nhắc học","Yên lặng từ","Yên lặng đến"]);
  let resolve; app.handler=()=>new Promise(r=>{resolve=r;}); button(tree,"Lưu nhắc học").props.onPress(); await tick(); tree=render();
  assert.ok(nodes(tree).filter(n=>n.type === "TextInput").every(n=>n.props.editable===false)); assert.match(text(tree),/Đang xử lý/);
@@ -142,9 +145,11 @@ test("clear button copy keeps permission explicit, refresh GET-only, and saved t
  const theme=app.load("src/theme/palettes.ts").getAppTheme("light").settingsTheme;
  const render=()=>app.hooks.render(Entry,{authenticated:true,theme});render();await app.hooks.flush();let tree=render();
  assert.match(text(tree),/Chưa kiểm tra quyền/);assert.match(text(tree),/Giờ nhắc đã lưu: 20:00/);
+ button(tree,"Chi tiết nhắc học").props.onPress(); tree=render();
  assert.match(text(tree),/không gửi thông báo thử/);assert.match(text(tree),/đăng ký máy này cho tài khoản/);
  assert.ok(button(tree,"Cho phép nhận thông báo"));assert.ok(button(tree,"Kiểm tra lại lịch nhắc"));
  assert.equal(registrations,0);assert.equal(app.requests.length,1);
+ button(tree,"Chỉnh sửa nhắc học").props.onPress(); tree=render();
  nodes(tree).find(n=>n.type==="TextInput"&&n.props.accessibilityLabel==="Giờ nhắc học").props.onChangeText("18:20");
  tree=render();assert.match(text(tree),/Giờ nhắc đã lưu: 20:00/);
  assert.equal(nodes(tree).find(n=>n.type==="TextInput"&&n.props.accessibilityLabel==="Giờ nhắc học").props.value,"18:20");
