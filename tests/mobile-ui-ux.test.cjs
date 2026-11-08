@@ -101,11 +101,11 @@ for (const pending of [true, false]) test(`catalog stays usable while auxiliary 
   app.hooks.dispose();
 });
 
-test("Register explains availability before requesting credentials and keeps existing alternatives", () => {
+test("Register offers account creation and keeps the Guest alternative", () => {
   const app = environment();
   const tree = app.hooks.render(app.load("features/auth/screens/RegisterScreen.tsx").default);
-  assert.match(tree.props.title, /chưa khả dụng/);
-  assert.equal(nodes(tree).some(n => /Input/.test(String(n.type))), false);
+  assert.match(tree.props.title, /Tạo tài khoản/);
+  assert.equal(nodes(tree).filter(n => n.props.label).length, 4);
   nodeWith(tree, n => text(n) === "Tiếp tục học thử" && n.props.onPress).props.onPress();
   assert.deepEqual(plain(app.routerCalls), [["replace", "/(tabs)/home"]]);
   assert.equal(app.requests.length, 0);

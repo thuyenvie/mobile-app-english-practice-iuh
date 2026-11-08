@@ -2,7 +2,7 @@ import { useAppTheme } from "@/theme/useAppTheme";
 import { useMemo as useThemeMemo, useRef, useState } from "react";
 import type { InputRef } from "tamagui";
 
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { Text, XStack, YStack } from "tamagui";
 
 
@@ -14,6 +14,7 @@ import { getLoginErrorMessage, login } from "../api/authApi";
 import { useGoogleLogin } from "../hooks/useGoogleLogin";
 
 export default function LoginScreen() {
+  const { registered } = useLocalSearchParams<{ registered?: string }>();
   const { design, themeColor } = useThemedStyles();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -71,6 +72,9 @@ export default function LoginScreen() {
 
   return (
     <AuthScaffold title="Chào mừng trở lại!" subtitle="Đăng nhập để tiếp tục lộ trình TOEIC.">
+      {registered === "1" ? <Text aria-live="polite" color={design.link} marginBottom={10}>
+        Đăng ký thành công. Vui lòng đăng nhập bằng email và mật khẩu vừa tạo.
+      </Text> : null}
       <YStack gap={10}>
         <AppInput
           {...design.input}
@@ -126,9 +130,9 @@ export default function LoginScreen() {
         Tiếp tục học thử
       </AppButton>
       <XStack alignItems="center" justifyContent="center" flexWrap="wrap" gap={6}>
-        <Text color={design.muted} fontSize={14}>Đăng ký hiện chưa khả dụng.</Text>
+        <Text color={design.muted} fontSize={14}>Chưa có tài khoản?</Text>
         <AppButton appearance="text" color={design.link} fontSize={14} onPress={() => router.push("/auth/register")}>
-          Xem thông tin
+          Đăng ký
         </AppButton>
       </XStack>
       <Text textAlign="center" color={design.muted} fontSize={12}>
