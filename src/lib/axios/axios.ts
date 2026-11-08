@@ -8,10 +8,16 @@ import {
   saveTokenPair,
 } from "@/lib/auth/tokenStorage";
 import { notifySessionExpired } from "@/lib/auth/sessionEvents";
-import { assertSessionGeneration, enterGuestSession, getSessionSnapshot } from "@/lib/auth/sessionStore";
+import { assertSessionGeneration, enterGuestSession, getSessionSnapshot, type SessionStatus } from "@/lib/auth/sessionStore";
+import { recordAuthDiagnostic } from "@/lib/auth/authDiagnostics";
 
 declare module "axios" {
-  interface AxiosRequestConfig { sessionGeneration?: number; }
+  interface AxiosRequestConfig {
+    sessionGeneration?: number;
+    _authSessionBefore?: SessionStatus;
+    _authHasAccessToken?: boolean;
+    _authHasRefreshToken?: boolean;
+  }
 }
 
 /**
@@ -57,6 +63,37 @@ const refreshClient = create({
   headers: { Accept: "application/json" },
 });
 
+function traceHttp(client: ReturnType<typeof create>) {
+  client.interceptors.request.use(config => {
+    config._authSessionBefore = getSessionSnapshot().status;
+    recordAuthDiagnostic("request", {
+      endpoint: config.url,
+      sessionBefore: config._authSessionBefore,
+      hasAccessToken: config._authHasAccessToken,
+      hasRefreshToken: config._authHasRefreshToken,
+    });
+    return config;
+  });
+  client.interceptors.response.use(response => {
+    recordAuthDiagnostic("response", {
+      endpoint: response.config.url, status: response.status,
+      code: response.data?.code,
+      sessionBefore: response.config._authSessionBefore, sessionAfter: getSessionSnapshot().status,
+    });
+    return response;
+  }, (error: unknown) => {
+    if (isAxiosError(error)) recordAuthDiagnostic("response", {
+      endpoint: error.config?.url, status: error.response?.status ?? null,
+      code: error.response?.data?.code,
+      sessionBefore: error.config?._authSessionBefore, sessionAfter: getSessionSnapshot().status,
+    });
+    return Promise.reject(error);
+  });
+}
+traceHttp(api);
+traceHttp(publicApi);
+traceHttp(refreshClient);
+
 interface AuthResult {
   token: string;
   refreshToken: string;
@@ -90,17 +127,121 @@ class InvalidRefreshSessionError extends Error {
 }
 
 let refreshInFlight: { generation: number; promise: Promise<string> } | null = null;
+type IdentityValidity = "valid" | "invalid" | "mismatch" | "unavailable";
+let identityCheckInFlight: {
+  generation: number; accessToken: string | null; promise: Promise<IdentityValidity>;
+} | null = null;
+let identityCache: {
+  generation: number; accessToken: string | null; validity: IdentityValidity; until: number;
+} | null = null;
+let refreshCooldown: { generation: number; accessToken: string | null; until: number } | null = null;
+
+function verificationDeadline(accessToken: string | null, duration: number): number {
+  const deadline = Date.now() + duration;
+  try {
+    const payload = accessToken?.split(".")[1]?.replace(/-/g, "+").replace(/_/g, "/");
+    if (!payload) return deadline;
+    const expiry: unknown = JSON.parse(atob(payload.padEnd(Math.ceil(payload.length / 4) * 4, "="))).exp;
+    // Unverified claims only shorten the cache lifetime; they never authorize a request.
+    return typeof expiry === "number" && Number.isFinite(expiry) ? Math.min(deadline, expiry * 1000) : deadline;
+  } catch {
+    return deadline;
+  }
+}
+
+async function verifyIdentitySession(generation: number, accessToken: string | null): Promise<IdentityValidity> {
+  let validity: IdentityValidity = "unavailable";
+  try {
+    assertSessionGeneration(generation);
+    if (!accessToken) return "unavailable";
+    // This client has no refresh interceptor: verification cannot recursively refresh.
+    const response = await refreshClient.get<{ success: boolean; result?: { userName?: string } }>(
+      "/identity/user/my-info", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        sessionGeneration: generation, _authHasAccessToken: true,
+      },
+    );
+    assertSessionGeneration(generation);
+    const subject = response.data.result?.userName;
+    if (response.data.success !== true || typeof subject !== "string" || !subject) return "unavailable";
+    const current = getSessionSnapshot();
+    validity = current.subject && current.subject !== subject ? "mismatch" : "valid";
+  } catch (error) {
+    assertSessionGeneration(generation);
+    // A permission error, outage, or malformed response is not proof of an expired session.
+    if (!isAxiosError(error) || error.response?.status !== 401) return "unavailable";
+    validity = "invalid";
+  }
+  try {
+    const latestAccessToken = await getAccessToken();
+    assertSessionGeneration(generation);
+    // Another refresh may rotate credentials without changing the account generation.
+    return latestAccessToken === accessToken ? validity : "unavailable";
+  } catch {
+    assertSessionGeneration(generation);
+    return "unavailable";
+  }
+}
+
+async function checkIdentitySession(generation: number): Promise<IdentityValidity> {
+  const accessToken = await getAccessToken();
+  assertSessionGeneration(generation);
+  if (!accessToken) return "invalid"; // A stored refresh token can restore a missing access token.
+  if (identityCache?.generation === generation && identityCache.accessToken === accessToken && identityCache.until > Date.now()) {
+    return identityCache.validity;
+  }
+  if (!identityCheckInFlight || identityCheckInFlight.generation !== generation || identityCheckInFlight.accessToken !== accessToken) {
+    const pending = { generation, accessToken, promise: verifyIdentitySession(generation, accessToken).then(validity => {
+      assertSessionGeneration(generation);
+      if (validity === "valid" || validity === "unavailable") {
+        identityCache = { generation, accessToken, validity,
+          until: validity === "valid" ? verificationDeadline(accessToken, 30_000) : Date.now() + 5_000 };
+      }
+      return validity;
+    }) };
+    identityCheckInFlight = pending;
+    void pending.promise.finally(() => {
+      if (identityCheckInFlight === pending) identityCheckInFlight = null;
+    }).catch(() => undefined);
+  }
+  return identityCheckInFlight.promise;
+}
+
+async function refreshOrReuseAccessToken(generation: number, failedToken: string | null): Promise<string> {
+  const latest = await getAccessToken();
+  assertSessionGeneration(generation);
+  // Another request may have completed refresh after this request was rejected.
+  if (latest && latest !== failedToken) return latest;
+  if (refreshCooldown?.generation === generation && refreshCooldown.accessToken === latest && refreshCooldown.until > Date.now()) {
+    throw new RefreshUnavailableError();
+  }
+  if (!refreshInFlight || refreshInFlight.generation !== generation) {
+    const pending = { generation, promise: refreshAccessToken(generation).catch(error => {
+      if (error instanceof RefreshUnavailableError) {
+        refreshCooldown = { generation, accessToken: latest, until: Date.now() + 5_000 };
+      }
+      throw error;
+    }) };
+    refreshInFlight = pending;
+    void pending.promise.finally(() => {
+      if (refreshInFlight === pending) refreshInFlight = null;
+    }).catch(() => undefined);
+  }
+  return refreshInFlight.promise;
+}
 
 async function refreshAccessToken(generation: number): Promise<string> {
-  assertSessionGeneration(generation);
-  const refreshToken = await getRefreshToken();
-  assertSessionGeneration(generation);
-  if (!refreshToken) throw new InvalidRefreshSessionError();
-
+  const sessionBefore = getSessionSnapshot().status;
   try {
+    assertSessionGeneration(generation);
+    const refreshToken = await getRefreshToken();
+    assertSessionGeneration(generation);
+    recordAuthDiagnostic("credentials", { hasRefreshToken: !!refreshToken });
+    if (!refreshToken) throw new InvalidRefreshSessionError();
     const response = await refreshClient.post<AuthEnvelope>(
       "/identity/auth/refresh",
-      { refreshToken }
+      { refreshToken },
+      { sessionGeneration: generation, _authHasRefreshToken: true },
     );
     const result = response.data?.result;
     if (
@@ -114,8 +255,13 @@ async function refreshAccessToken(generation: number): Promise<string> {
 
     // Backend rotates both credentials; persist the new refresh token before retrying requests.
     await saveTokenPair(result.token, result.refreshToken, { generation });
+    recordAuthDiagnostic("refresh", {
+      refresh: "success", hasAccessToken: true, hasRefreshToken: true,
+      sessionBefore, sessionAfter: getSessionSnapshot().status,
+    });
     return result.token;
   } catch (error) {
+    recordAuthDiagnostic("refresh", { refresh: "failure", sessionBefore, sessionAfter: getSessionSnapshot().status });
     if (error instanceof InvalidRefreshSessionError) throw error;
     if (isAxiosError(error)) {
       const status = error.response?.status;
@@ -165,6 +311,7 @@ api.interceptors.request.use(async (config) => {
   }
   const token = await getAccessToken();
   assertSessionGeneration(config.sessionGeneration);
+  config._authHasAccessToken = !!token;
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
@@ -194,23 +341,41 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // A retried request failing with 401 means the new access token cannot authorize this API.
+    const authorization = request.headers.get("Authorization");
+    const failedToken = typeof authorization === "string" && authorization.startsWith("Bearer ") ? authorization.slice(7) : null;
+    const latestToken = await getAccessToken();
+    assertSessionGeneration(generation);
+    if (latestToken && latestToken !== failedToken) {
+      if (request._accessTokenRetried) return Promise.reject(error);
+      request._accessTokenRetried = true;
+      request.headers.Authorization = `Bearer ${latestToken}`;
+      return api(request);
+    }
+
+    // A downstream denial is not proof that the Identity session has expired.
     if (request._accessTokenRetried) {
-      await expireLocalSession(generation);
+      const validity = requestPath === "/identity/user/my-info" ? "invalid" : await checkIdentitySession(generation);
+      if (validity === "invalid" || validity === "mismatch") {
+        await expireLocalSession(generation);
+      }
       return Promise.reject(error);
+    }
+
+    if (refreshCooldown?.generation === generation && refreshCooldown.accessToken === latestToken && refreshCooldown.until > Date.now()) {
+      return Promise.reject(new RefreshUnavailableError());
+    }
+    if (requestPath !== "/identity/user/my-info") {
+      const validity = await checkIdentitySession(generation);
+      if (validity === "mismatch") await expireLocalSession(generation);
+      if (validity !== "invalid") return Promise.reject(error);
+    } else {
+      identityCache = null; // A direct Identity rejection overrides cached verification.
     }
 
     request._accessTokenRetried = true;
     request._skipAuthRefresh = true;
     try {
-      if (!refreshInFlight || refreshInFlight.generation !== generation) {
-        const pending = { generation, promise: refreshAccessToken(generation) };
-        refreshInFlight = pending;
-        void pending.promise.finally(() => {
-          if (refreshInFlight === pending) refreshInFlight = null;
-        }).catch(() => undefined);
-      }
-      const newAccessToken = await refreshInFlight.promise;
+      const newAccessToken = await refreshOrReuseAccessToken(generation, failedToken);
       assertSessionGeneration(generation);
       request.headers.Authorization = `Bearer ${newAccessToken}`;
       request._skipAuthRefresh = false;

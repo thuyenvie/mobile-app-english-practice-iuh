@@ -1,4 +1,5 @@
 import { useAppTheme } from "@/theme/useAppTheme";
+import { DialogContent } from "@/components/ui/DialogContent";
 import { useMemo as useThemeMemo, useCallback, useState } from "react";
 
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
@@ -288,7 +289,7 @@ export function RecentStudyTimeCard({ authenticated }: { authenticated: boolean 
             onPress={() => setGoalModalVisible(false)}
             style={StyleSheet.absoluteFill}
           />
-          <View style={[styles.modalCard, { width: modalWidth }]}>
+          <DialogContent style={[styles.modalCard, { width: modalWidth }]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Đặt mục tiêu thời gian (phút)</Text>
             </View>
@@ -352,7 +353,7 @@ export function RecentStudyTimeCard({ authenticated }: { authenticated: boolean 
                 <Text style={styles.saveText}>{savingGoal ? "Đang lưu..." : "Lưu"}</Text>
               </Pressable>
             </View>
-          </View>
+          </DialogContent>
         </View>
       </Modal>
     </View>
@@ -391,11 +392,11 @@ function useThemedStyles() {
       modalOverlay: { flex: 1, alignItems: "center", justifyContent: "center", padding: 20, backgroundColor: themeColor("rgba(0, 0, 0, 0.68)", "background") },
       modalCard: { overflow: "hidden", borderRadius: 24, backgroundColor: c.surface },
       modalHeader: { minHeight: 70, justifyContent: "center", alignItems: "center", paddingHorizontal: 18, backgroundColor: authDesign.colors.primary },
-      modalTitle: { color: c.text, fontSize: 19, lineHeight: 25, fontWeight: "700", textAlign: "center" },
+      modalTitle: { color: c.onAccent, fontSize: 19, lineHeight: 25, fontWeight: "700", textAlign: "center" },
       modalContent: { minHeight: 245, alignItems: "center", justifyContent: "center", paddingHorizontal: 22, paddingVertical: 24, gap: 28 },
       switchRow: { width: "100%", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 20 },
       modalBodyText: { color: c.text, fontSize: 16 },
-      stepper: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 30 },
+      stepper: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "center", gap: 12 },
       stepButton: { width: 52, height: 52, alignItems: "center", justifyContent: "center", borderRadius: 26, backgroundColor: c.surfaceRaised },
       targetValue: { minWidth: 48, color: c.text, fontSize: 22, textAlign: "center" },
       modalFooter: { minHeight: 58, flexDirection: "row", borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border },

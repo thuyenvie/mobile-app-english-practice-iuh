@@ -1,4 +1,5 @@
 import { useAppTheme } from "@/theme/useAppTheme";
+import { DialogContent } from "@/components/ui/DialogContent";
 import { useMemo as useThemeMemo, useState } from "react";
 
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -36,7 +37,7 @@ export default function StudySessionScreen() {
     </>}
   </ScrollView>
   <Modal visible={confirm} transparent animationType="slide" onRequestClose={() => { if (!busy) setConfirm(false); }}>
-    <View style={styles.overlay}><View style={[styles.sheet, { paddingBottom: insets.bottom + 20 }]}><Text style={styles.title}>Kết thúc phiên học?</Text><Text style={styles.muted}>Thời gian được lưu khi bạn xác nhận. “Học tiếp sau” giữ nhiệm vụ chưa hoàn thành.</Text><Action label="Đã hoàn thành nhiệm vụ" busy={busy} onPress={() => finish(true)} /><Action secondary label="Học tiếp sau" busy={busy} onPress={() => finish(false)} /><Action secondary label="Quay lại phiên học" busy={busy} onPress={() => setConfirm(false)} /></View></View>
+    <View style={styles.overlay}><DialogContent style={styles.sheet} contentStyle={{ gap: 14 }}><Text style={styles.title}>Kết thúc phiên học?</Text><Text style={styles.muted}>Thời gian được lưu khi bạn xác nhận. “Học tiếp sau” giữ nhiệm vụ chưa hoàn thành.</Text><Action label="Đã hoàn thành nhiệm vụ" busy={busy} onPress={() => finish(true)} /><Action secondary label="Học tiếp sau" busy={busy} onPress={() => finish(false)} /><Action secondary label="Quay lại phiên học" busy={busy} onPress={() => setConfirm(false)} /></DialogContent></View>
   </Modal></StudyScaffold>;
 }
 function Action({ label, onPress, secondary = false, busy = false }: { label: string; onPress: () => void; secondary?: boolean; busy?: boolean }) {

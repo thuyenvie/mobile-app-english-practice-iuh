@@ -1,5 +1,6 @@
 import { useAppTheme } from "@/theme/useAppTheme";
-import { useMemo as useThemeMemo, useState } from "react";
+import { useMemo as useThemeMemo, useRef, useState } from "react";
+import type { InputRef } from "tamagui";
 
 import { router } from "expo-router";
 import { Text, XStack, YStack } from "tamagui";
@@ -16,6 +17,7 @@ export default function LoginScreen() {
   const { design, themeColor } = useThemedStyles();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const passwordInput = useRef<InputRef>(null);
   const [notice, setNotice] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { completeGoogleSignIn, isGoogleLoading, signInWithGoogle } =
@@ -81,6 +83,9 @@ export default function LoginScreen() {
           value={username}
           onChangeText={setUsername}
           autoComplete="username"
+          returnKeyType="next"
+          submitBehavior="submit"
+          onSubmitEditing={() => passwordInput.current?.focus()}
         />
         <AppInput
           {...design.input}
@@ -89,11 +94,14 @@ export default function LoginScreen() {
           autoCapitalize="none"
           autoCorrect={false}
           label="Mật khẩu"
+          inputRef={passwordInput}
           placeholder="Nhập mật khẩu"
           value={password}
           onChangeText={setPassword}
           secureTextEntry
           autoComplete="current-password"
+          returnKeyType="done"
+          submitBehavior="blurAndSubmit"
         />
         {notice ? <Text aria-live="polite" color={design.error}>{notice}</Text> : null}
         <AppButton {...design.button} disabled={isSubmitting || isGoogleLoading}
@@ -118,9 +126,9 @@ export default function LoginScreen() {
         Tiếp tục học thử
       </AppButton>
       <XStack alignItems="center" justifyContent="center" flexWrap="wrap" gap={6}>
-        <Text color={design.muted} fontSize={14}>Chưa có tài khoản?</Text>
+        <Text color={design.muted} fontSize={14}>Đăng ký hiện chưa khả dụng.</Text>
         <AppButton appearance="text" color={design.link} fontSize={14} onPress={() => router.push("/auth/register")}>
-          Đăng ký
+          Xem thông tin
         </AppButton>
       </XStack>
       <Text textAlign="center" color={design.muted} fontSize={12}>

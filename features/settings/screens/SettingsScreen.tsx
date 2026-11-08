@@ -13,7 +13,8 @@ import { SET06Entry } from "../entries/SET06Entry";
 import { SET07Entry } from "../entries/SET07Entry";
 import { SET08Entry } from "../entries/SET08Entry";
 
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, StyleSheet, View } from "react-native";
+import { FormScrollView } from "@/components/ui/FormScrollView";
 import { router } from "expo-router";
 import { Text, YStack } from "tamagui";
 
@@ -105,7 +106,7 @@ export default function SettingsScreen() {
 
   return (
     <HomeScaffold>
-      <ScrollView
+      <FormScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
       >
@@ -123,10 +124,6 @@ export default function SettingsScreen() {
             <Text color={homeDesign.colors.secondary}>
               Đang đăng nhập: {session.subject ?? "tài khoản"}
             </Text>
-            {error ? <Text color={homeDesign.colors.inProgress}>{error}</Text> : null}
-            <AppButton disabled={busy} onPress={confirmLogout}>
-              {busy ? "Đang đăng xuất..." : "Đăng xuất"}
-            </AppButton>
           </YStack>
         ) : (
           <YStack gap={12}>
@@ -146,16 +143,22 @@ export default function SettingsScreen() {
         </View> : null}
         {settings.recoveredFields.length ? <Text style={{ color: settingsTheme.warning }}>Một số lựa chọn đã lưu không hợp lệ; đang dùng giá trị mặc định cho các mục đó.</Text> : null}
         {settings.persistenceError ? <Text style={{ color: settingsTheme.error }}>{settings.persistenceError.message}</Text> : null}
-        <SettingsSection title="Giao diện và học tập">
-          <SET01Entry {...entryProps} />
-          <SET02Entry {...entryProps} />
-          <SET03Entry {...entryProps} />
-        </SettingsSection>
         <SettingsSection title="Tài khoản">
           <RequireAccount title="Cài đặt tài khoản">
             <SET04Entry {...entryProps} />
             <SET05Entry {...entryProps} />
           </RequireAccount>
+          {session.status === "authenticated" ? <>
+            {error ? <Text role="alert" color={settingsTheme.error}>{error}</Text> : null}
+            <AppButton appearance="text" color={settingsTheme.error} disabled={busy} onPress={confirmLogout}>
+              {busy ? "Đang đăng xuất..." : "Đăng xuất"}
+            </AppButton>
+          </> : null}
+        </SettingsSection>
+        <SettingsSection title="Giao diện và học tập">
+          <SET01Entry {...entryProps} />
+          <SET02Entry {...entryProps} />
+          <SET03Entry {...entryProps} />
         </SettingsSection>
         <SettingsSection title="Dữ liệu và hỗ trợ">
           <SET06Entry {...entryProps} />
@@ -167,7 +170,7 @@ export default function SettingsScreen() {
           <SET07Entry {...entryProps} />
         </SettingsSection>
         <RecentStudyTimeCard authenticated={session.status === "authenticated"} />
-      </ScrollView>
+      </FormScrollView>
     </HomeScaffold>
   );
 }
@@ -177,7 +180,7 @@ function useThemedStyles() {
   return useThemeMemo(() => {
     const { settingsTheme, homeDesign } = appTheme;
     const styles = StyleSheet.create({
-      content: { flexGrow: 1, padding: 24, paddingBottom: 32, gap: 18, backgroundColor: homeDesign.colors.background },
+      content: { flexGrow: 1, padding: 16, paddingBottom: 32, gap: 24, backgroundColor: homeDesign.colors.background },
       statusRow: { flexDirection: "row", alignItems: "center", gap: 10 },
     });
     return { settingsTheme, homeDesign, styles };

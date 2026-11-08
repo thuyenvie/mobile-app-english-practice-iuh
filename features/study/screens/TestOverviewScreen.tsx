@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Text, XStack, YStack } from "tamagui";
 
 import { AppButton } from "@/components/ui/AppButton";
+import { useSession } from "@/lib/auth/useSession";
 
 import { PartCard } from "../components/PartCard";
 import { SectionTitle } from "../components/SectionTitle";
@@ -16,6 +17,7 @@ import { toeicParts } from "../data/toeicCatalog";
 
 export default function TestOverviewScreen() {
   const { homeDesign, styles } = useThemedStyles();
+  const session = useSession();
   const params = useLocalSearchParams<{ year?: string; testNumber?: string }>();
   const year = Number(params.year);
   const testNumber = Number(params.testNumber);
@@ -133,6 +135,9 @@ export default function TestOverviewScreen() {
             <AppButton marginTop={6} onPress={startFullTest}>
               Bắt đầu Full Test
             </AppButton>
+            {session.status === "guest" ? <Text color={homeDesign.colors.secondary} fontSize={14} lineHeight={20}>
+              Học thử Full Test chưa hỗ trợ chấm điểm hoặc lưu kết quả. Chọn Part bên dưới để luyện và xem số câu đúng ngay.
+            </Text> : null}
           </YStack>
 
           <YStack gap={10} marginBottom={20}>
@@ -208,7 +213,7 @@ function useThemedStyles() {
       },
       selectionSummary: { color: homeDesign.colors.secondary, fontSize: 13, textAlign: "center" },
       startButton: { minHeight: 52, padding: 14, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: homeDesign.colors.link },
-      startLabel: { color: homeDesign.colors.text, fontSize: 16, fontWeight: "700", textAlign: "center" },
+      startLabel: { color: homeDesign.colors.onAccent, fontSize: 16, fontWeight: "700", textAlign: "center" },
       disabled: { opacity: 0.45 },
     });
     return { homeDesign, styles };

@@ -97,6 +97,8 @@ test("Full Test still loads seven Parts and the continuous audio", async () => {
   await app.hooks.flush();
   assert.equal(app.requests.filter((request) => /\/parts\/[1-7]$/.test(request.url)).length, 7);
   assert.equal(app.audioSources.length, 1);
+  assert.match(text(app.hooks.output), /Full Test chưa hỗ trợ chấm điểm hoặc lưu kết quả/);
+  assert.ok(nodes(app.hooks.output).some(node => node.props.title === "Quay lại chọn Part để luyện có chấm điểm"));
   assert.ok(nodes(app.hooks.output).some((node) => node.props.title === "Bắt đầu làm bài · 120 phút"));
   app.hooks.dispose();
 });
