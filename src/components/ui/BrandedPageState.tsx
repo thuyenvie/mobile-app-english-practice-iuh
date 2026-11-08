@@ -1,6 +1,8 @@
 import { useAppTheme } from "@/theme/useAppTheme";
+import { DialogContent } from "./DialogContent";
 import { useMemo as useThemeMemo, useEffect, useState } from "react";
-import { Animated, Easing, Image, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Animated, Easing, Image, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 
@@ -40,6 +42,8 @@ function LoadingDots({ light }: { light?: boolean }) {
 
 export function BrandedPageState({ message, loading, compact, overlay, onRetry, onBack }: Props) {
   const { themeColor, blue, styles } = useThemedStyles();
+  const { height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const small = compact || overlay;
   const content = <>
     <Image source={logo} accessibilityLabel="Practice Easy English" style={[styles.logo, small && styles.smallLogo]} />
@@ -65,9 +69,9 @@ export function BrandedPageState({ message, loading, compact, overlay, onRetry, 
   </>;
 
   if (overlay) return <View style={styles.overlay}>
-    <View style={[styles.content, styles.dialog]}>{content}</View>
+    <DialogContent style={[styles.dialog, { padding: 0 }]} contentStyle={[styles.content, { padding: 18, gap: 10 }]}>{content}</DialogContent>
   </View>;
-  if (compact) return <View style={[styles.content, styles.card]}>{content}</View>;
+  if (compact) return <ScrollView nestedScrollEnabled style={[styles.card, { flexGrow: 0, maxHeight: Math.max(1, height - insets.top - insets.bottom - 48) }]} contentContainerStyle={styles.content}>{content}</ScrollView>;
   return <ScrollView style={styles.screen} contentContainerStyle={[styles.content, styles.page]}>{content}</ScrollView>;
 }
 

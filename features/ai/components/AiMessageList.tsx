@@ -1,5 +1,5 @@
 import { useAppTheme } from "@/theme/useAppTheme";
-import { useMemo as useThemeMemo, useEffect, useRef } from "react";
+import { useMemo as useThemeMemo, useEffect, useRef, type ReactNode } from "react";
 
 import { FlatList, Image } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
@@ -20,6 +20,7 @@ export function AiMessageList({
   hasOlderMessages,
   onSuggestion,
   onLoadOlder,
+  suggestionContent,
 }: {
   messages: TutorMessage[];
   loading: boolean;
@@ -27,6 +28,7 @@ export function AiMessageList({
   hasOlderMessages: boolean;
   onSuggestion: (prompt: string) => void;
   onLoadOlder: () => void;
+  suggestionContent?: ReactNode;
 }) {
   const { aiDesign } = useThemedStyles();
   const listRef = useRef<FlatList<TutorMessage>>(null);
@@ -47,6 +49,7 @@ export function AiMessageList({
       )}
       contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12, gap: 14 }}
       keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
       showsVerticalScrollIndicator={false}
       ListHeaderComponent={
         hasOlderMessages ? (
@@ -63,7 +66,7 @@ export function AiMessageList({
           </AppButton>
         ) : null
       }
-      ListFooterComponent={loading ? <TypingBubble /> : null}
+      ListFooterComponent={<>{suggestionContent}{loading ? <TypingBubble /> : null}</>}
     />
   );
 }
@@ -75,7 +78,7 @@ function AiMessageBubble({
   message: TutorMessage;
   onSuggestion: (prompt: string) => void;
 }) {
-  const { aiDesign } = useThemedStyles();
+  const { aiDesign, homeDesign } = useThemedStyles();
   const user = message.role === 'user';
 
   return (
@@ -93,18 +96,18 @@ function AiMessageBubble({
             <Image
               source={{ uri: message.imageUri }}
               resizeMode="cover"
-              style={{ width: 210, height: 160, borderRadius: 10 }}
+              style={{ width: 210, maxWidth: "100%", aspectRatio: 21 / 16, borderRadius: 10 }}
             />
           ) : null}
           {message.kind === 'image' && !message.imageUri ? (
             <XStack alignItems="center" gap={7}>
-              <MaterialCommunityIcons name="image-off-outline" size={22} color={aiDesign.colors.text} />
-              <Text color={aiDesign.colors.secondary} fontSize={11} flexShrink={1}>
+              <MaterialCommunityIcons name="image-off-outline" size={22} color={user ? homeDesign.colors.onAccent : aiDesign.colors.text} />
+              <Text color={user ? homeDesign.colors.onAccent : aiDesign.colors.secondary} fontSize={14} flexShrink={1}>
                 Ảnh không còn trên thiết bị này.
               </Text>
             </XStack>
           ) : null}
-          <Text color={user ? '#FFFFFF' : aiDesign.colors.text} fontSize={15} lineHeight={21}>
+          <Text color={user ? homeDesign.colors.onAccent : aiDesign.colors.text} fontSize={15} lineHeight={21}>
             {message.text}
           </Text>
           {message.kind === 'chat' ? (

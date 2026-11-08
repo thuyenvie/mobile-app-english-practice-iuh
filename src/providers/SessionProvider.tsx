@@ -2,10 +2,14 @@ import { Fragment, useEffect, type PropsWithChildren } from "react";
 import { BrandedPageState } from "@/components/ui/BrandedPageState";
 import { useSession } from "@/lib/auth/useSession";
 import { restoreSession } from "@/lib/auth/restoreSession";
+import { recordUpdateDiagnostic } from "@/lib/auth/updateDiagnostics";
 
 export function SessionProvider({ children }: PropsWithChildren) {
   const session = useSession();
-  useEffect(() => { void restoreSession(); }, []);
+  useEffect(() => {
+    recordUpdateDiagnostic();
+    void restoreSession();
+  }, []);
   if (session.status === "loading") {
     return <BrandedPageState
       loading={!session.error}

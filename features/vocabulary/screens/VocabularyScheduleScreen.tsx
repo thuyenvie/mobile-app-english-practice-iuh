@@ -1,7 +1,8 @@
 import { useAppTheme } from "@/theme/useAppTheme";
 import { useMemo as useThemeMemo, useEffect, useRef, useState } from "react";
 
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Switch, Text, TextInput, View } from "react-native";
+import { FormScrollView, useFormInputFocus } from "@/components/ui/FormScrollView";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSession } from "@/lib/auth/useSession";
@@ -95,7 +96,7 @@ export default function VocabularyScheduleScreen() {
     } catch (cause: unknown) { if (getSessionSnapshot().generation === generation) setError(getExamErrorMessage(cause)); }
     finally { savingRef.current = false; setSaving(false); }
   };
-  return <StudyScaffold><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}>
+  return <StudyScaffold><FormScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}>
     <Pressable onPress={back} disabled={saving} accessibilityRole="button"><Text style={styles.link}>‹ Quay lại</Text></Pressable>
     <Text style={styles.heading}>{editing ? "Sửa lịch ôn" : "Lên lịch ôn từ"}</Text>
     {loading ? <ActivityIndicator color={c.tabActive} /> : <>
@@ -112,12 +113,13 @@ export default function VocabularyScheduleScreen() {
       </>}
     </>}
     {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
-  </ScrollView></StudyScaffold>;
+  </FormScrollView></StudyScaffold>;
 }
 function Field({ label, value, onChange, numeric, disabled }: { label: string; value: string; onChange: (value: string) => void; numeric?: boolean; disabled: boolean }) {
   const { resolvedMode } = useAppTheme();
+  const focusInput = useFormInputFocus();
   const { styles } = useThemedStyles();
-  return <View style={{ gap: 7 }}><Text style={styles.text}>{label}</Text><TextInput keyboardAppearance={resolvedMode} accessibilityLabel={label} value={value} onChangeText={onChange} editable={!disabled} autoCapitalize="none" keyboardType={numeric ? "number-pad" : "default"} style={styles.input} /></View>;
+  return <View style={{ gap: 7 }}><Text style={styles.text}>{label}</Text><TextInput keyboardAppearance={resolvedMode} accessibilityLabel={label} onFocus={focusInput} returnKeyType="done" autoCorrect={false} value={value} onChangeText={onChange} editable={!disabled} autoCapitalize="none" keyboardType={numeric ? "number-pad" : "default"} style={styles.input} /></View>;
 }
 
 

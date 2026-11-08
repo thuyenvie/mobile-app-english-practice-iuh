@@ -1,4 +1,5 @@
 import { useAppTheme } from "@/theme/useAppTheme";
+import { DialogContent } from "@/components/ui/DialogContent";
 import { useMemo as useThemeMemo, useMemo, useRef, useState } from "react";
 import { BrandedPageState } from "@/components/ui/BrandedPageState";
 import { useStudySession } from "../session/StudySessionProvider";
@@ -266,7 +267,7 @@ export default function ListeningPartScreen() {
           }}
         >
           <View style={styles.overlay}>
-            <View style={styles.dialog}>
+            <DialogContent style={styles.dialog} contentStyle={{ gap: 14 }}>
               {result ? (
                 <>
                   <Text style={styles.title}>Kết quả Listening · Part {result.partNumber}</Text>
@@ -326,7 +327,7 @@ export default function ListeningPartScreen() {
                   <Text style={styles.muted}>
                     Chạm số câu để chuyển đến câu hỏi.
                   </Text>
-                  <ScrollView contentContainerStyle={styles.grid}>
+                  <View style={styles.grid}>
                     {questions.map((question) => (
                       <Pressable
                         key={question.id}
@@ -350,7 +351,7 @@ export default function ListeningPartScreen() {
                         </Text>
                       </Pressable>
                     ))}
-                  </ScrollView>
+                  </View>
                   <Action
                     text="Nộp"
                     onPress={() => setConfirm(true)}
@@ -358,7 +359,7 @@ export default function ListeningPartScreen() {
                   <Action text="Đóng" onPress={() => setSheet(false)} />
                 </>
               )}
-            </View>
+            </DialogContent>
           </View>
         </Modal>
       </View>

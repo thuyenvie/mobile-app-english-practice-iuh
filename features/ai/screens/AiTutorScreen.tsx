@@ -1,7 +1,8 @@
 import { useAppTheme } from "@/theme/useAppTheme";
 import { useMemo as useThemeMemo, useEffect, useRef, useState } from "react";
 
-import { Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { Alert, Platform } from 'react-native';
+import { KeyboardViewport } from '@/components/ui/FormScrollView';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -135,11 +136,8 @@ export default function AiTutorScreen() {
 
   return (
     <HomeScaffold>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? homeDesign.tabHeight : 0}
-      >
+      {/* Keep flex sizing when the bottom tab bar hides; height mode can oscillate. */}
+      <KeyboardViewport androidBehavior="padding">
         <XStack
           alignItems="center"
           justifyContent="space-between"
@@ -148,7 +146,7 @@ export default function AiTutorScreen() {
           borderBottomWidth={1}
           borderBottomColor={homeDesign.colors.border}
         >
-          <YStack>
+          <YStack flex={1} minWidth={0}>
             <Text role="heading" color={aiDesign.colors.text} fontSize={18} fontWeight="800">
               Gia sư AI
             </Text>
@@ -194,19 +192,18 @@ export default function AiTutorScreen() {
           hasOlderMessages={hasOlderMessages}
           onLoadOlder={() => void loadOlderMessages()}
           onSuggestion={(prompt) => void submitQuestion(prompt)}
+          suggestionContent={canShowSuggestions && !loadingHistory ? (
+            <YStack paddingHorizontal={16} paddingBottom={10}>
+              <AiSuggestionGrid
+                onCamera={openImageSource}
+                onPrompt={(prompt) => {
+                  setQuestion(prompt);
+                  setLocalNotice('');
+                }}
+              />
+            </YStack>
+          ) : null}
         />
-
-        {canShowSuggestions && !loadingHistory ? (
-          <YStack paddingHorizontal={16} paddingBottom={10}>
-            <AiSuggestionGrid
-              onCamera={openImageSource}
-              onPrompt={(prompt) => {
-                setQuestion(prompt);
-                setLocalNotice('');
-              }}
-            />
-          </YStack>
-        ) : null}
 
         <YStack
           paddingHorizontal={16}
@@ -237,7 +234,7 @@ export default function AiTutorScreen() {
             onSend={() => void submitQuestion()}
           />
         </YStack>
-      </KeyboardAvoidingView>
+      </KeyboardViewport>
     </HomeScaffold>
   );
 }

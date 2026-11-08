@@ -1,11 +1,10 @@
 import { useAppTheme } from "@/theme/useAppTheme";
 import { useMemo as useThemeMemo, useCallback, useState } from "react";
-import { BrandedPageState } from "@/components/ui/BrandedPageState";
 import { ContinueExamCard } from "../components/ContinueExamCard";
 
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { router, useFocusEffect } from "expo-router";
-import { ScrollView } from "react-native";
+import { ActivityIndicator, ScrollView } from "react-native";
 import { Text, XStack, YStack } from "tamagui";
 
 import { AppButton } from "@/components/ui/AppButton";
@@ -95,18 +94,7 @@ export default function StudyScreen() {
       };
     }, [session.status, studyPlanRetry])
   );
-  const [dismissedError, setDismissedError] = useState("");
   const planLoading = !isGuest && (session.status !== "authenticated" || studyPlanLoading);
-  const historyLoading = !isGuest && recentLoading;
-  const loading = state.status === "loading" || planLoading || historyLoading;
-  const examError = state.status === "error" ? state.message : "";
-  const error = examError || (!isGuest ? studyPlanError || recentError : "");
-  const retryFailed = () => {
-    setDismissedError("");
-    if (examError) retry();
-    if (!isGuest && studyPlanError) setStudyPlanRetry(value => value + 1);
-    if (!isGuest && recentError) setRecentRetry(value => value + 1);
-  };
 
   // back end ch co cai nay
   const openTest = (testNumber: number) => {
@@ -177,7 +165,11 @@ export default function StudyScreen() {
                 Đăng nhập
               </AppButton>
             </>
-          ) : planLoading || studyPlanError ? null : !todaySchedule?.plan ? (
+          ) : planLoading ? (
+            <SectionState loading message="Đang tải lộ trình…" />
+          ) : studyPlanError ? (
+            <SectionState message={`Chưa tải được lộ trình. ${studyPlanError}`} onRetry={() => setStudyPlanRetry(value => value + 1)} />
+          ) : !todaySchedule?.plan ? (
             <>
               <Text color={homeDesign.colors.secondary} fontSize={12}>
                 Đặt mục tiêu TOEIC và thời gian học mỗi ngày để tạo lộ trình 7
@@ -231,22 +223,20 @@ export default function StudyScreen() {
                   Hôm nay không có nhiệm vụ trong lộ trình.
                 </Text>
               )}
-              <XStack gap={10} marginTop={3}>
+              <YStack gap={10} marginTop={3}>
                 <AppButton
-                  flex={1}
                   onPress={() => router.push("/study-plan/week")}
                 >
                   Xem lộ trình tuần
                 </AppButton>
                 <AppButton
-                  flex={1}
                   appearance="text"
                   color={homeDesign.colors.link}
                   onPress={() => router.push("/study-plan/setup")}
                 >
                   Chỉnh mục tiêu
                 </AppButton>
-              </XStack>
+              </YStack>
             </>
           )}
         </YStack>
@@ -264,7 +254,11 @@ export default function StudyScreen() {
 
         <YStack gap={12} marginBottom={26}>
           <SectionTitle title={`Danh sách đề ETS ${selectedYear}`} />
-          {state.status !== "ready" ? null : state.testNumbers.length ? (
+          {state.status === "loading" ? (
+            <SectionState loading message={`Đang tải đề ETS ${selectedYear}…`} />
+          ) : state.status === "error" ? (
+            <SectionState message={state.message} onRetry={retry} />
+          ) : state.testNumbers.length ? (
             state.testNumbers.map((testNumber) => (
               <TestCard
                 key={testNumber}
@@ -295,7 +289,11 @@ export default function StudyScreen() {
         ) : (
           <YStack gap={8}>
             <SectionTitle title="Kết quả gần đây" hint="Listening và Reading" />
-            {recentLoading || recentError ? null : recent.length ? (
+            {recentLoading ? (
+              <SectionState loading message="Đang tải kết quả gần đây…" />
+            ) : recentError ? (
+              <SectionState message={`Chưa tải được kết quả gần đây. ${recentError}`} onRetry={() => setRecentRetry(value => value + 1)} />
+            ) : recent.length ? (
               recent.map((item) => (
                 <ExamResultCard key={item.resultId} item={item} />
               ))
@@ -312,21 +310,18 @@ export default function StudyScreen() {
             </AppButton>
           </YStack>
         )}
-        {!loading && error && error === dismissedError ? (
-          <AppButton appearance="text" onPress={retryFailed}>Thử tải lại dữ liệu</AppButton>
-        ) : null}
       </ScrollView>
-      {loading || (error && error !== dismissedError) ? (
-        <BrandedPageState
-          overlay
-          loading={loading}
-          message={loading ? "Đang tải dữ liệu học tập..." : error}
-          onRetry={retryFailed}
-          onBack={loading ? undefined : () => setDismissedError(error)}
-        />
-      ) : null}
     </StudyScaffold>
   );
+}
+
+function SectionState({ message, loading, onRetry }: { message: string; loading?: boolean; onRetry?: () => void }) {
+  const { palette } = useAppTheme();
+  return <YStack gap={8} paddingVertical={8}>
+    {loading ? <ActivityIndicator color={palette.accent} /> : null}
+    <Text role={loading ? "status" : "alert"} color={loading ? palette.muted : palette.error} fontSize={14}>{message}</Text>
+    {onRetry ? <AppButton appearance="text" color={palette.accent} onPress={onRetry}>Thử lại</AppButton> : null}
+  </YStack>;
 }
 
 function useThemedStyles() {

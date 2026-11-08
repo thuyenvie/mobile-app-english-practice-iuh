@@ -1,7 +1,8 @@
 import { useAppTheme } from "@/theme/useAppTheme";
 import { useMemo as useThemeMemo, type PropsWithChildren } from "react";
 
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
+import { FormScrollView } from "@/components/ui/FormScrollView";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { Text, Theme } from "tamagui";
@@ -17,11 +18,9 @@ export function AuthScaffold({ children, title, subtitle }: AuthScaffoldProps) {
   return (
     <Theme name={tamaguiTheme}>
       <StatusBar style={statusBarStyle} />
-      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <View style={styles.container}>
         <View style={[styles.halo, { pointerEvents: "none" }]} />
-        <ScrollView
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
+        <FormScrollView
           contentContainerStyle={[
             styles.content,
             { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 20,
@@ -36,8 +35,8 @@ export function AuthScaffold({ children, title, subtitle }: AuthScaffoldProps) {
               {children}
             </View>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </FormScrollView>
+      </View>
     </Theme>
   );
 }

@@ -1,4 +1,5 @@
 import { useAppTheme } from "@/theme/useAppTheme";
+import { DialogContent } from "@/components/ui/DialogContent";
 import { useMemo as useThemeMemo, useCallback, useEffect, useState } from "react";
 
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from "react-native";
@@ -69,7 +70,7 @@ export default function VocabularyTaskReviewScreen() {
         pronunciation={{ activeUrl: pronunciation.activeUrl, activeWord: pronunciation.activeWord, loading: pronunciation.loading, playing: pronunciation.playing, error: pronunciation.error, onPress: pronunciation.play }} /> : null}
       <View style={styles.controls}>{active ? <><Action label={paused ? "Tiếp tục" : "Tạm dừng"} disabled={session.busy} onPress={() => { pronunciation.stop(); void act(paused ? session.resume : session.pause); }} /><Action label="Kết thúc" disabled={session.busy} onPress={() => { pronunciation.stop(); setConfirm(true); }} /></> : <Action label="Đã hoàn thành · Về Trang chủ" onPress={() => router.replace("/(tabs)/home")} />}</View>
     </>}
-    <Modal visible={confirm} transparent animationType="fade" onRequestClose={() => { if (!session.busy) setConfirm(false); }}><View style={styles.overlay}><View style={styles.dialog}><Text style={styles.title}>Kết thúc buổi ôn?</Text><Text style={styles.muted}>Hoàn thành buổi ôn không đồng nghĩa đã thuộc vĩnh viễn tất cả từ.</Text><Action label="Đã hoàn thành" disabled={session.busy} onPress={() => finish(true)} /><Action label="Học tiếp sau" disabled={session.busy} onPress={() => finish(false)} /><Action label="Quay lại" disabled={session.busy} onPress={() => setConfirm(false)} />{error ? <Text style={styles.warning}>{error}</Text> : null}</View></View></Modal>
+    <Modal visible={confirm} transparent animationType="fade" onRequestClose={() => { if (!session.busy) setConfirm(false); }}><View style={styles.overlay}><DialogContent style={styles.dialog} contentStyle={{ gap: 13 }}><Text style={styles.title}>Kết thúc buổi ôn?</Text><Text style={styles.muted}>Hoàn thành buổi ôn không đồng nghĩa đã thuộc vĩnh viễn tất cả từ.</Text><Action label="Đã hoàn thành" disabled={session.busy} onPress={() => finish(true)} /><Action label="Học tiếp sau" disabled={session.busy} onPress={() => finish(false)} /><Action label="Quay lại" disabled={session.busy} onPress={() => setConfirm(false)} />{error ? <Text style={styles.warning}>{error}</Text> : null}</DialogContent></View></Modal>
   </View></StudyScaffold>;
 }
 function Action({ label, onPress, disabled }: { label: string; onPress: () => void; disabled?: boolean }) {

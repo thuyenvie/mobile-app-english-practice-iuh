@@ -33,7 +33,8 @@ export function AppButton({
         backgroundColor="transparent"
         borderWidth={0}
         padding={0}
-        minHeight="$touchTarget"
+        minHeight={48}
+        height="auto"
         justifyContent="center"
         color="$color"
         role="button"
@@ -45,7 +46,7 @@ export function AppButton({
 
   return (
     <Button
-      minHeight="$control"
+      minHeight={52}
       height="auto"
       paddingVertical="$medium"
       borderRadius="$control"

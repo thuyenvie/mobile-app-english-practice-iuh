@@ -35,10 +35,10 @@ function buildTheme(mode: ResolvedTheme) {
     surface: p.surface, secondary: p.muted, accent: p.accent, avatar: p.surfaceRaised,
     robot: p.selection, camera: p.selection, send: p.accent } };
   const authForm = {
-    input: { minHeight: 44, borderRadius: 11, backgroundColor: p.surface, borderColor: p.border,
+    input: { minHeight: 48, borderRadius: 11, backgroundColor: p.surface, borderColor: p.border,
       color: p.text, placeholderTextColor: "$placeholderColor", focusStyle: { borderColor: p.accent } },
     label: { color: p.text, fontWeight: "600" },
-    button: { minHeight: 44, borderRadius: 12, backgroundColor: p.accent, color: p.onAccent,
+    button: { minHeight: 52, borderRadius: 12, backgroundColor: p.accent, color: p.onAccent,
       pressStyle: { backgroundColor: p.accentPressed } },
     link: p.accent, muted: p.muted, error: p.error,
   } as const;
