@@ -9,8 +9,10 @@ import { isReminderInQuietHours } from "../reminder/reminderSchedule";
 import { QuietHoursFields } from "../reminder/QuietHoursFields";
 import type { SettingsEntryProps } from "../types";
 import { useFormInputFocus } from "@/components/ui/FormScrollView";
+import { getInteractionColors } from "../components/interactionColors";
 
 export function SET03Entry({ theme, authenticated }: SettingsEntryProps) {
+  const feedback = getInteractionColors(theme);
   const session = useSession();
   const [editing, setEditing] = useState(false);
   const [details, setDetails] = useState(false);
@@ -33,7 +35,8 @@ export function SET03Entry({ theme, authenticated }: SettingsEntryProps) {
   }, [account, controller]);
   const action = (label: string, onPress: () => void, disabled = false) => <Pressable accessibilityRole="button"
     disabled={disabled} accessibilityState={{ disabled }} onPress={onPress}
-    style={{ minHeight: 48, justifyContent: "center", opacity: disabled ? 0.5 : 1 }}>
+    style={({ pressed }) => ({ minHeight: 48, justifyContent: "center", borderRadius: 8, paddingHorizontal: 8,
+      backgroundColor: pressed && !disabled ? feedback.pressedBackground : "transparent", opacity: disabled ? 0.5 : 1 })}>
     <Text style={{ color: theme.accent }}>{label}</Text></Pressable>;
   const input = (label: string, field: "reminderTime") => <View>
     <Text style={{ color: theme.text }}>{label}</Text>
@@ -49,7 +52,14 @@ export function SET03Entry({ theme, authenticated }: SettingsEntryProps) {
     "permission-denied": "Thiết bị chưa cấp quyền thông báo. Cấp quyền trong cài đặt hệ thống rồi thử lại.",
     unsupported: "Nền tảng này chưa hỗ trợ nhận push.", error: "Chưa đăng ký được thiết bị. Kiểm tra kết nối rồi thử lại." };
   return <View style={{ borderWidth: 1, borderColor: theme.border, backgroundColor: theme.surface, borderRadius: 12, padding: 16, gap: 10 }}>
-    <Text style={{ color: theme.text, fontSize: 16, fontWeight: "600" }}>Nhắc học theo kế hoạch</Text>
+    {account && state.phase === "ready" ? <Pressable accessibilityRole="button"
+      accessibilityState={{ expanded: editing, disabled: state.busy }} disabled={state.busy}
+      onPress={() => setEditing(value => !value)}
+      style={({ pressed }) => ({ minHeight: 48, justifyContent: "center", borderRadius: 8, paddingHorizontal: 10,
+        borderWidth: 1, borderColor: editing ? theme.selection : theme.border,
+        backgroundColor: pressed ? feedback.pressedBackground : editing ? feedback.selectedBackground : "transparent" })}>
+      <Text style={{ color: editing ? theme.selection : theme.text, fontSize: 16, fontWeight: "700" }}>Nhắc học theo kế hoạch {editing ? "▴" : "▾"}</Text>
+    </Pressable> : <Text style={{ color: theme.text, fontSize: 16, fontWeight: "600" }}>Nhắc học theo kế hoạch</Text>}
     {!account ? <>
       <Text style={{ color: theme.muted }}>Đăng nhập để nhận nhắc học từ máy chủ theo kế hoạch của tài khoản.</Text>
       {action("Đăng nhập để cài nhắc học", () => router.push("/auth/login"))}
@@ -66,13 +76,15 @@ export function SET03Entry({ theme, authenticated }: SettingsEntryProps) {
           Giờ nhắc nằm trong khoảng yên lặng nên sẽ không gửi thông báo. Hãy đổi giờ nhắc hoặc khoảng yên lặng.
         </Text> : null}
         <Pressable accessibilityRole="button" accessibilityState={{ expanded: editing, disabled: state.busy }} disabled={state.busy}
-          onPress={() => setEditing(value => !value)} style={{ minHeight: 48, justifyContent: "center" }}>
-          <Text style={{ color: theme.accent }}>{editing ? "Thu gọn chỉnh sửa" : "Chỉnh sửa nhắc học"}</Text>
+          onPress={() => setEditing(value => !value)}
+          style={({ pressed }) => ({ minHeight: 48, justifyContent: "center", borderRadius: 8, paddingHorizontal: 8,
+            backgroundColor: pressed ? feedback.pressedBackground : editing ? feedback.selectedBackground : "transparent" })}>
+          <Text style={{ color: editing ? theme.selection : theme.accent, fontWeight: editing ? "700" : "500" }}>{editing ? "Thu gọn chỉnh sửa" : "Chỉnh sửa nhắc học"}</Text>
         </Pressable>
         {editing ? <>
         <Text style={{ color: theme.text }}>Nhắc học hằng ngày · Có hiệu lực sau khi lưu</Text>
         <Switch accessibilityLabel="Nhắc học hằng ngày" value={state.draft.reminderEnabled} disabled={state.busy}
-          onValueChange={value => controller.edit({ reminderEnabled: value })} trackColor={{ true: theme.accent, false: theme.border }} />
+          onValueChange={value => controller.edit({ reminderEnabled: value })} trackColor={{ true: theme.selection, false: theme.border }} />
         {input("Giờ nhắc học", "reminderTime")}
         <QuietHoursFields start={state.draft.quietStart} end={state.draft.quietEnd} theme={theme}
           onStartChange={value => controller.edit({ quietStart: value })}
@@ -90,13 +102,17 @@ export function SET03Entry({ theme, authenticated }: SettingsEntryProps) {
       </> : null}
       {state.error ? <Text style={{ color: theme.error }} accessibilityRole="alert">{state.error}</Text> : null}
       {action("Kiểm tra lại lịch nhắc", () => void controller.load(), state.busy)}
-      <Pressable accessibilityRole="button" accessibilityState={{ expanded: details }} onPress={() => setDetails(value => !value)} style={{ minHeight: 48, justifyContent: "center" }}>
-        <Text style={{ color: theme.accent }}>{details ? "Ẩn chi tiết nhắc học" : "Chi tiết nhắc học"}</Text>
+      <Pressable accessibilityRole="button" accessibilityState={{ expanded: details }} onPress={() => setDetails(value => !value)}
+        style={({ pressed }) => ({ minHeight: 48, justifyContent: "center", borderRadius: 8, paddingHorizontal: 10,
+          borderWidth: 1, borderColor: details ? theme.selection : theme.border,
+          backgroundColor: pressed ? feedback.pressedBackground : details ? feedback.selectedBackground : "transparent" })}>
+        <Text style={{ color: details ? theme.selection : theme.accent, fontWeight: details ? "700" : "500" }}>Chi tiết nhắc học {details ? "▴" : "▾"}</Text>
       </Pressable>
       {details ? <>
         {state.plan ? <Text style={{ color: theme.muted }}>Múi giờ kế hoạch: {state.plan.timezone}</Text> : null}
         <Text style={{ color: theme.muted }}>Cho phép nhận thông báo sẽ cấp quyền và đăng ký máy này cho tài khoản đang đăng nhập.</Text>
         <Text style={{ color: theme.muted }}>Kiểm tra lại chỉ đọc lịch đã lưu, không gửi thông báo thử. Lưu lịch và cấp quyền nhận thông báo là hai bước riêng. Thông báo còn phụ thuộc lịch gửi, quyền và kết nối thiết bị.</Text>
+        {action("Ẩn chi tiết nhắc học", () => setDetails(false))}
       </> : null}
     </>}
   </View>;

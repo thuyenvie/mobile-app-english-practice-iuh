@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { SettingsEntryProps } from "../types";
+import { getInteractionColors } from "../components/interactionColors";
 
 export function SET01Entry({ theme, settings }: SettingsEntryProps) {
+  const feedback = getInteractionColors(theme);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const select = async (themeMode: "system" | "light" | "dark") => {
@@ -20,8 +22,11 @@ export function SET01Entry({ theme, settings }: SettingsEntryProps) {
         const disabled = saving || settings.hydration !== "ready" || settings.persistence === "saving";
         return <Pressable key={mode} accessibilityRole="radio" accessibilityState={{ checked: selected, disabled }}
           disabled={disabled} onPress={() => { void select(mode); }}
-          style={[styles.option, { borderColor: selected ? theme.accent : theme.border, opacity: disabled ? 0.6 : 1 }]}>
-          <Text style={{ color: selected ? theme.accent : theme.text }}>{selected ? "● " : "○ "}{label}</Text>
+          style={({ pressed }) => [styles.option, {
+            backgroundColor: pressed && !disabled ? feedback.pressedBackground : selected ? feedback.selectedBackground : theme.surface,
+            borderColor: selected ? theme.selection : theme.border, opacity: disabled ? 0.6 : 1,
+          }]}>
+          <Text style={{ color: selected ? theme.selection : theme.text, fontWeight: selected ? "700" : "500" }}>{selected ? "● " : "○ "}{label}</Text>
         </Pressable>;
       })}
     </View>
