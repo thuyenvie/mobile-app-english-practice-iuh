@@ -7,6 +7,7 @@ export interface AccountProfile {
   lastName: string;
   dob: string | null;
   userName?: string;
+  hasPassword?: boolean;
 }
 
 export interface ProfileUpdate {

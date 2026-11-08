@@ -18,6 +18,7 @@ function screenApp(extraMocks = {}) {
   "../../notifications/api/pushNotificationApi":{deactivateCurrentPushToken:async()=>{}},
  };
  for(const id of ["04","05","08"]) mocks["../entries/SET"+id+"Entry"]={['SET'+id+'Entry']:()=>{mounts.push(id);return null;}};
+ mocks["../entries/AccountPasswordEntry"]={AccountPasswordEntry:()=>{mounts.push("05");return null;}};
  const app=environment({...mocks,...extraMocks}); app.session.enterGuestSession();
  const Screen=app.load("src/app/(tabs)/settings.tsx").default;
  return {app,mounts,render:()=>expand(app.hooks.render(Screen))};
