@@ -18,7 +18,7 @@ export function AuthScaffold({ children, title, subtitle }: AuthScaffoldProps) {
     <Theme name={tamaguiTheme}>
       <StatusBar style={statusBarStyle} />
       <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-        <View pointerEvents="none" style={styles.halo} />
+        <View style={[styles.halo, { pointerEvents: "none" }]} />
         <ScrollView
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"

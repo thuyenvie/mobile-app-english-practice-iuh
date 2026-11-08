@@ -104,7 +104,7 @@ function AiMessageBubble({
               </Text>
             </XStack>
           ) : null}
-          <Text color={aiDesign.colors.text} fontSize={15} lineHeight={21}>
+          <Text color={user ? '#FFFFFF' : aiDesign.colors.text} fontSize={15} lineHeight={21}>
             {message.text}
           </Text>
           {message.kind === 'chat' ? (

@@ -1,6 +1,10 @@
 import { BrandedPageState } from "@/components/ui/BrandedPageState";
 import { useNavigationContainerRef, type ErrorBoundaryProps } from "expo-router";
 import { useEffect } from "react";
+import { useFonts } from "expo-font";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { Alert, BackHandler, Platform } from "react-native";
 import { SettingsProvider } from "@/providers/SettingsProvider";
 import { SessionProvider } from "@/providers/SessionProvider";
@@ -19,6 +23,16 @@ export function ErrorBoundary({ retry }: ErrorBoundaryProps) {
 
 export default function RootLayout() {
   const navigationRef = useNavigationContainerRef();
+  // Tai font icon truoc khi ve tab va cac nut, tranh hien o vuong tren web.
+  const [fontsLoaded, fontError] = useFonts({
+    ...MaterialCommunityIcons.font,
+    ...MaterialIcons.font,
+    ...FontAwesome.font,
+  });
+
+  useEffect(() => {
+    if (fontError) throw fontError;
+  }, [fontError]);
 
   useEffect(() => {
     if (Platform.OS !== "android") return;
@@ -54,6 +68,8 @@ export default function RootLayout() {
 
     return () => subscription.remove();
   }, [navigationRef]);
+
+  if (!fontsLoaded) return null;
 
   return (
       <GoogleAuthProvider>

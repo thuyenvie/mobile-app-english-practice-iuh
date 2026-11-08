@@ -10,21 +10,21 @@ type AppButtonProps = ButtonProps & { appearance?: "primary" | "text" };
 export function AppButton({
   appearance = "primary",
   accessibilityState,
+  accessibilityLabel,
   ...props
 }: AppButtonProps) {
   const { authDesign } = useThemedStyles();
   // Web dung ARIA; khong dua accessibilityState vao the button cua DOM.
-  const accessibilityProps = accessibilityState
-    ? Platform.OS === "web"
+  const accessibilityProps = Platform.OS === "web"
       ? {
-          "aria-disabled": accessibilityState.disabled,
-          "aria-pressed": accessibilityState.selected,
-          "aria-checked": accessibilityState.checked,
-          "aria-busy": accessibilityState.busy,
-          "aria-expanded": accessibilityState.expanded,
+          "aria-label": accessibilityLabel,
+          "aria-disabled": accessibilityState?.disabled,
+          "aria-pressed": accessibilityState?.selected,
+          "aria-checked": accessibilityState?.checked,
+          "aria-busy": accessibilityState?.busy,
+          "aria-expanded": accessibilityState?.expanded,
         }
-      : { accessibilityState }
-    : {};
+      : { accessibilityState, accessibilityLabel };
 
   if (appearance === "text") {
     return (

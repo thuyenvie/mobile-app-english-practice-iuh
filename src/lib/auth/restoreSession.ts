@@ -7,6 +7,7 @@ export function restoreSession(): Promise<void> {
   if (restoring) return restoring;
   if (getSessionSnapshot().status !== "loading") return Promise.resolve();
   const generation = getSessionSnapshot().generation;
+  sessionUnavailable("");
   restoring = (async () => {
     try {
       const [access, refresh] = await Promise.all([getAccessToken(), getRefreshToken()]);

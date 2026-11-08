@@ -9,7 +9,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
   if (session.status === "loading") {
     return <BrandedPageState
       loading={!session.error}
-      message={session.error || "Đang kiểm tra phiên..."}
+      message={session.error || "Đang kết nối máy chủ và kiểm tra phiên. Render Free có thể cần vài phút để khởi động..."}
       onRetry={() => {
         void restoreSession();
       }}

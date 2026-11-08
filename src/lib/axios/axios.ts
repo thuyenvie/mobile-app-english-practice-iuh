@@ -1,5 +1,6 @@
 import { create, isAxiosError, type InternalAxiosRequestConfig } from "axios";
 import { Platform } from "react-native";
+import { invalidateRenderService, waitForRenderService } from "./renderReadiness";
 
 import {
   getAccessToken,
@@ -39,8 +40,10 @@ const api = create({
 export const publicApi = create({
   baseURL: API_BASE_URL, timeout: 30_000, headers: { Accept: "application/json" },
 });
-publicApi.interceptors.request.use(config => {
+publicApi.interceptors.request.use(async config => {
   config.sessionGeneration ??= getSessionSnapshot().generation;
+  assertSessionGeneration(config.sessionGeneration);
+  await waitForRenderService(API_BASE_URL, config.url);
   assertSessionGeneration(config.sessionGeneration);
   config.headers.delete("Authorization");
   return config;
@@ -101,6 +104,8 @@ async function refreshAccessToken(generation: number): Promise<string> {
   if (!refreshToken) throw new InvalidRefreshSessionError();
 
   try {
+    await waitForRenderService(API_BASE_URL, "/identity/auth/refresh");
+    assertSessionGeneration(generation);
     const response = await refreshClient.post<AuthEnvelope>(
       "/identity/auth/refresh",
       { refreshToken }
@@ -154,6 +159,12 @@ const loginEndpoints = new Set([
 api.interceptors.request.use(async (config) => {
   config.sessionGeneration ??= getSessionSnapshot().generation;
   assertSessionGeneration(config.sessionGeneration);
+  // API co JWT con can Identity thuc de Gateway kiem tra token.
+  await Promise.all([
+    waitForRenderService(API_BASE_URL, "/identity/auth/login"),
+    waitForRenderService(API_BASE_URL, config.url),
+  ]);
+  assertSessionGeneration(config.sessionGeneration);
   const requestPath = config.url?.split("?")[0].replace(/\/+$/, "");
   if (
     config.method?.toLowerCase() === "post" &&
@@ -195,6 +206,7 @@ api.interceptors.response.use(
         (request._transientRetryCount ?? 0) < MAX_TRANSIENT_RETRIES;
 
       if (canRetry) {
+        invalidateRenderService(API_BASE_URL, request.url);
         if (request.sessionGeneration !== undefined) {
           assertSessionGeneration(request.sessionGeneration);
         }

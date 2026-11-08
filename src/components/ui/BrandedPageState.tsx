@@ -1,6 +1,6 @@
 import { useAppTheme } from "@/theme/useAppTheme";
-import { useMemo as useThemeMemo, useEffect, useRef } from "react";
-import { Animated, Easing, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useMemo as useThemeMemo, useEffect, useState } from "react";
+import { Animated, Easing, Image, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 
@@ -18,10 +18,10 @@ const logo = require("../../../assets/english-practice-logo.jpg");
 
 function LoadingDots({ light }: { light?: boolean }) {
   const { styles } = useThemedStyles();
-  const phase = useRef(new Animated.Value(0)).current;
+  const [phase] = useState(() => new Animated.Value(0));
   useEffect(() => {
     const animation = Animated.loop(Animated.timing(phase, {
-      toValue: 3, duration: 1050, easing: Easing.linear, useNativeDriver: true,
+      toValue: 3, duration: 1050, easing: Easing.linear, useNativeDriver: Platform.OS !== "web",
     }));
     animation.start();
     return () => animation.stop();
