@@ -12,10 +12,16 @@
     "preview": {
       "distribution": "internal",
       "environment": "preview",
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://laptop-upv1a8mf.tail0ed20d.ts.net/api"
+      },
       "android": {
         "buildType": "apk"
       },
       "channel": "preview"
+    },
+    "apk": {
+      "extends": "preview"
     },
     "production": {
       "autoIncrement": true,
