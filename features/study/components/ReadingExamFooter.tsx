@@ -5,7 +5,6 @@ import { XStack } from "tamagui";
 
 import { AppButton } from "@/components/ui/AppButton";
 
-
 export function ReadingExamFooter({
   canGoPrevious,
   canGoNext,
@@ -34,7 +33,7 @@ export function ReadingExamFooter({
         height={48}
         disabled={!canGoPrevious}
         opacity={canGoPrevious ? 1 : 0.3}
-        aria-label="Câu trước"
+        aria-label="< Câu trước"
         onPress={onPrevious}
         icon={
           <MaterialIcons

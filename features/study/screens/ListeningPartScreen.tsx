@@ -71,8 +71,14 @@ export default function ListeningPartScreen() {
     [state, partNumber]
   );
   const partAnswers = useMemo(() => {
-    const numbers = new Set(questions.map(question => question.questionNumber));
-    return Object.fromEntries(Object.entries(draft.answers).filter(([number]) => numbers.has(Number(number))));
+    const numbers = new Set(
+      questions.map((question) => question.questionNumber)
+    );
+    return Object.fromEntries(
+      Object.entries(draft.answers).filter(([number]) =>
+        numbers.has(Number(number))
+      )
+    );
   }, [questions, draft.answers]);
   const answeredCount = Object.keys(partAnswers).length;
   const current =
@@ -112,7 +118,8 @@ export default function ListeningPartScreen() {
     } catch (e) {
       setError(getExamErrorMessage(e));
     } finally {
-      if (session.status === "authenticated") void refreshStudySession().catch(() => undefined);
+      if (session.status === "authenticated")
+        void refreshStudySession().catch(() => undefined);
       submitting.current = false;
       setBusy(false);
     }
@@ -135,10 +142,7 @@ export default function ListeningPartScreen() {
             disabled={!current || busy}
           />
         </View>
-        <GuestPracticeNotice
-          hasAnswers={answeredCount > 0}
-          busy={busy}
-        />
+        <GuestPracticeNotice hasAnswers={answeredCount > 0} busy={busy} />
         {current ? (
           <PracticeAudioPlayer
             autoplayHistory={autoplayHistory}
@@ -150,16 +154,24 @@ export default function ListeningPartScreen() {
         {!valid ? (
           <Text style={styles.message}>Thông tin đề không hợp lệ.</Text>
         ) : state.status === "error" ? (
-          <BrandedPageState message={state.message} onRetry={retry} onBack={back} />
+          <BrandedPageState
+            message={state.message}
+            onRetry={retry}
+            onBack={back}
+          />
         ) : state.status === "loading" || !draft.ready ? (
-          <BrandedPageState loading message="Đang tải bài nghe..." onBack={back} />
+          <BrandedPageState
+            loading
+            message="Đang tải bài nghe..."
+            onBack={back}
+          />
         ) : !current ? (
           <Text style={styles.message}>Part này chưa có câu hỏi.</Text>
         ) : (
           <>
             <Text style={styles.progress}>
-              Câu {current.questionNumber} · Đã chọn{" "}
-              {answeredCount}/{questions.length}
+              Câu {current.questionNumber} · Đã chọn {answeredCount}/
+              {questions.length}
             </Text>
             {draft.error ? (
               <Text style={styles.warning}>{draft.error}</Text>
@@ -242,7 +254,10 @@ export default function ListeningPartScreen() {
               <Action
                 text="Nộp"
                 disabled={busy || !!result || !answeredCount}
-                onPress={() => { setError(""); setConfirm(true); }}
+                onPress={() => {
+                  setError("");
+                  setConfirm(true);
+                }}
               />
               <Action
                 text="Câu sau ›"
@@ -270,7 +285,9 @@ export default function ListeningPartScreen() {
             <DialogContent style={styles.dialog} contentStyle={{ gap: 14 }}>
               {result ? (
                 <>
-                  <Text style={styles.title}>Kết quả Listening · Part {result.partNumber}</Text>
+                  <Text style={styles.title}>
+                    Kết quả Listening · Part {result.partNumber}
+                  </Text>
                   <Text style={styles.body}>
                     Đúng {result.score}/{result.totalQuestions} câu · Đã trả lời{" "}
                     {result.answeredQuestions} câu
@@ -297,10 +314,13 @@ export default function ListeningPartScreen() {
                 </>
               ) : confirm ? (
                 <>
-                  <Text style={styles.title}>Nộp Listening Part {partNumber}?</Text>
+                  <Text style={styles.title}>
+                    Nộp Listening Part {partNumber}?
+                  </Text>
                   <Text style={styles.body}>
-                    Bạn đã chọn {answeredCount}/{questions.length} câu. Câu
-                    chưa trả lời không có điểm. Chỉ Part {partNumber} được chấm và lưu kết quả.
+                    Bạn đã chọn {answeredCount}/{questions.length} câu. Câu chưa
+                    trả lời không có điểm. Chỉ Part {partNumber} được chấm và
+                    lưu kết quả.
                   </Text>
                   <Text style={styles.muted}>
                     {session.status === "guest"
@@ -352,10 +372,7 @@ export default function ListeningPartScreen() {
                       </Pressable>
                     ))}
                   </View>
-                  <Action
-                    text="Nộp"
-                    onPress={() => setConfirm(true)}
-                  />
+                  <Action text="Nộp" onPress={() => setConfirm(true)} />
                   <Action text="Đóng" onPress={() => setSheet(false)} />
                 </>
               )}
@@ -416,8 +433,6 @@ function Action({
   );
 }
 
-
-
 function useThemedStyles() {
   const appTheme = useAppTheme();
   return useThemeMemo(() => {
@@ -426,7 +441,12 @@ function useThemedStyles() {
     const styles = StyleSheet.create({
       screen: { flex: 1 },
       flex: { flex: 1 },
-      header: { flexDirection: "row", alignItems: "center", padding: 8, gap: 8 },
+      header: {
+        flexDirection: "row",
+        alignItems: "center",
+        padding: 8,
+        gap: 8,
+      },
       row: { flexDirection: "row", justifyContent: "space-around" },
       title: { color: c.text, fontSize: 18, fontWeight: "700" },
       body: { color: c.text, fontSize: 16, lineHeight: 24, flexShrink: 1 },
@@ -455,7 +475,10 @@ function useThemedStyles() {
         borderColor: c.border,
         borderRadius: 12,
       },
-      selected: { borderColor: c.tabActive, backgroundColor: themeColor("#334018", "background") },
+      selected: {
+        borderColor: c.tabActive,
+        backgroundColor: themeColor("#334018", "background"),
+      },
       optionLabel: { color: c.text, fontSize: 16, fontWeight: "700" },
       footer: {
         flexDirection: "row",

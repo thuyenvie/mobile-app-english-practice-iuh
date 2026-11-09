@@ -1,6 +1,13 @@
 import { useAppTheme } from "@/theme/useAppTheme";
 import { DialogContent } from "@/components/ui/DialogContent";
-import { useMemo as useThemeMemo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useMemo as useThemeMemo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { BrandedPageState } from "@/components/ui/BrandedPageState";
 import { useStudySession } from "../session/StudySessionProvider";
 
@@ -50,17 +57,27 @@ type LoadState =
   | { status: "ready"; parts: ExamPart[] };
 type ResultKey = "listening" | `reading-${number}` | `listening-${number}`;
 
-export default function FullTestScreen({ practice = false }: { practice?: boolean } = {}) {
+export default function FullTestScreen({
+  practice = false,
+}: { practice?: boolean } = {}) {
   const { homeDesign, styles } = useThemedStyles();
-  const params = useLocalSearchParams<{ year?: string; testNumber?: string; parts?: string }>();
-  const partNumbers = useMemo(() => practice ? parseSelectedParts(params.parts) : PART_NUMBERS, [practice, params.parts]);
+  const params = useLocalSearchParams<{
+    year?: string;
+    testNumber?: string;
+    parts?: string;
+  }>();
+  const partNumbers = useMemo(
+    () => (practice ? parseSelectedParts(params.parts) : PART_NUMBERS),
+    [practice, params.parts]
+  );
   const year = Number(params.year);
   const testNumber = Number(params.testNumber);
   const valid =
     Number.isInteger(year) &&
     year > 0 &&
     Number.isInteger(testNumber) &&
-    testNumber > 0 && partNumbers.length > 0;
+    testNumber > 0 &&
+    partNumbers.length > 0;
   const session = useSession();
   const { refresh: refreshStudySession } = useStudySession();
   const insets = useSafeAreaInsets();
@@ -91,28 +108,34 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
   const c = homeDesign.colors;
   const draftKey =
     session.status === "authenticated" && session.subject
-      ? `${practice ? "practice-parts:v1" : "full-test:v1"}:${encodeURIComponent(
-          session.subject
-        )}:${year}:${testNumber}${practice ? ":" + partNumbers.join("-") : ""}`
+      ? `${
+          practice ? "practice-parts:v1" : "full-test:v1"
+        }:${encodeURIComponent(session.subject)}:${year}:${testNumber}${
+          practice ? ":" + partNumbers.join("-") : ""
+        }`
       : null;
   const results = Object.values(savedResults).filter(
     (item): item is PracticeResult => Boolean(item)
   );
   const expectedResultCount = practice
-    ? (loadState.status === "ready" ? loadState.parts.filter((part) => Object.keys(answersForPart(part, answers)).length > 0).length : 0)
+    ? loadState.status === "ready"
+      ? loadState.parts.filter(
+          (part) => Object.keys(answersForPart(part, answers)).length > 0
+        ).length
+      : 0
     : [
-    Object.keys(answers).some((number) => Number(number) <= 100),
-    ...[5, 6, 7].map((part) =>
-      Object.keys(answers).some((number) => {
-        const question = Number(number);
-        return part === 5
-          ? question >= 101 && question <= 130
-          : part === 6
-          ? question >= 131 && question <= 146
-          : question >= 147;
-      })
-    ),
-  ].filter(Boolean).length;
+        Object.keys(answers).some((number) => Number(number) <= 100),
+        ...[5, 6, 7].map((part) =>
+          Object.keys(answers).some((number) => {
+            const question = Number(number);
+            return part === 5
+              ? question >= 101 && question <= 130
+              : part === 6
+              ? question >= 131 && question <= 146
+              : question >= 147;
+          })
+        ),
+      ].filter(Boolean).length;
   const allSubmitted =
     results.length > 0 && results.length >= expectedResultCount;
   const totalScore = results.reduce((sum, item) => sum + item.score, 0);
@@ -278,7 +301,11 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
   );
 
   const pauseFullAudio = useCallback(() => {
-    try { fullAudioPlayer.pause(); } catch { /* Native player already released. */ }
+    try {
+      fullAudioPlayer.pause();
+    } catch {
+      /* Native player already released. */
+    }
   }, [fullAudioPlayer]);
   const playFullAudio = useCallback(() => {
     try {
@@ -290,7 +317,14 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
   const autoplay = useListeningAutoplay({
     unit: !practice && startedAt ? `full:${year}:${testNumber}` : "",
     ready: audioStatus.isLoaded && fullAudioArmed,
-    active: !practice && !!startedAt && questionNumber <= 100 && !confirmSubmit && !questionSheet && !submitting && results.length === 0,
+    active:
+      !practice &&
+      !!startedAt &&
+      questionNumber <= 100 &&
+      !confirmSubmit &&
+      !questionSheet &&
+      !submitting &&
+      results.length === 0,
     start: playFullAudio,
     stop: pauseFullAudio,
   });
@@ -316,9 +350,18 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
 
   useEffect(() => {
     if (!draftReady || !draftKey || !startedAt) return;
-    void writeExamDraft(draftKey, allSubmitted ? null : {
-      answers, startedAt, expiresAt, questionNumber, savedResults,
-    }).catch(() => setSubmitError("Không lưu được bản nháp trên thiết bị."));
+    void writeExamDraft(
+      draftKey,
+      allSubmitted
+        ? null
+        : {
+            answers,
+            startedAt,
+            expiresAt,
+            questionNumber,
+            savedResults,
+          }
+    ).catch(() => setSubmitError("Không lưu được bản nháp trên thiết bị."));
   }, [
     allSubmitted,
     answers,
@@ -358,16 +401,37 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
     try {
       if (practice) {
         if (loadState.status !== "ready") return;
-        if (Object.keys(answers).some((number) => !allQuestions.some((question) => question.questionNumber === Number(number)))) {
-          throw new Error("Có đáp án không thuộc các Part đã chọn. Hãy mở lại bài luyện tập.");
+        if (
+          Object.keys(answers).some(
+            (number) =>
+              !allQuestions.some(
+                (question) => question.questionNumber === Number(number)
+              )
+          )
+        ) {
+          throw new Error(
+            "Có đáp án không thuộc các Part đã chọn. Hãy mở lại bài luyện tập."
+          );
         }
         // Chi gui Part co dap an. Giu ket qua da nhan de thu lai phan loi.
         for (const part of loadState.parts) {
           const partAnswers = answersForPart(part, answers);
-          const key: ResultKey = `${part.partNumber <= 4 ? "listening" : "reading"}-${part.partNumber}`;
+          const key: ResultKey = `${
+            part.partNumber <= 4 ? "listening" : "reading"
+          }-${part.partNumber}`;
           if (!Object.keys(partAnswers).length || savedResults[key]) continue;
-          const submitPart = part.partNumber <= 4 ? submitListeningPartPractice : submitReadingPractice;
-          const result = await submitPart(session.generation, year, testNumber, part.partNumber, partAnswers, startedAt);
+          const submitPart =
+            part.partNumber <= 4
+              ? submitListeningPartPractice
+              : submitReadingPractice;
+          const result = await submitPart(
+            session.generation,
+            year,
+            testNumber,
+            part.partNumber,
+            partAnswers,
+            startedAt
+          );
           setSavedResults((current) => ({ ...current, [key]: result }));
         }
         return;
@@ -429,7 +493,8 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
     } catch (error: unknown) {
       setSubmitError(getExamErrorMessage(error));
     } finally {
-      if (session.status === "authenticated") void refreshStudySession().catch(() => undefined);
+      if (session.status === "authenticated")
+        void refreshStudySession().catch(() => undefined);
       submitLock.current = false;
       setSubmitting(false);
     }
@@ -467,21 +532,35 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
   if (loadState.status === "loading")
     return (
       <StudyScaffold>
-        <BrandedPageState loading message={practice ? "Đang tải các Part đã chọn..." : "Đang tải đề thi..."} />
+        <BrandedPageState
+          loading
+          message={
+            practice ? "Đang tải các Part đã chọn..." : "Đang tải đề thi..."
+          }
+        />
       </StudyScaffold>
     );
   if (loadState.status === "error")
     return (
       <StudyScaffold>
-        <BrandedPageState message={loadState.message} onRetry={() => setLoadAttempt(value => value + 1)} onBack={back} />
+        <BrandedPageState
+          message={loadState.message}
+          onRetry={() => setLoadAttempt((value) => value + 1)}
+          onBack={back}
+        />
       </StudyScaffold>
     );
-  if ((!practice && allQuestions.length !== 200) || (practice && loadState.parts.some((part) => !part.questions.length)))
+  if (
+    (!practice && allQuestions.length !== 200) ||
+    (practice && loadState.parts.some((part) => !part.questions.length))
+  )
     return (
       <StudyScaffold>
         <View style={styles.center}>
           <Text style={styles.notice}>
-            {practice ? "Một Part đã chọn chưa có câu hỏi. Hãy quay lại chọn Part khác." : `Đề hiện có ${allQuestions.length}/200 câu, chưa đủ dữ liệu để bắt đầu Full Test.`}
+            {practice
+              ? "Một Part đã chọn chưa có câu hỏi. Hãy quay lại chọn Part khác."
+              : `Đề hiện có ${allQuestions.length}/200 câu, chưa đủ dữ liệu để bắt đầu Full Test.`}
           </Text>
           <Action title="Quay lại" onPress={back} />
         </View>
@@ -500,10 +579,13 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
           />
           <View style={styles.heading}>
             <Text style={styles.title}>
-              {practice ? "Luyện tập" : "Full Test"} · ETS {year} Test {testNumber}
+              {practice ? "Luyện tập" : "Full Test"} · ETS {year} Test{" "}
+              {testNumber}
             </Text>
             <Text style={styles.muted}>
-              {practice ? `Part ${partNumbers.join(", ")} · ${allQuestions.length} câu` : startedAt
+              {practice
+                ? `Part ${partNumbers.join(", ")} · ${allQuestions.length} câu`
+                : startedAt
                 ? `Còn lại ${formatTime(secondsLeft)}`
                 : "200 câu · 120 phút"}
             </Text>
@@ -519,21 +601,40 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
 
         {!startedAt ? (
           <ScrollView contentContainerStyle={styles.intro}>
-            <Text style={styles.title}>{practice ? `Luyện Part ${partNumbers.join(", ")}` : "Bài thi TOEIC đầy đủ"}</Text>
+            <Text style={styles.title}>
+              {practice
+                ? `Luyện Part ${partNumbers.join(", ")}`
+                : "Bài thi TOEIC đầy đủ"}
+            </Text>
             <Text style={styles.body}>
-              {practice ? "Làm các Part đã chọn trong cùng một lượt, không giới hạn thời gian. Audio nghe riêng theo câu hoặc nhóm hội thoại. Chuyển câu bằng nút điều hướng hoặc bảng câu hỏi." : <>Làm liên tục Part 1–7 trong 120 phút. Audio Listening phát theo
-              một track toàn bài. Bạn có thể chuyển câu bằng nút điều hướng hoặc
-              bảng câu hỏi.</>}
+              {practice ? (
+                "Làm các Part đã chọn trong cùng một lượt, không giới hạn thời gian. Audio nghe riêng theo câu hoặc nhóm hội thoại. Chuyển câu bằng nút điều hướng hoặc bảng câu hỏi."
+              ) : (
+                <>
+                  Làm liên tục Part 1–7 trong 120 phút. Audio Listening phát
+                  theo một track toàn bài. Bạn có thể chuyển câu bằng nút điều
+                  hướng hoặc bảng câu hỏi.
+                </>
+              )}
             </Text>
             <Text style={styles.muted}>
-              {practice ? `Đã tải ${allQuestions.length} câu. Kết quả lưu riêng từng Part; Part chưa trả lời câu nào sẽ không được gửi chấm.` : "Đã tải đủ 200 câu. Kết quả gồm phần Listening và từng Part Reading đã nộp."}
+              {practice
+                ? `Đã tải ${allQuestions.length} câu. Kết quả lưu riêng từng Part; Part chưa trả lời câu nào sẽ không được gửi chấm.`
+                : "Đã tải đủ 200 câu. Kết quả gồm phần Listening và từng Part Reading đã nộp."}
             </Text>
             {session.status === "guest" ? (
               <View style={{ gap: 12 }}>
-                <Text style={styles.body}>{practice
-                  ? "Học thử · Kết quả chỉ hiển thị trong lượt này, không lưu vào tài khoản."
-                  : "Học thử Full Test chưa hỗ trợ chấm điểm hoặc lưu kết quả. Đăng nhập trước khi làm bài để nhận kết quả; đăng nhập giữa chừng không chuyển bài học thử vào tài khoản."}</Text>
-                {!practice ? <Action title="Quay lại chọn Part để luyện có chấm điểm" onPress={back} /> : null}
+                <Text style={styles.body}>
+                  {practice
+                    ? "Học thử · Kết quả chỉ hiển thị trong lượt này, không lưu vào tài khoản."
+                    : "Học thử Full Test chưa hỗ trợ chấm điểm hoặc lưu kết quả. Đăng nhập trước khi làm bài để nhận kết quả; đăng nhập giữa chừng không chuyển bài học thử vào tài khoản."}
+                </Text>
+                {!practice ? (
+                  <Action
+                    title="Quay lại chọn Part để luyện có chấm điểm"
+                    onPress={back}
+                  />
+                ) : null}
               </View>
             ) : null}
             {practice ? null : fullAudioError ? (
@@ -547,7 +648,9 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
               </Text>
             )}
             <Action
-              title={practice ? "Bắt đầu làm bài" : "Bắt đầu làm bài · 120 phút"}
+              title={
+                practice ? "Bắt đầu làm bài" : "Bắt đầu làm bài · 120 phút"
+              }
               disabled={!draftReady}
               onPress={begin}
               primary
@@ -562,7 +665,9 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
                     autoplayHistory={autoplayHistory}
                     audio={currentPassage?.audioSegment ?? null}
                     activeQuestionNumber={questionNumber}
-                    paused={confirmSubmit || questionSheet || results.length > 0}
+                    paused={
+                      confirmSubmit || questionSheet || results.length > 0
+                    }
                   />
                 ) : currentPartNumber <= 4 ? (
                   <View style={styles.audioBanner}>
@@ -581,10 +686,19 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
                     {audioStatus.isLoaded && !audioStatus.playing ? (
                       <Action
                         title="Phát / tiếp tục"
-                        onPress={() => { if (autoplay.manual()) playFullAudio(); }}
+                        onPress={() => {
+                          if (autoplay.manual()) playFullAudio();
+                        }}
                       />
                     ) : null}
-                    {audioStatus.playing ? <Action title="Tạm dừng audio" onPress={() => { autoplay.cancel(); }} /> : null}
+                    {audioStatus.playing ? (
+                      <Action
+                        title="Tạm dừng audio"
+                        onPress={() => {
+                          autoplay.cancel();
+                        }}
+                      />
+                    ) : null}
                     {fullAudioError ? (
                       <Action
                         title="Thử tải lại"
@@ -606,7 +720,8 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
                 ) : null}
                 <View style={styles.progressRow}>
                   <Text style={styles.progress}>
-                    Câu {questionNumber} · Đã chọn {Object.keys(answers).length}/{allQuestions.length}
+                    Câu {questionNumber} · Đã chọn {Object.keys(answers).length}
+                    /{allQuestions.length}
                   </Text>
                   <Text style={styles.partLabel}>Part {currentPartNumber}</Text>
                 </View>
@@ -658,7 +773,9 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
                           >
                             <Text style={styles.optionLabel}>{label}</Text>
                             {currentPartNumber >= 3 && option?.text ? (
-                              <Text style={[styles.body, styles.optionText]}>{option.text}</Text>
+                              <Text style={[styles.body, styles.optionText]}>
+                                {option.text}
+                              </Text>
                             ) : null}
                           </Pressable>
                         );
@@ -668,7 +785,7 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
                 </ScrollView>
                 <View style={styles.footer}>
                   <Action
-                    title="‹ Trước"
+                    title="‹ Câu Trước"
                     disabled={currentIndex <= 0 || submitting}
                     onPress={() =>
                       setQuestionNumber(
@@ -682,7 +799,7 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
                     onPress={() => setConfirmSubmit(true)}
                   />
                   <Action
-                    title="Tiếp ›"
+                    title="Câu sau ›"
                     disabled={
                       currentIndex >= allQuestions.length - 1 || submitting
                     }
@@ -723,39 +840,49 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
                     trả lời {totalAnswered}/{allQuestions.length} câu
                   </Text>
                   <Text style={styles.muted}>
-                    {practice ? "Mỗi Part đã làm có một kết quả riêng. Part chưa trả lời câu nào không được gửi chấm." : "Backend lưu từng phần riêng, nên lịch sử có một kết quả Listening và các kết quả Reading đã nộp."}
+                    {practice
+                      ? "Mỗi Part đã làm có một kết quả riêng. Part chưa trả lời câu nào không được gửi chấm."
+                      : "Backend lưu từng phần riêng, nên lịch sử có một kết quả Listening và các kết quả Reading đã nộp."}
                   </Text>
                   <View>
-                  {results.map((result) => (
-                    <View
-                      key={
-                        "resultId" in result
-                          ? result.resultId
-                          : `${result.section}-${result.partNumber}`
-                      }
-                      style={styles.resultRow}
-                    >
-                      <Text style={styles.body}>
-                        {result.partNumber != null ? `${result.section === "LISTENING" ? "Listening" : "Reading"} · Part ${result.partNumber}` : result.section === "LISTENING"
-                          ? "Listening · Part 1–4"
-                          : `Reading · Part ${result.partNumber}`}
-                        : {result.score}/{result.totalQuestions}
-                      </Text>
-                      {"resultId" in result ? (
-                        <Action
-                          title="Xem lại"
-                          onPress={() => {
-                            setConfirmSubmit(false);
-                            router.push({
-                              pathname: "/study/history/[resultId]",
-                              params: { resultId: String(result.resultId) },
-                            });
-                          }}
-                        />
-                      ) : null}
-                      {practice && !("resultId" in result) ? <GuestResultDetails result={result} /> : null}
-                    </View>
-                  ))}
+                    {results.map((result) => (
+                      <View
+                        key={
+                          "resultId" in result
+                            ? result.resultId
+                            : `${result.section}-${result.partNumber}`
+                        }
+                        style={styles.resultRow}
+                      >
+                        <Text style={styles.body}>
+                          {result.partNumber != null
+                            ? `${
+                                result.section === "LISTENING"
+                                  ? "Listening"
+                                  : "Reading"
+                              } · Part ${result.partNumber}`
+                            : result.section === "LISTENING"
+                            ? "Listening · Part 1–4"
+                            : `Reading · Part ${result.partNumber}`}
+                          : {result.score}/{result.totalQuestions}
+                        </Text>
+                        {"resultId" in result ? (
+                          <Action
+                            title="Xem lại"
+                            onPress={() => {
+                              setConfirmSubmit(false);
+                              router.push({
+                                pathname: "/study/history/[resultId]",
+                                params: { resultId: String(result.resultId) },
+                              });
+                            }}
+                          />
+                        ) : null}
+                        {practice && !("resultId" in result) ? (
+                          <GuestResultDetails result={result} />
+                        ) : null}
+                      </View>
+                    ))}
                   </View>
                   {submitError ? (
                     <Text style={styles.warning}>{submitError}</Text>
@@ -786,9 +913,13 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
                 </>
               ) : confirmSubmit ? (
                 <>
-                  <Text style={styles.title}>{practice ? "Nộp bài luyện tập?" : "Nộp bài Full Test?"}</Text>
+                  <Text style={styles.title}>
+                    {practice ? "Nộp bài luyện tập?" : "Nộp bài Full Test?"}
+                  </Text>
                   <Text style={styles.body}>
-                    Đã chọn {Object.keys(answers).length}/{allQuestions.length} câu. Câu bỏ trống không có điểm. Part chưa có đáp án sẽ không được gửi chấm.
+                    Đã chọn {Object.keys(answers).length}/{allQuestions.length}{" "}
+                    câu. Câu bỏ trống không có điểm. Part chưa có đáp án sẽ
+                    không được gửi chấm.
                   </Text>
                   {session.status === "guest" && !practice ? (
                     <Text style={styles.warning}>
@@ -807,9 +938,7 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
                     />
                   ) : (
                     <Action
-                      title={
-                        submitting ? "Đang nộp..." : "Nộp"
-                      }
+                      title={submitting ? "Đang nộp..." : "Nộp"}
                       disabled={submitting || !Object.keys(answers).length}
                       onPress={() => void submit()}
                       primary
@@ -825,50 +954,52 @@ export default function FullTestScreen({ practice = false }: { practice?: boolea
                 <>
                   <Text style={styles.title}>Bảng câu hỏi</Text>
                   <View>
-                    {toeicParts.filter((part) => partNumbers.includes(part.number)).map((part) => {
-                      const partData = loadState.parts.find(
-                        (item) => item.partNumber === part.number
-                      );
-                      return (
-                        <View key={part.number} style={styles.sheetPart}>
-                          <Text style={styles.partLabel}>
-                            Part {part.number} · {part.title}
-                          </Text>
-                          <View style={styles.grid}>
-                            {partData?.questions.map((question) => (
-                              <Pressable
-                                key={question.id}
-                                accessibilityRole="button"
-                                accessibilityLabel={`Câu ${
-                                  question.questionNumber
-                                }${
-                                  answers[question.questionNumber]
-                                    ? ` đã chọn ${
-                                        answers[question.questionNumber]
-                                      }`
-                                    : " chưa làm"
-                                }`}
-                                onPress={() => {
-                                  setQuestionNumber(question.questionNumber);
-                                  setQuestionSheet(false);
-                                }}
-                                style={[
-                                  styles.cell,
-                                  answers[question.questionNumber] &&
-                                    styles.cellAnswered,
-                                  question.questionNumber === questionNumber &&
-                                    styles.cellCurrent,
-                                ]}
-                              >
-                                <Text style={styles.cellText}>
-                                  {question.questionNumber}
-                                </Text>
-                              </Pressable>
-                            ))}
+                    {toeicParts
+                      .filter((part) => partNumbers.includes(part.number))
+                      .map((part) => {
+                        const partData = loadState.parts.find(
+                          (item) => item.partNumber === part.number
+                        );
+                        return (
+                          <View key={part.number} style={styles.sheetPart}>
+                            <Text style={styles.partLabel}>
+                              Part {part.number} · {part.title}
+                            </Text>
+                            <View style={styles.grid}>
+                              {partData?.questions.map((question) => (
+                                <Pressable
+                                  key={question.id}
+                                  accessibilityRole="button"
+                                  accessibilityLabel={`Câu ${
+                                    question.questionNumber
+                                  }${
+                                    answers[question.questionNumber]
+                                      ? ` đã chọn ${
+                                          answers[question.questionNumber]
+                                        }`
+                                      : " chưa làm"
+                                  }`}
+                                  onPress={() => {
+                                    setQuestionNumber(question.questionNumber);
+                                    setQuestionSheet(false);
+                                  }}
+                                  style={[
+                                    styles.cell,
+                                    answers[question.questionNumber] &&
+                                      styles.cellAnswered,
+                                    question.questionNumber ===
+                                      questionNumber && styles.cellCurrent,
+                                  ]}
+                                >
+                                  <Text style={styles.cellText}>
+                                    {question.questionNumber}
+                                  </Text>
+                                </Pressable>
+                              ))}
+                            </View>
                           </View>
-                        </View>
-                      );
-                    })}
+                        );
+                      })}
                   </View>
                   <Action
                     title="Đóng bảng câu hỏi"
@@ -959,9 +1090,6 @@ function formatTime(value: number) {
   )}`;
 }
 
-
-
-
 function useThemedStyles() {
   const appTheme = useAppTheme();
   return useThemeMemo(() => {
@@ -1042,7 +1170,10 @@ function useThemedStyles() {
       },
       optionLabel: { color: c.text, fontSize: 16, fontWeight: "800" },
       optionText: { flex: 1, flexShrink: 1 },
-      selected: { borderColor: c.tabActive, backgroundColor: themeColor("#334018", "background") },
+      selected: {
+        borderColor: c.tabActive,
+        backgroundColor: themeColor("#334018", "background"),
+      },
       footer: {
         flexDirection: "row",
         justifyContent: "space-around",
@@ -1099,10 +1230,17 @@ function useThemedStyles() {
         borderRadius: 9,
         borderColor: c.border,
       },
-      cellAnswered: { backgroundColor: themeColor("#334018", "background"), borderColor: c.tabActive },
+      cellAnswered: {
+        backgroundColor: themeColor("#334018", "background"),
+        borderColor: c.tabActive,
+      },
       cellCurrent: { borderWidth: 2, borderColor: c.link },
       cellText: { color: c.text, fontSize: 12, fontWeight: "700" },
-      resultRow: { padding: 10, borderRadius: 10, backgroundColor: c.background },
+      resultRow: {
+        padding: 10,
+        borderRadius: 10,
+        backgroundColor: c.background,
+      },
     });
     return { homeDesign, themeColor, c, styles };
   }, [appTheme]);
