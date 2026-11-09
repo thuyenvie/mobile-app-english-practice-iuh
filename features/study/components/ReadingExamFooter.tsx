@@ -1,9 +1,6 @@
 import { useAppTheme } from "@/theme/useAppTheme";
-import { useMemo as useThemeMemo } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { XStack } from "tamagui";
-
-import { AppButton } from "@/components/ui/AppButton";
 
 export function ReadingExamFooter({
   canGoPrevious,
@@ -20,73 +17,54 @@ export function ReadingExamFooter({
   onNext: () => void;
   onSubmit: () => void;
 }) {
-  const { homeDesign } = useThemedStyles();
+  const { homeDesign } = useAppTheme();
   const insets = useSafeAreaInsets();
   return (
-    <XStack
-      minHeight={48 + insets.bottom}
-      paddingBottom={insets.bottom}
-      alignItems="center"
-      justifyContent="space-between"
-      backgroundColor={homeDesign.colors.surface}
-    >
-      <AppButton
-        appearance="text"
-        flex={1}
-        minWidth={0}
-        paddingHorizontal={10}
-        paddingVertical={10}
-        justifyContent="flex-start"
-        fontSize={14}
-        fontWeight="600"
-        color={homeDesign.colors.link}
-        disabled={!canGoPrevious}
-        opacity={canGoPrevious ? 1 : 0.4}
-        aria-label="Câu trước"
-        onPress={onPrevious}
-      >
-        ‹ Câu trước
-      </AppButton>
-
-      <AppButton
-        appearance="text"
-        padding={10}
-        fontSize={14}
-        fontWeight="600"
-        color={homeDesign.colors.link}
-        disabled={!canSubmit}
-        opacity={canSubmit ? 1 : 0.4}
-        onPress={onSubmit}
-      >
-        Nộp
-      </AppButton>
-
-      <AppButton
-        appearance="text"
-        flex={1}
-        minWidth={0}
-        paddingHorizontal={10}
-        paddingVertical={10}
-        justifyContent="flex-end"
-        fontSize={14}
-        fontWeight="600"
-        color={homeDesign.colors.link}
-        disabled={!canGoNext}
-        opacity={canGoNext ? 1 : 0.4}
-        aria-label="Câu sau"
-        onPress={onNext}
-      >
-        Câu sau ›
-      </AppButton>
-    </XStack>
+    <View style={{ paddingBottom: insets.bottom, backgroundColor: homeDesign.colors.background }}>
+      <View style={[styles.footer, { backgroundColor: homeDesign.colors.surface }]}>
+        <FooterAction text="‹ Câu trước" disabled={!canGoPrevious} onPress={onPrevious} />
+        <FooterAction text="Nộp" disabled={!canSubmit} onPress={onSubmit} />
+        <FooterAction text="Câu sau ›" disabled={!canGoNext} onPress={onNext} />
+      </View>
+    </View>
   );
 }
 
-function useThemedStyles() {
-  const appTheme = useAppTheme();
-  return useThemeMemo(() => {
-    const { homeDesign } = appTheme;
-
-    return { homeDesign };
-  }, [appTheme]);
+function FooterAction({
+  text,
+  disabled,
+  onPress,
+}: {
+  text: string;
+  disabled: boolean;
+  onPress: () => void;
+}) {
+  const { homeDesign } = useAppTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={text}
+      accessibilityState={{ disabled }}
+      disabled={disabled}
+      onPress={onPress}
+      style={[styles.action, disabled && styles.disabled]}
+    >
+      <Text style={[styles.actionText, { color: homeDesign.colors.link }]}>{text}</Text>
+    </Pressable>
+  );
 }
+
+const styles = StyleSheet.create({
+  footer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  action: {
+    padding: 10,
+    minHeight: 44,
+    justifyContent: "center",
+  },
+  actionText: { fontSize: 14, fontWeight: "600" },
+  disabled: { opacity: 0.4 },
+});
