@@ -2,6 +2,8 @@ import { useAppTheme } from "@/theme/useAppTheme";
 import { useMemo as useThemeMemo, useState, type Ref } from "react";
 import { useFormInputFocus } from "./FormScrollView";
 import { AppButton } from "./AppButton";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { Image } from "react-native";
 import {
   Input,
   Text,
@@ -40,7 +42,7 @@ export function AppInput({
       <Text color={authDesign.colors.text} {...typography.label} {...labelProps}>
         {label}
       </Text>
-      <XStack alignItems="center" gap={4}>
+      <XStack alignItems="center" flex={1} minWidth={0} position="relative">
         <Input keyboardAppearance={resolvedMode}
           ref={inputRef}
           flex={1}
@@ -58,12 +60,23 @@ export function AppInput({
           secureTextEntry={secureTextEntry && !revealed}
           onFocus={event => { focusInput?.(); onFocus?.(event); }}
           {...props}
+          paddingRight={secureTextEntry ? 52 : undefined}
         />
-        {secureTextEntry ? <AppButton appearance="text" minWidth={48} paddingHorizontal={8}
+        {secureTextEntry ? <AppButton appearance="text" position="absolute" right={4} top={0} bottom={0}
+          zIndex={1} minWidth={44} width={44} minHeight={48} paddingHorizontal={4}
           aria-label={`${revealed ? "Ẩn" : "Hiện"} ${label.toLowerCase()}`}
           accessibilityState={{ selected: revealed }}
           onPress={() => setRevealed(value => !value)} color={authDesign.colors.primary}>
-          {revealed ? "Ẩn" : "Hiện"}
+          {!revealed ? (
+            <Image
+              source={require("../../../assets/password-eye.png")}
+              accessibilityIgnoresInvertColors
+              style={{ width: 22, height: 22 }}
+              resizeMode="contain"
+            />
+          ) : (
+            <MaterialCommunityIcons name="eye-off" size={22} color={authDesign.colors.primary} />
+          )}
         </AppButton> : null}
       </XStack>
     </YStack>
