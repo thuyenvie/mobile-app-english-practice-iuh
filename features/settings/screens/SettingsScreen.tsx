@@ -150,9 +150,11 @@ export default function SettingsScreen() {
           </RequireAccount>
           {session.status === "authenticated" ? <>
             {error ? <Text role="alert" color={settingsTheme.error}>{error}</Text> : null}
-            <AppButton appearance="text" color={settingsTheme.error} disabled={busy} onPress={confirmLogout}>
-              {busy ? "Đang đăng xuất..." : "Đăng xuất"}
-            </AppButton>
+            <YStack width="100%" alignItems="center">
+              <AppButton appearance="text" color={settingsTheme.error} disabled={busy} onPress={confirmLogout}>
+                {busy ? "Đang đăng xuất..." : "Đăng xuất"}
+              </AppButton>
+            </YStack>
           </> : null}
         </SettingsSection>
         <SettingsSection title="Giao diện và học tập">

@@ -2,7 +2,7 @@ import { useAppTheme } from "@/theme/useAppTheme";
 import { useMemo as useThemeMemo } from "react";
 import Constants from "expo-constants";
 import { router } from "expo-router";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { HomeScaffold } from "../../home/components/HomeScaffold";
 import { getAboutMetadata } from "../metadata/aboutMetadata";
@@ -24,7 +24,30 @@ export default function AboutScreen() {
       </View>
       <View style={styles.card}>
         <Text accessibilityRole="header" style={styles.name}>Thông tin liên hệ</Text>
-        <Text style={styles.text}>Thông tin nhóm phát triển, hỗ trợ và chính sách chưa được cung cấp.</Text>
+        <Text style={styles.text}>Nhóm phát triển English Practice</Text>
+        <View style={styles.member}>
+          <Text style={styles.memberId}>23633961</Text>
+          <Text style={styles.memberName}>Nguyễn Công Tuyến (NCT)</Text>
+          <Pressable
+            accessibilityRole="link"
+            accessibilityLabel="Mở Facebook của Nguyễn Công Tuyến"
+            onPress={() => void Linking.openURL("https://www.facebook.com/cong.tuyen.307425").catch(() =>
+              Alert.alert("Không mở được liên kết", "Vui lòng thử lại sau."))}
+            hitSlop={8}
+          >
+            <Text style={styles.link}>Facebook cá nhân ↗</Text>
+          </Pressable>
+        </View>
+        <View style={styles.divider} />
+        <View style={styles.member}>
+          <Text style={styles.memberId}>23636821</Text>
+          <Text style={styles.memberName}>Đỗ Hoài Nhớ</Text>
+        </View>
+        <View style={styles.divider} />
+        <View style={styles.member}>
+          <Text style={styles.memberId}>23635991</Text>
+          <Text style={styles.memberName}>Tô Nguyễn An Thuyên</Text>
+        </View>
       </View>
       <View style={styles.card}>
         <Text accessibilityRole="header" style={styles.name}>Ghi nhận nguồn</Text>
@@ -48,6 +71,10 @@ function useThemedStyles() {
       card: { padding: 16, gap: 12, borderWidth: 1, borderColor: theme.border, borderRadius: 12, backgroundColor: theme.surface },
       name: { color: theme.text, fontSize: 18, fontWeight: "600" },
       text: { color: theme.text, fontSize: 16, lineHeight: 24 },
+      member: { gap: 3, paddingVertical: 4 },
+      memberId: { color: theme.muted, fontSize: 14, fontWeight: "600", letterSpacing: 0.3 },
+      memberName: { color: theme.text, fontSize: 16, fontWeight: "600", lineHeight: 23 },
+      divider: { height: StyleSheet.hairlineWidth, backgroundColor: theme.border },
       note: { color: theme.muted, fontSize: 14, lineHeight: 22 },
     });
     return { theme, styles };
