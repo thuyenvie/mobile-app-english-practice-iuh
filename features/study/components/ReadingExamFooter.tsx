@@ -1,6 +1,6 @@
 import { useAppTheme } from "@/theme/useAppTheme";
 import { useMemo as useThemeMemo } from "react";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { XStack } from "tamagui";
 
 import { AppButton } from "@/components/ui/AppButton";
@@ -8,74 +8,76 @@ import { AppButton } from "@/components/ui/AppButton";
 export function ReadingExamFooter({
   canGoPrevious,
   canGoNext,
+  canSubmit,
   onPrevious,
   onNext,
+  onSubmit,
 }: {
   canGoPrevious: boolean;
   canGoNext: boolean;
+  canSubmit: boolean;
   onPrevious: () => void;
   onNext: () => void;
+  onSubmit: () => void;
 }) {
   const { homeDesign } = useThemedStyles();
+  const insets = useSafeAreaInsets();
   return (
     <XStack
-      minHeight={62}
-      paddingHorizontal={18}
+      minHeight={48 + insets.bottom}
+      paddingBottom={insets.bottom}
       alignItems="center"
       justifyContent="space-between"
       backgroundColor={homeDesign.colors.surface}
-      borderTopWidth={1}
-      borderTopColor={homeDesign.colors.border}
     >
       <AppButton
         appearance="text"
-        width={52}
-        height={48}
+        flex={1}
+        minWidth={0}
+        paddingHorizontal={10}
+        paddingVertical={10}
+        justifyContent="flex-start"
+        fontSize={14}
+        fontWeight="600"
+        color={homeDesign.colors.link}
         disabled={!canGoPrevious}
-        opacity={canGoPrevious ? 1 : 0.3}
-        aria-label="< Câu trước"
+        opacity={canGoPrevious ? 1 : 0.4}
+        aria-label="Câu trước"
         onPress={onPrevious}
-        icon={
-          <MaterialIcons
-            name="chevron-left"
-            size={38}
-            color={homeDesign.colors.text}
-          />
-        }
-      />
+      >
+        ‹ Câu trước
+      </AppButton>
 
       <AppButton
         appearance="text"
-        width={52}
-        height={48}
-        disabled
-        opacity={0.55}
-        aria-label="Yêu thích - sẽ phát triển sau"
-        icon={
-          <MaterialIcons
-            name="favorite-border"
-            size={29}
-            color={homeDesign.colors.text}
-          />
-        }
-      />
+        padding={10}
+        fontSize={14}
+        fontWeight="600"
+        color={homeDesign.colors.link}
+        disabled={!canSubmit}
+        opacity={canSubmit ? 1 : 0.4}
+        onPress={onSubmit}
+      >
+        Nộp
+      </AppButton>
 
       <AppButton
         appearance="text"
-        width={52}
-        height={48}
+        flex={1}
+        minWidth={0}
+        paddingHorizontal={10}
+        paddingVertical={10}
+        justifyContent="flex-end"
+        fontSize={14}
+        fontWeight="600"
+        color={homeDesign.colors.link}
         disabled={!canGoNext}
-        opacity={canGoNext ? 1 : 0.3}
-        aria-label="Câu tiếp theo"
+        opacity={canGoNext ? 1 : 0.4}
+        aria-label="Câu sau"
         onPress={onNext}
-        icon={
-          <MaterialIcons
-            name="chevron-right"
-            size={38}
-            color={homeDesign.colors.text}
-          />
-        }
-      />
+      >
+        Câu sau ›
+      </AppButton>
     </XStack>
   );
 }

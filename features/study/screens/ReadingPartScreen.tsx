@@ -192,6 +192,8 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
   }, [currentQuestion, part.partNumber, questions]);
 
   const questionLabel = getQuestionLabel(currentQuestion, relatedQuestions);
+  const answeredCount = Object.keys(answers).length;
+  const canSubmit = answeredCount > 0 && !submitting && !result;
 
   const loadWordLookup = async (word: string, context: string) => {
     const requestId = ++lookupRequestId.current;
@@ -258,11 +260,13 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
   };
 
   const selectAnswer = (questionNumber: number, label: string) => {
+    if (submittingRef.current || result) return;
     setAnswers((current) => ({ ...current, [questionNumber]: label }));
     goToQuestion(questionNumber, false);
   };
 
   const openSubmitConfirmation = () => {
+    if (!canSubmit || submittingRef.current) return;
     setQuestionSheetVisible(false);
     setSubmitError("");
     setConfirmVisible(true);
@@ -297,17 +301,17 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
 
   return (
     <StudyScaffold>
-      <GuestPracticeNotice
-        hasAnswers={Object.keys(answers).length > 0}
-        busy={submitting}
-      />
       <ReadingExamHeader
-        questionLabel={questionLabel}
+        partNumber={part.partNumber}
+        year={part.year}
+        testNumber={part.testNumber}
+        busy={submitting || !!result}
         timerLabel={timerLabel}
         timerExpired={timerExpired}
         onBack={() => router.back()}
         onOpenQuestionSheet={() => setQuestionSheetVisible(true)}
       />
+      <GuestPracticeNotice hasAnswers={answeredCount > 0} busy={submitting} />
 
       {timerExpired ? (
         <XStack
@@ -325,6 +329,10 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
         </XStack>
       ) : null}
 
+      <Text padding={10} color={homeDesign.colors.tabActive} fontSize={14}>
+        Câu {currentQuestion.questionNumber} · Đã chọn {answeredCount}/{questions.length}
+      </Text>
+
       {part.partNumber === 5 ? (
         <ScrollView
           style={styles.flex}
@@ -336,6 +344,7 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
             question={currentQuestion}
             selectedOption={answers[currentQuestion.questionNumber]}
             focused
+            disabled={submitting || !!result}
             onSelect={(label) =>
               selectAnswer(currentQuestion.questionNumber, label)
             }
@@ -358,22 +367,22 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
               paddingVertical={10}
               alignItems="center"
               justifyContent="space-between"
-              backgroundColor={homeDesign.colors.tabActive}
+              backgroundColor={homeDesign.colors.surface}
+              borderBottomWidth={1}
+              borderBottomColor={homeDesign.colors.border}
             >
               <Text
-                color={homeDesign.colors.onSelection}
-                fontSize={15}
-                fontWeight="800"
+                color={homeDesign.colors.text}
+                fontSize={18}
+                fontWeight="700"
               >
                 Nội dung bài đọc
               </Text>
               <Text
-                color={homeDesign.colors.onSelection}
-                fontSize={12}
-                fontWeight="700"
+                color={homeDesign.colors.secondary}
+                fontSize={13}
               >
-                Câu {relatedQuestions[0].questionNumber}–
-                {relatedQuestions[relatedQuestions.length - 1].questionNumber}
+                {questionLabel}
               </Text>
             </XStack>
             <ScrollView
@@ -417,12 +426,14 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
             <XStack
               paddingHorizontal={13}
               paddingVertical={9}
-              backgroundColor={homeDesign.colors.link}
+              backgroundColor={homeDesign.colors.surface}
+              borderBottomWidth={1}
+              borderBottomColor={homeDesign.colors.border}
             >
               <Text
-                color={homeDesign.colors.onSelection}
-                fontSize={14}
-                fontWeight="800"
+                color={homeDesign.colors.text}
+                fontSize={18}
+                fontWeight="700"
               >
                 Câu hỏi liên quan
               </Text>
@@ -440,6 +451,7 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
                   focused={
                     question.questionNumber === currentQuestion.questionNumber
                   }
+                  disabled={submitting || !!result}
                   onSelect={(label) =>
                     selectAnswer(question.questionNumber, label)
                   }
@@ -455,8 +467,10 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
       )}
 
       <ReadingExamFooter
-        canGoPrevious={currentIndex > 0}
-        canGoNext={currentIndex < questions.length - 1}
+        canGoPrevious={currentIndex > 0 && !submitting && !result}
+        canGoNext={currentIndex < questions.length - 1 && !submitting && !result}
+        canSubmit={canSubmit}
+        onSubmit={openSubmitConfirmation}
         onPrevious={() => setCurrentIndex((index) => Math.max(0, index - 1))}
         onNext={() =>
           setCurrentIndex((index) => Math.min(questions.length - 1, index + 1))
@@ -465,12 +479,13 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
 
       <QuestionSheetModal
         visible={questionSheetVisible && !confirmVisible && !result}
+        partNumber={part.partNumber}
+        canSubmit={canSubmit}
         questions={questions}
         answers={answers}
         currentQuestionNumber={currentQuestion.questionNumber}
         onClose={() => setQuestionSheetVisible(false)}
         onJump={goToQuestion}
-        onSelect={selectAnswer}
         onSubmit={openSubmitConfirmation}
       />
 
@@ -510,22 +525,27 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
               <>
                 <Text
                   color={homeDesign.colors.text}
-                  fontSize={19}
-                  fontWeight="800"
+                  fontSize={18}
+                  fontWeight="700"
                 >
                   Kết quả Reading · Part {result.partNumber}
                 </Text>
-                <Text color={homeDesign.colors.text} fontSize={15}>
+                <Text color={homeDesign.colors.text} fontSize={16} lineHeight={24}>
                   Đúng {result.score}/{result.totalQuestions} câu · Đã trả lời{" "}
                   {result.answeredQuestions} câu
                 </Text>
-                <Text color={homeDesign.colors.secondary} fontSize={13}>
+                <Text color={homeDesign.colors.secondary} fontSize={13} lineHeight={20}>
                   Đây là số câu đúng trên tổng câu thực tế của Part, không quy
                   đổi sang điểm TOEIC.
                 </Text>
                 {"resultId" in result ? (
                   <>
                     <AppButton
+                      appearance="text"
+                      padding={10}
+                      color={homeDesign.colors.link}
+                      fontSize={14}
+                      fontWeight="600"
                       onPress={() => {
                         const resultId = result.resultId;
                         setResult(null);
@@ -539,6 +559,10 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
                     </AppButton>
                     <AppButton
                       appearance="text"
+                      padding={10}
+                      color={homeDesign.colors.link}
+                      fontSize={14}
+                      fontWeight="600"
                       onPress={() => {
                         const resultId = result.resultId;
                         setResult(null);
@@ -548,14 +572,17 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
                         });
                       }}
                     >
-                      Đóng
+                      Đóng kết quả
                     </AppButton>
                   </>
                 ) : (
                   <>
                     <GuestResultDetails result={result} />
-                    <AppButton onPress={() => setResult(null)}>
-                      Đóng kết quả tạm
+                    <AppButton
+                      appearance="text" padding={10} color={homeDesign.colors.link}
+                      fontSize={14} fontWeight="600" onPress={() => setResult(null)}
+                    >
+                      Đóng kết quả
                     </AppButton>
                   </>
                 )}
@@ -564,15 +591,19 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
               <>
                 <Text
                   color={homeDesign.colors.text}
-                  fontSize={19}
-                  fontWeight="800"
+                  fontSize={18}
+                  fontWeight="700"
                 >
-                  Nộp Reading · Part {part.partNumber}?
+                  Nộp Reading Part {part.partNumber}?
                 </Text>
-                <Text color={homeDesign.colors.text} fontSize={14}>
-                  Đã chọn {Object.keys(answers).length}/{questions.length} câu;
-                  còn {questions.length - Object.keys(answers).length} câu chưa
-                  trả lời. Câu bỏ trống không được tính đúng.
+                <Text color={homeDesign.colors.text} fontSize={16} lineHeight={24}>
+                  Bạn đã chọn {answeredCount}/{questions.length} câu. Câu chưa
+                  trả lời không có điểm. Chỉ Part {part.partNumber} được chấm.
+                </Text>
+                <Text color={homeDesign.colors.secondary} fontSize={13} lineHeight={20}>
+                  {session.status === "guest"
+                    ? "Kết quả chỉ hiển thị trong bài học thử này, không lưu vào tài khoản hoặc lịch sử."
+                    : "Kết quả được lưu vào lịch sử học tập sau khi nộp thành công."}
                 </Text>
                 {submitError ? (
                   <Text color={homeDesign.colors.inProgress} fontSize={13}>
@@ -580,14 +611,25 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
                   </Text>
                 ) : null}
                 <AppButton
-                  disabled={submitting || Object.keys(answers).length === 0}
+                  appearance="text"
+                  padding={10}
+                  color={homeDesign.colors.link}
+                  fontSize={14}
+                  fontWeight="600"
+                  disabled={!canSubmit}
+                  opacity={canSubmit ? 1 : 0.4}
                   onPress={() => void submit()}
                 >
-                  {submitting ? "Đang chấm..." : "Xác nhận nộp"}
+                  {submitting ? "Đang chấm..." : "Nộp"}
                 </AppButton>
                 <AppButton
                   appearance="text"
+                  padding={10}
+                  color={homeDesign.colors.link}
+                  fontSize={14}
+                  fontWeight="600"
                   disabled={submitting}
+                  opacity={submitting ? 0.4 : 1}
                   onPress={() => setConfirmVisible(false)}
                 >
                   Tiếp tục làm bài
@@ -606,10 +648,10 @@ function getQuestionLabel(
   relatedQuestions: ExamQuestion[]
 ) {
   if (relatedQuestions.length <= 1) {
-    return `Question ${currentQuestion.questionNumber}`;
+    return `Câu ${currentQuestion.questionNumber}`;
   }
 
-  return `Question ${relatedQuestions[0].questionNumber}–${
+  return `Câu ${relatedQuestions[0].questionNumber}–${
     relatedQuestions[relatedQuestions.length - 1].questionNumber
   }`;
 }
@@ -622,18 +664,19 @@ function useThemedStyles() {
     const { homeDesign, themeColor } = appTheme;
     const styles = StyleSheet.create({
       flex: { flex: 1 },
-      singleQuestionContent: { padding: 14, paddingBottom: 28 },
+      singleQuestionContent: { padding: 12, paddingBottom: 24 },
       passageContent: { padding: 15, paddingBottom: 26 },
       relatedQuestionsContent: { padding: 10, paddingBottom: 24, gap: 10 },
       modalOverlay: {
         flex: 1,
         justifyContent: "center",
         padding: 20,
-        backgroundColor: themeColor("rgba(0,0,0,0.72)", "background"),
+        backgroundColor: themeColor("#000b", "background"),
       },
       modalCard: {
         width: "100%",
-        maxWidth: 440,
+        maxWidth: 480,
+        maxHeight: "85%",
         alignSelf: "center",
         padding: 18,
         gap: 12,

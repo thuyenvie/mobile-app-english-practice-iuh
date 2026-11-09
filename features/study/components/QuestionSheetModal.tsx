@@ -1,189 +1,107 @@
 import { useAppTheme } from "@/theme/useAppTheme";
-import { useMemo as useThemeMemo } from "react";
-import { Modal, ScrollView } from "react-native";
-import { Text, XStack, YStack } from "tamagui";
+import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 
+import { DialogContent } from "@/components/ui/DialogContent";
 import { AppButton } from "@/components/ui/AppButton";
 
 import type { ExamAnswers, ExamQuestion } from "../types";
 
-const OPTION_LABELS = ["A", "B", "C", "D"];
-
 export function QuestionSheetModal({
   visible,
+  partNumber,
   questions,
   answers,
   currentQuestionNumber,
+  canSubmit,
   onClose,
   onJump,
-  onSelect,
   onSubmit,
 }: {
   visible: boolean;
+  partNumber: number;
   questions: ExamQuestion[];
   answers: ExamAnswers;
   currentQuestionNumber: number;
+  canSubmit: boolean;
   onClose: () => void;
   onJump: (questionNumber: number) => void;
-  onSelect: (questionNumber: number, label: string) => void;
   onSubmit: () => void;
 }) {
-  const { homeDesign, themeColor } = useThemedStyles();
+  const { homeDesign, themeColor } = useAppTheme();
+  const c = homeDesign.colors;
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-    >
-      <YStack
-        flex={1}
-        padding={18}
-        justifyContent="center"
-        backgroundColor={themeColor("rgba(0,0,0,0.72)", "background")}
-      >
-        <YStack
-          width="100%"
-          maxWidth={440}
-          maxHeight="88%"
-          alignSelf="center"
-          borderRadius={18}
-          overflow="hidden"
-          backgroundColor={homeDesign.colors.surface}
-          borderWidth={1}
-          borderColor={homeDesign.colors.border}
-        >
-          <YStack padding={17} borderBottomWidth={1} borderBottomColor={homeDesign.colors.border}>
-            <Text
-              color={homeDesign.colors.text}
-              textAlign="center"
-              fontSize={19}
-              fontWeight="800"
-            >
-              Bảng câu hỏi
-            </Text>
-            <Text
-              marginTop={5}
-              color={homeDesign.colors.secondary}
-              textAlign="center"
-              fontSize={12}
-            >
-              Chạm số câu để chuyển nhanh hoặc chọn trực tiếp A–D
-            </Text>
-          </YStack>
-
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ padding: 14, gap: 8 }}
-          >
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={[styles.overlay, { backgroundColor: themeColor("#000b", "background") }]}>
+        <DialogContent style={[styles.dialog, { backgroundColor: c.surface }]} contentStyle={{ gap: 14 }}>
+          <Text style={{ color: c.text, fontSize: 18, fontWeight: "700" }}>
+            Bảng câu hỏi · Part {partNumber}
+          </Text>
+          <Text style={{ color: c.secondary, fontSize: 13, lineHeight: 20 }}>
+            Chạm số câu để chuyển đến câu hỏi.
+          </Text>
+          <View style={styles.grid}>
             {questions.map((question) => {
+              const answer = answers[question.questionNumber];
               const current = question.questionNumber === currentQuestionNumber;
-              const availableOptions = new Set(
-                question.options.map((option) => option.label)
-              );
-
               return (
-                <XStack
+                <Pressable
                   key={question.id}
-                  minHeight={54}
-                  paddingHorizontal={8}
-                  alignItems="center"
-                  gap={8}
-                  borderRadius={10}
-                  backgroundColor={
-                    current ? homeDesign.colors.surfaceRaised : "transparent"
-                  }
+                  accessibilityRole="button"
+                  accessibilityLabel={`Câu ${question.questionNumber}${answer ? `, đã chọn ${answer}` : ", chưa trả lời"}`}
+                  accessibilityState={{ selected: current }}
+                  onPress={() => onJump(question.questionNumber)}
+                  style={[
+                    styles.cell,
+                    { borderColor: current ? c.link : answer ? c.tabActive : c.border },
+                    answer && { backgroundColor: themeColor("#334018", "background") },
+                  ]}
                 >
-                  <AppButton
-                    appearance="text"
-                    width={54}
-                    height={42}
-                    aria-label={`Đi tới câu ${question.questionNumber}`}
-                    onPress={() => onJump(question.questionNumber)}
-                  >
-                    <Text
-                      color={current ? homeDesign.colors.tabActive : homeDesign.colors.text}
-                      fontSize={15}
-                      fontWeight="800"
-                    >
-                      {question.questionNumber}.
-                    </Text>
-                  </AppButton>
-
-                  <XStack flex={1} justifyContent="space-between" gap={6}>
-                    {OPTION_LABELS.map((label) => {
-                      const available = availableOptions.has(label);
-                      const selected = answers[question.questionNumber] === label;
-
-                      return (
-                        <AppButton
-                          key={label}
-                          appearance="text"
-                          width={38}
-                          height={38}
-                          minHeight={38}
-                          borderRadius={19}
-                          disabled={!available}
-                          opacity={available ? 1 : 0.2}
-                          backgroundColor={
-                            selected
-                              ? homeDesign.colors.tabActive
-                              : homeDesign.colors.tab
-                          }
-                          color={homeDesign.colors.onSelection}
-                          aria-label={`Câu ${question.questionNumber}, đáp án ${label}`}
-                          onPress={() => onSelect(question.questionNumber, label)}
-                        >
-                          {label}
-                        </AppButton>
-                      );
-                    })}
-                  </XStack>
-                </XStack>
+                  <Text style={{ color: c.text, fontSize: 16, lineHeight: 24 }}>
+                    {question.questionNumber}{answer ? ` · ${answer}` : ""}
+                  </Text>
+                </Pressable>
               );
             })}
-          </ScrollView>
-
-          <XStack
-            padding={14}
-            gap={10}
-            borderTopWidth={1}
-            borderTopColor={homeDesign.colors.border}
+          </View>
+          <AppButton
+            appearance="text"
+            padding={10}
+            color={c.link}
+            fontSize={14}
+            fontWeight="600"
+            disabled={!canSubmit}
+            opacity={canSubmit ? 1 : 0.4}
+            onPress={onSubmit}
           >
-            <AppButton
-              appearance="text"
-              flex={1}
-              minHeight={48}
-              backgroundColor="transparent"
-              borderWidth={1}
-              borderColor={homeDesign.colors.tabActive}
-              color={homeDesign.colors.tabActive}
-              onPress={onClose}
-            >
-              Huỷ
-            </AppButton>
-            <AppButton
-              appearance="text"
-              flex={1}
-              minHeight={48}
-              backgroundColor={homeDesign.colors.tabActive}
-              color={homeDesign.colors.onSelection}
-              onPress={onSubmit}
-            >
-              Nộp bài
-            </AppButton>
-          </XStack>
-        </YStack>
-      </YStack>
+            Nộp
+          </AppButton>
+          <AppButton
+            appearance="text"
+            padding={10}
+            color={c.link}
+            fontSize={14}
+            fontWeight="600"
+            onPress={onClose}
+          >
+            Đóng
+          </AppButton>
+        </DialogContent>
+      </View>
     </Modal>
   );
 }
 
-function useThemedStyles() {
-  const appTheme = useAppTheme();
-  return useThemeMemo(() => {
-    const { homeDesign, themeColor } = appTheme;
-
-    return { homeDesign, themeColor };
-  }, [appTheme]);
-}
+const styles = StyleSheet.create({
+  overlay: { flex: 1, padding: 20, justifyContent: "center" },
+  dialog: {
+    width: "100%",
+    maxWidth: 480,
+    alignSelf: "center",
+    maxHeight: "85%",
+    padding: 18,
+    gap: 12,
+    borderRadius: 16,
+  },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  cell: { padding: 12, minWidth: 64, minHeight: 48, borderWidth: 1, borderRadius: 8 },
+});

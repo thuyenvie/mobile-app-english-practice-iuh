@@ -1,20 +1,25 @@
 import { useAppTheme } from "@/theme/useAppTheme";
 import { useMemo as useThemeMemo } from "react";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { Text, XStack } from "tamagui";
+import { Text, XStack, YStack } from "tamagui";
 
 import { AppButton } from "@/components/ui/AppButton";
 
 
 export function ReadingExamHeader({
-  questionLabel,
+  partNumber,
+  year,
+  testNumber,
+  busy,
   timerLabel,
   timerExpired,
   onBack,
   onOpenQuestionSheet,
 }: {
-  questionLabel: string;
+  partNumber: number;
+  year: number;
+  testNumber: number;
+  busy: boolean;
   timerLabel: string;
   timerExpired: boolean;
   onBack: () => void;
@@ -23,50 +28,45 @@ export function ReadingExamHeader({
   const { homeDesign, themeColor } = useThemedStyles();
   return (
     <XStack
-      minHeight={62}
-      paddingHorizontal={10}
+      padding={8}
       alignItems="center"
       gap={8}
-      backgroundColor={homeDesign.colors.surface}
-      borderBottomWidth={1}
-      borderBottomColor={homeDesign.colors.border}
+      backgroundColor={homeDesign.colors.background}
     >
       <AppButton
         appearance="text"
-        width={40}
-        height={40}
+        padding={10}
+        color={homeDesign.colors.link}
+        fontSize={14}
+        fontWeight="600"
+        disabled={busy}
+        opacity={busy ? 0.4 : 1}
         aria-label="Quay lại"
         onPress={onBack}
-        icon={
-          <MaterialIcons
-            name="arrow-back"
-            size={25}
-            color={homeDesign.colors.text}
-          />
-        }
-      />
-
-      <Text
-        flex={1}
-        color={homeDesign.colors.text}
-        fontSize={15}
-        fontWeight="700"
-        numberOfLines={1}
       >
-        {questionLabel}
-      </Text>
+        ‹
+      </AppButton>
+
+      <YStack flex={1}>
+        <Text color={homeDesign.colors.text} fontSize={18} fontWeight="700">
+          Reading · Part {partNumber}
+        </Text>
+        <Text color={homeDesign.colors.secondary} fontSize={13} lineHeight={20}>
+          ETS {year} · Test {testNumber} · Luyện tập
+        </Text>
+      </YStack>
 
       <XStack alignItems="center" gap={5}>
         <MaterialCommunityIcons
           name="timer-outline"
-          size={22}
+          size={20}
           color={timerExpired ? themeColor("#ff4d4f", "text") : homeDesign.colors.inProgress}
         />
         <Text
           minWidth={48}
           color={timerExpired ? themeColor("#ff4d4f", "text") : homeDesign.colors.inProgress}
           fontSize={14}
-          fontWeight="800"
+          fontWeight="700"
         >
           {timerLabel}
         </Text>
@@ -74,34 +74,17 @@ export function ReadingExamHeader({
 
       <AppButton
         appearance="text"
-        width={38}
-        height={40}
-        disabled
-        opacity={0.55}
-        aria-label="Cài đặt - sẽ phát triển sau"
-        icon={
-          <MaterialIcons
-            name="settings"
-            size={24}
-            color={homeDesign.colors.text}
-          />
-        }
-      />
-
-      <AppButton
-        appearance="text"
-        width={38}
-        height={40}
+        padding={10}
+        color={homeDesign.colors.link}
+        fontSize={14}
+        fontWeight="600"
+        disabled={busy}
+        opacity={busy ? 0.4 : 1}
         aria-label="Mở bảng câu hỏi"
         onPress={onOpenQuestionSheet}
-        icon={
-          <MaterialIcons
-            name="format-list-numbered"
-            size={27}
-            color={homeDesign.colors.text}
-          />
-        }
-      />
+      >
+        ☰
+      </AppButton>
     </XStack>
   );
 }

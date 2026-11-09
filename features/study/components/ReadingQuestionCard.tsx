@@ -27,6 +27,7 @@ export function ReadingQuestionCard({
   onSelect,
   onWordPress,
   highlightedWord,
+  disabled = false,
 }: {
   question: ExamQuestion;
   selectedOption?: string;
@@ -34,8 +35,9 @@ export function ReadingQuestionCard({
   onSelect: (label: string) => void;
   onWordPress?: (word: string, context: string) => void;
   highlightedWord?: string | null;
+  disabled?: boolean;
 }) {
-  const { homeDesign } = useThemedStyles();
+  const { homeDesign, themeColor } = useThemedStyles();
   const imageUri = getQuestionImage(question);
 
   return (
@@ -43,12 +45,12 @@ export function ReadingQuestionCard({
       padding={14}
       gap={12}
       borderRadius={14}
-      borderWidth={focused ? 2 : 1}
+      borderWidth={1}
       borderColor={focused ? homeDesign.colors.link : homeDesign.colors.border}
       backgroundColor={homeDesign.colors.surface}
     >
-      <Text color={homeDesign.colors.text} fontSize={17} fontWeight="800">
-        {question.questionNumber}.
+      <Text color={homeDesign.colors.text} fontSize={18} fontWeight="700">
+        Câu {question.questionNumber}
       </Text>
 
       {question.content ? (
@@ -74,7 +76,7 @@ export function ReadingQuestionCard({
         />
       ) : null}
 
-      <YStack gap={9}>
+      <YStack gap={12}>
         {question.options.map((option) => {
           const selected = selectedOption === option.label;
 
@@ -85,52 +87,37 @@ export function ReadingQuestionCard({
               width="100%"
               height="auto"
               minHeight={54}
-              paddingHorizontal={12}
-              paddingVertical={11}
+              padding={14}
               borderWidth={1}
               borderColor={
                 selected ? homeDesign.colors.tabActive : homeDesign.colors.border
               }
               borderRadius={12}
               backgroundColor={
-                selected ? homeDesign.colors.surfaceRaised : "transparent"
+                selected ? themeColor("#334018", "background") : "transparent"
               }
               alignItems="stretch"
+              accessibilityRole="radio"
+              accessibilityState={{ checked: selected, disabled }}
+              disabled={disabled}
               aria-label={`Chọn đáp án ${option.label} cho câu ${question.questionNumber}`}
               onPress={() => onSelect(option.label)}
             >
-              <XStack width="100%" alignItems="flex-start" gap={11}>
-                <YStack
-                  width={30}
-                  height={30}
-                  flexShrink={0}
-                  borderRadius={15}
-                  alignItems="center"
-                  justifyContent="center"
-                  borderWidth={2}
-                  borderColor={
-                    selected
-                      ? homeDesign.colors.tabActive
-                      : homeDesign.colors.secondary
-                  }
-                  backgroundColor={
-                    selected ? homeDesign.colors.tabActive : "transparent"
-                  }
+              <XStack width="100%" alignItems="flex-start" gap={14}>
+                <Text
+                  color={homeDesign.colors.text}
+                  fontSize={16}
+                  lineHeight={24}
+                  fontWeight="700"
                 >
-                  <Text
-                    color={selected ? homeDesign.colors.onSelection : homeDesign.colors.text}
-                    fontWeight="800"
-                  >
-                    {option.label}
-                  </Text>
-                </YStack>
+                  {option.label}
+                </Text>
                 <Text
                   flex={1}
                   flexShrink={1}
                   color={homeDesign.colors.text}
-                  fontSize={15}
-                  lineHeight={22}
-                  paddingTop={4}
+                  fontSize={16}
+                  lineHeight={24}
                   textAlign="left"
                 >
                   {normalizeInlineText(option.text)}
@@ -147,8 +134,8 @@ export function ReadingQuestionCard({
 function useThemedStyles() {
   const appTheme = useAppTheme();
   return useThemeMemo(() => {
-    const { homeDesign } = appTheme;
+    const { homeDesign, themeColor } = appTheme;
 
-    return { homeDesign };
+    return { homeDesign, themeColor };
   }, [appTheme]);
 }
