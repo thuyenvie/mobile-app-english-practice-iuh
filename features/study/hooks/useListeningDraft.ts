@@ -68,7 +68,9 @@ export function useListeningDraft(year: number, test: number, part: number) {
 
   const select = (number: number, label: string) => {
     if (!ready || loadedScope !== scope || getSessionSnapshot().generation !== session.generation) return;
-    const next = { ...currentAnswers.current, [number]: label };
+    const next = { ...currentAnswers.current };
+    if (next[number] === label) delete next[number];
+    else next[number] = label;
     currentAnswers.current = next;
     setAnswers(next);
     if (session.status === "guest") {

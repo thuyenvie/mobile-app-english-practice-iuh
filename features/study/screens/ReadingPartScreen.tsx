@@ -171,7 +171,7 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
   }, [draftKey, questions]);
 
   useEffect(() => {
-    if (!draftReady || !draftKey || (!result && !Object.keys(answers).length)) return;
+    if (!draftReady || !draftKey) return;
     void writeExamDraft(draftKey, result ? null : {
       answers, startedAt, questionNumber: questions[currentIndex]?.questionNumber,
     }).catch(() => setSubmitError("Không cập nhật được bản nháp trên thiết bị."));
@@ -261,7 +261,12 @@ function ReadingPartContent({ part }: { part: ExamPart }) {
 
   const selectAnswer = (questionNumber: number, label: string) => {
     if (submittingRef.current || result) return;
-    setAnswers((current) => ({ ...current, [questionNumber]: label }));
+    setAnswers((current) => {
+      const next = { ...current };
+      if (next[questionNumber] === label) delete next[questionNumber];
+      else next[questionNumber] = label;
+      return next;
+    });
     goToQuestion(questionNumber, false);
   };
 
