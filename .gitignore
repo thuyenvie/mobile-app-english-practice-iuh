@@ -16,9 +16,12 @@ expo-env.d.ts
 .kotlin/
 *.orig.*
 *.jks
+*.keystore
 *.p8
 *.p12
+*.pfx
 *.key
+*.key.*
 *.mobileprovision
 
 # Metro
@@ -38,10 +41,25 @@ yarn-error.*
 .env.*
 !.env.example
 !.env.*.example
+.envrc
+
+# Private SSH keys and local cloud credentials
+.ssh/
+.aws/
+id_rsa
+id_rsa.*
+id_dsa
+id_dsa.*
+id_ecdsa
+id_ecdsa.*
+id_ed25519
+id_ed25519.*
 
 # private Firebase / Expo credentials
 .secrets/
 credentials.json
+credentials.local.json
+application_default_credentials.json
 *firebase-adminsdk*.json
 *service-account*.json
 *service_account*.json
