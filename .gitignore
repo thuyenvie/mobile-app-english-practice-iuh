@@ -12,6 +12,16 @@ expo-env.d.ts
 # Local EAS inspection output
 /eas-archive/
 
+# Local troubleshooting notes and tests
+/fix/
+/test/
+/tests/
+
+# Local IDE state and installable build artifacts
+/.idea/
+*.apk
+*.aab
+
 # Native
 .kotlin/
 *.orig.*
